@@ -1,0 +1,69 @@
+# ─────────────────────────────────────────────────────────────
+#  HeDeck — những gì KHÔNG đưa lên Git
+#
+#  Nguyên tắc: chỉ đưa lên thứ con người viết ra. Mọi thứ máy
+#  sinh lại được đều bỏ qua — vừa nhẹ kho mã, vừa tránh xung đột
+#  khi nhiều máy cùng làm việc.
+# ─────────────────────────────────────────────────────────────
+
+# ── Flutter: phần sinh ra khi build ──────────────────────────
+flutter_app/build/
+flutter_app/.dart_tool/
+flutter_app/.flutter-plugins
+flutter_app/.flutter-plugins-dependencies
+flutter_app/.packages
+flutter_app/.pub-cache/
+flutter_app/.pub/
+flutter_app/coverage/
+
+# Toàn bộ thư mục android/ do `flutter create` sinh ra.
+# Người lấy source về chạy setup_app.bat là có lại đầy đủ, và đúng
+# phiên bản Flutter của máy họ. Đưa lên Git chỉ tổ gây xung đột.
+flutter_app/android/
+flutter_app/ios/
+flutter_app/web/
+flutter_app/windows/
+flutter_app/linux/
+flutter_app/macos/
+
+# ── Agent Python ─────────────────────────────────────────────
+agent/.venv/
+agent/venv/
+agent/__pycache__/
+agent/build/
+agent/dist/
+agent/*.spec
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# ── Kết quả build và bảng đối chiếu lỗi ──────────────────────
+debug_symbols/
+*.apk
+*.aab
+*.apk.sha256
+
+# ── Ảnh do tools/make_icon.py sinh ra ────────────────────────
+# Chạy lại script là có, không cần lưu.
+tools/*.png
+
+# ── Cấu hình riêng của từng máy ──────────────────────────────
+*.iml
+.idea/
+.vscode/
+!.vscode/extensions.json
+*.swp
+*~
+
+# ── Rác của hệ điều hành ─────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ── Dữ liệu chạy thật, tuyệt đối không đưa lên ───────────────
+# Chứa khoá công khai của thiết bị đã ghép cặp và danh mục ứng
+# dụng kèm đường dẫn thật trên máy.
+.hedeck/
+*.local

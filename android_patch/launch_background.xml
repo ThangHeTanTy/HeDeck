@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nền hiện ra trong vài trăm mili giây trước khi Flutter kịp vẽ.
+  Để trắng cho khớp với màn hình mở đầu, tránh nháy tối rồi sáng.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@android:color/white" />
+</layer-list>
