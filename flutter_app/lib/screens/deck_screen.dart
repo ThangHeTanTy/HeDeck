@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../models/deck.dart';
 import '../services/deck_connection.dart';
 import '../services/store.dart';
+import '../services/wake_on_lan.dart';
 import '../theme.dart';
 import '../widgets/clown_logo.dart';
 import '../widgets/deck_tile_view.dart';
@@ -26,6 +27,9 @@ class DeckScreen extends StatefulWidget {
 class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
   final _pager = PageController();
   Timer? _tick;
+
+  /// Các lần thử kết nối lại sau khi gửi tín hiệu bật máy.
+  final List<Timer> _wakeTimers = [];
   int _page = 0;
   bool _editing = false;
 
@@ -44,6 +48,9 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _tick?.cancel();
+    for (final t in _wakeTimers) {
+      t.cancel();
+    }
     _pager.dispose();
     super.dispose();
   }
@@ -183,6 +190,248 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
           duration: const Duration(seconds: 2),
         ),
       );
+
+  // ---------------------------------------------------------- nguồn máy tính
+
+  /// Bảng nguồn: máy đang tắt thì bật, đang chạy thì khoá/ngủ/tắt.
+  Future<void> _powerSheet() async {
+    final store = context.read<Store>();
+    final conn = context.read<DeckConnection>();
+    final online = conn.isOnline;
+    final warnings = online ? (conn.wol?.warnings ?? const []) : const [];
+
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: DeckColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+                child: Text(
+                  'Nguồn · ${store.hostName.isEmpty ? 'máy tính' : store.hostName}',
+                  style: const TextStyle(color: DeckColors.muted, fontSize: 12),
+                ),
+              ),
+              if (!online) ...[
+                ListTile(
+                  enabled: store.canWake,
+                  leading: Icon(Icons.power_settings_new_rounded,
+                      size: 22,
+                      color:
+                          store.canWake ? DeckColors.live : DeckColors.muted),
+                  title: const Text('Bật máy',
+                      style: TextStyle(color: DeckColors.text, fontSize: 14)),
+                  subtitle: Text(
+                    store.canWake
+                        ? 'Wake-on-LAN tới ${store.wolMacs.first}'
+                        : 'Chưa biết địa chỉ MAC. Kết nối một lần lúc máy '
+                            'đang bật, hoặc nhập tay bên dưới.',
+                    style:
+                        const TextStyle(color: DeckColors.muted, fontSize: 11),
+                  ),
+                  onTap: () => Navigator.pop(context, 'wake'),
+                ),
+              ] else ...[
+                _sheetItem(Icons.lock_rounded, 'Khoá máy', 'lock'),
+                _sheetItem(Icons.bedtime_rounded, 'Ngủ', 'sleep'),
+                _sheetItem(
+                    Icons.restart_alt_rounded, 'Khởi động lại', 'restart'),
+                _sheetItem(
+                    Icons.power_settings_new_rounded, 'Tắt máy', 'shutdown'),
+              ],
+              for (final w in warnings)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.warning_amber_rounded,
+                          size: 14, color: DeckColors.warn),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(w,
+                            style: const TextStyle(
+                                color: DeckColors.warn,
+                                fontSize: 11,
+                                height: 1.4)),
+                      ),
+                    ],
+                  ),
+                ),
+              const Divider(height: 17, color: DeckColors.line),
+              _sheetItem(Icons.settings_ethernet_rounded,
+                  'Địa chỉ MAC để bật máy', 'mac'),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (choice == null || !mounted) return;
+
+    switch (choice) {
+      case 'wake':
+        await _wake();
+        break;
+      case 'mac':
+        await _askMac();
+        break;
+      case 'lock':
+      case 'sleep':
+        conn.power(choice);
+        _snack(choice == 'lock' ? 'Đã khoá máy' : 'Máy đang đi ngủ…');
+        break;
+      case 'restart':
+      case 'shutdown':
+        final force = await _confirmPower(choice);
+        if (force == null || !mounted) return;
+        conn.power(choice, force: force);
+        _snack(choice == 'restart' ? 'Đang khởi động lại…' : 'Đang tắt máy…');
+        break;
+    }
+  }
+
+  Future<void> _wake() async {
+    final store = context.read<Store>();
+    final conn = context.read<DeckConnection>();
+    if (!store.canWake) {
+      _snack('Chưa có địa chỉ MAC của máy tính');
+      return;
+    }
+    HapticFeedback.mediumImpact();
+    try {
+      final sent = await sendWakeOnLan(store.wolMacs,
+          broadcast: store.wolBroadcast);
+      if (sent == 0) {
+        _snack('Không gửi được — điện thoại có đang nối Wi-Fi nhà không?');
+        return;
+      }
+    } catch (e) {
+      _snack('Gửi tín hiệu bật máy lỗi: $e');
+      return;
+    }
+    _snack('Đã gửi tín hiệu bật máy. Windows cần khoảng 20–60 giây để lên.');
+
+    // Đừng để vòng thử lại đang lùi tới 20 giây làm chậm thêm: chủ động gõ
+    // cửa vài lần quanh lúc Windows thường khởi động xong.
+    for (final t in _wakeTimers) {
+      t.cancel();
+    }
+    _wakeTimers
+      ..clear()
+      ..addAll([20, 35, 50, 75].map((s) => Timer(Duration(seconds: s), () {
+            if (mounted) conn.reconnectNow();
+          })));
+  }
+
+  /// Hỏi lại trước khi tắt hoặc khởi động lại. Trả về null nếu huỷ, còn lại
+  /// là có buộc đóng app chưa lưu hay không.
+  Future<bool?> _confirmPower(String action) {
+    final restart = action == 'restart';
+    var force = false;
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialog) => AlertDialog(
+          backgroundColor: DeckColors.surface,
+          title: Text(restart ? 'Khởi động lại máy?' : 'Tắt máy?',
+              style: const TextStyle(color: DeckColors.text, fontSize: 17)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                restart
+                    ? 'Máy sẽ khởi động lại ngay.'
+                    : 'Máy sẽ tắt hẳn. Bật lại bằng nút nguồn trên HeDeck '
+                        'nếu đã cài Wake-on-LAN.',
+                style: const TextStyle(
+                    color: DeckColors.muted, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                value: force,
+                activeColor: DeckColors.danger,
+                onChanged: (v) => setDialog(() => force = v ?? false),
+                title: const Text('Buộc đóng app chưa lưu',
+                    style: TextStyle(color: DeckColors.text, fontSize: 13)),
+                subtitle: const Text(
+                    'Không chọn thì Windows có thể dừng lại hỏi lưu file.',
+                    style: TextStyle(color: DeckColors.muted, fontSize: 11)),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx), child: const Text('Huỷ')),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                  backgroundColor: DeckColors.danger),
+              onPressed: () => Navigator.pop(ctx, force),
+              child: Text(restart ? 'Khởi động lại' : 'Tắt máy'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _askMac() async {
+    final store = context.read<Store>();
+    final ctl = TextEditingController(
+        text: store.wolMacs.isEmpty ? '' : store.wolMacs.first);
+    final text = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: DeckColors.surface,
+        title: const Text('Địa chỉ MAC',
+            style: TextStyle(color: DeckColors.text, fontSize: 17)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: ctl,
+              autofocus: true,
+              style: const TextStyle(color: DeckColors.text),
+              decoration: const InputDecoration(hintText: 'AA:BB:CC:DD:EE:FF'),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Agent tự gửi MAC mỗi lần kết nối. Chỉ cần nhập tay nếu cửa sổ '
+              'agent báo không đọc được. Xem bằng lệnh: getmac /v',
+              style:
+                  TextStyle(color: DeckColors.muted, fontSize: 11, height: 1.4),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Huỷ')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctl.text),
+              child: const Text('Lưu')),
+        ],
+      ),
+    );
+    if (text == null || !mounted) return;
+    final mac = normalizeMac(text);
+    if (mac == null) {
+      _snack('MAC không hợp lệ — cần 12 chữ số hex');
+      return;
+    }
+    await store.setManualMac(mac);
+    _snack('Đã lưu MAC $mac');
+  }
 
   // ---------------------------------------------------------------- menu
 
@@ -509,6 +758,15 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
             color: DeckColors.warn,
             onTap: conn.reconnectNow,
           ),
+        _barButton(
+          icon: Icons.power_settings_new_rounded,
+          tooltip: conn.isOnline ? 'Nguồn máy tính' : 'Bật máy tính',
+          // Máy tắt mà bật được thì nút sáng xanh, mời bấm.
+          color: !conn.isOnline && store.canWake
+              ? DeckColors.live
+              : DeckColors.muted,
+          onTap: _powerSheet,
+        ),
         _barButton(
           icon: _editing ? Icons.check_rounded : Icons.edit_rounded,
           tooltip: _editing ? 'Xong' : 'Sửa bố cục',

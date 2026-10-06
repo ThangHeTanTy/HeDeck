@@ -112,7 +112,7 @@ def main():
     print("\n[Lệnh mà agent hiểu]")
     source = (HERE / "agent.py").read_text(encoding="utf-8")
     for cmd in ("ping", "catalog", "rescan", "launch", "close",
-                "media", "macro", "app_volume", "watch_volume"):
+                "media", "macro", "app_volume", "watch_volume", "power"):
         check(f'có xử lý lệnh "{cmd}"', f'kind == "{cmd}"' in source)
 
     # --- Danh mục ---------------------------------------------------------
@@ -134,6 +134,19 @@ def main():
     check("vòng đo trạng thái dùng window_counts",
           "win_control.window_counts()" in source,
           "Gọi windows_of cho từng app sẽ tốn gấp hàng chục lần.")
+
+    # --- Nguồn và bật máy từ xa ------------------------------------------
+    print("\n[Nguồn và Wake-on-LAN]")
+    pw_src = (HERE / "power.py").read_text(encoding="utf-8")
+    check("agent lấy thông tin Wake-on-LAN lúc khởi động",
+          "power.wol_info" in source)
+    check("điện thoại nhận MAC lúc ghép cặp và lúc kết nối lại",
+          source.count('"wol": power.public_view(self.wol)') >= 2,
+          "Thiếu thì điện thoại không biết MAC để bật máy.")
+    check("lệnh nguồn trả lời trước rồi mới thực hiện",
+          "self.power_later(" in source)
+    check("tắt máy là tắt hẳn, không qua Fast Startup",
+          "/hybrid" not in pw_src)
 
     # --- Bảo mật ----------------------------------------------------------
     print("\n[Bảo mật]")

@@ -97,6 +97,7 @@ class DeckApp extends StatelessWidget {
             final conn = DeckConnection(identity);
             // Gán ngay từ lúc dựng, không phụ thuộc màn hình nào chạy trước.
             conn.onHostChanged = store.updateHost;
+            conn.onWolInfo = (w) => store.saveWol(w.macs, w.broadcast);
             return conn;
           },
         ),
