@@ -16,6 +16,8 @@ class Store extends ChangeNotifier {
   static const _kPages = 'deck.pages';
   static const _kRows = 'deck.rows';
   static const _kFlipped = 'deck.flipped';
+  static const _kWolMacs = 'deck.wolMacs';
+  static const _kWolBroadcast = 'deck.wolBroadcast';
 
   late SharedPreferences _prefs;
 
@@ -25,6 +27,13 @@ class Store extends ChangeNotifier {
   String fingerprint = '';
   String hostName = '';
   List<DeckPage> pages = DeckPage.starter();
+
+  /// MAC card mạng có dây của laptop, để bật máy bằng Wake-on-LAN. Phải lưu
+  /// lại vì lúc cần bật máy thì agent đã tắt theo, không ai trả lời nữa.
+  List<String> wolMacs = [];
+  String wolBroadcast = '';
+
+  bool get canWake => wolMacs.isNotEmpty;
 
   /// Số hàng của lưới: 2 (bố cục 4x2, 8 ô) hoặc 3 (4x3, 12 ô).
   int rows = 2;
@@ -50,6 +59,8 @@ class Store extends ChangeNotifier {
     flippedTiles
       ..clear()
       ..addAll(_prefs.getStringList(_kFlipped) ?? const []);
+    wolMacs = _prefs.getStringList(_kWolMacs) ?? [];
+    wolBroadcast = _prefs.getString(_kWolBroadcast) ?? '';
     deviceId = _prefs.getString(_kDeviceId) ?? _newDeviceId();
     await _prefs.setString(_kDeviceId, deviceId);
 
@@ -108,9 +119,32 @@ class Store extends ChangeNotifier {
     host = '';
     hostName = '';
     fingerprint = '';
+    wolMacs = [];
+    wolBroadcast = '';
     await _prefs.remove(_kHost);
     await _prefs.remove(_kFingerprint);
     await _prefs.remove(_kHostName);
+    await _prefs.remove(_kWolMacs);
+    await _prefs.remove(_kWolBroadcast);
+    notifyListeners();
+  }
+
+  /// Lưu thông tin bật máy agent gửi về. Agent không thấy card dây nào thì
+  /// giữ MAC cũ — có thể người dùng đã nhập tay, đừng xoá mất.
+  Future<void> saveWol(List<String> macs, String broadcast) async {
+    if (macs.isEmpty) return;
+    if (listEquals(macs, wolMacs) && broadcast == wolBroadcast) return;
+    wolMacs = List.of(macs);
+    if (broadcast.isNotEmpty) wolBroadcast = broadcast;
+    await _prefs.setStringList(_kWolMacs, wolMacs);
+    await _prefs.setString(_kWolBroadcast, wolBroadcast);
+    notifyListeners();
+  }
+
+  /// MAC nhập tay, dùng khi agent không tự đọc được.
+  Future<void> setManualMac(String mac) async {
+    wolMacs = [mac, ...wolMacs.where((m) => m != mac)];
+    await _prefs.setStringList(_kWolMacs, wolMacs);
     notifyListeners();
   }
 

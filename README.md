@@ -26,6 +26,7 @@ nhạc, âm lượng riêng từng ứng dụng, và các ô macro gõ tổ hợ
 | **113 icon vector** | Chọn icon cho từng ô, nét ở mọi kích thước. Hoặc dùng icon thật của ứng dụng. |
 | **Nhiều trang** | Vuốt ngang để đổi. Mỗi trang 10 hoặc 15 ô, tuỳ bố cục 5×2 hay 5×3. |
 | **Điều khiển nhạc** | Thanh media cố định dưới màn hình, không tốn ô nào. |
+| **Bật máy từ xa** | Bật PC kể cả sau khi đã tắt hẳn (Wake-on-LAN). Khi máy đang chạy: khoá, ngủ, khởi động lại, tắt máy. |
 
 Ai dùng hợp: người livestream cần đổi cảnh và tắt mic nhanh, người làm việc
 nhiều cửa sổ, hoặc bất kỳ ai cắm laptop vào TV và ngồi xa bàn phím.
@@ -161,6 +162,18 @@ muốn bấm bật bấm tắt.
 
 Vào bánh răng để đổi giữa **5×2** (10 ô, ô lớn) và **5×3** (15 ô, ô nhỏ hơn).
 Đổi qua lại không mất dữ liệu — mỗi trang luôn giữ đủ 15 chỗ.
+
+---
+
+## Bật và tắt máy từ xa
+
+Nút **⏻** trên thanh trên cùng. Máy đang chạy: Khoá · Ngủ · Khởi động lại ·
+Tắt máy. Máy đã tắt: nút chuyển xanh lá, bấm là **Bật máy** bằng Wake-on-LAN.
+
+Cần làm một lần: cắm **dây LAN** cho PC, chỉnh hai mục trong BIOS, chạy
+`agent\CAI_BAT_MAY_TU_XA.bat` và `agent\TU_CHAY_CUNG_WINDOWS.bat`. Hướng dẫn
+từng bước, kèm đường dẫn BIOS cho main MSI B760:
+[`docs/BAT_MAY_TU_XA.md`](docs/BAT_MAY_TU_XA.md).
 
 ---
 
@@ -324,6 +337,9 @@ hedeck/
 │   ├── catalog.py         quét Start Menu
 │   ├── icon_source.py     lấy icon độ phân giải gốc
 │   ├── app_volume.py      âm lượng riêng từng app
+│   ├── power.py           tắt/ngủ/khoá máy, thông tin Wake-on-LAN
+│   ├── CAI_BAT_MAY_TU_XA.bat   cấu hình Windows cho Wake-on-LAN
+│   ├── TU_CHAY_CUNG_WINDOWS.bat agent tự chạy khi đăng nhập
 │   ├── security.py        chặn IP lạ, chữ ký Ed25519
 │   └── kiem_tra_*.py      công cụ tự kiểm tra và chẩn đoán
 ├── flutter_app/lib/       phần chạy trên điện thoại
@@ -355,8 +371,8 @@ khai báo rồi nhưng chưa được khởi động, một phương thức khô
 thiếu nhánh xử lý.
 
 **Hướng phát triển còn bỏ ngỏ:** kết nối Bluetooth, touchpad ảo, nâng lên
-`wss://` có mã hoá, ô nhiều bước có độ trễ, đóng gói agent thành dịch vụ chạy
-nền cùng Windows.
+`wss://` có mã hoá, ô nhiều bước có độ trễ, ô nguồn đặt thẳng trên lưới,
+bật máy từ ngoài mạng nhà qua một thiết bị trung chuyển.
 
 ---
 

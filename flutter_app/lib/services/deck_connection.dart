@@ -9,6 +9,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/deck.dart';
 import 'device_identity.dart';
 import 'discovery.dart';
+import 'wake_on_lan.dart';
 
 enum ConnState {
   offline,
@@ -70,6 +71,13 @@ class DeckConnection extends ChangeNotifier {
 
   /// Gọi khi tự dò lại thấy laptop ở địa chỉ IP mới, để lưu lại.
   void Function(String host, int port)? onHostChanged;
+
+  /// Thông tin bật máy agent gửi lúc kết nối. Null khi chưa kết nối lần nào,
+  /// hoặc agent bản cũ chưa biết Wake-on-LAN.
+  WolInfo? wol;
+
+  /// Gọi mỗi khi agent gửi thông tin bật máy, để lưu lại dùng lúc máy tắt.
+  void Function(WolInfo info)? onWolInfo;
 
   /// Số lần thử liên tiếp không thành. Đủ nhiều thì đi dò lại địa chỉ.
   int _misses = 0;
@@ -291,6 +299,11 @@ class DeckConnection extends ChangeNotifier {
 
   void macro(List<String> keys) => _send({'t': 'macro', 'keys': keys});
 
+  /// lock | sleep | restart | shutdown. `force` đóng luôn app chưa lưu thay
+  /// vì để Windows dừng lại hỏi — mà lúc đó không ai ngồi trước máy để bấm.
+  void power(String action, {bool force = false}) =>
+      _send({'t': 'power', 'action': action, 'force': force});
+
   void media(String action) => _send({'t': 'media', 'action': action});
 
   void appVolume(String appId, String action) =>
@@ -319,10 +332,12 @@ class DeckConnection extends ChangeNotifier {
           msg['fingerprint'] as String? ?? '',
         ));
         hostName = msg['host_name'] as String? ?? '';
+        _readWol(msg['wol']);
         break;
 
       case 'auth_ok':
         hostName = msg['host_name'] as String? ?? hostName;
+        _readWol(msg['wol']);
         lastError = null;
         _backoff = 1;
         _misses = 0;
@@ -418,6 +433,12 @@ class DeckConnection extends ChangeNotifier {
         }
         break;
     }
+  }
+
+  void _readWol(dynamic raw) {
+    if (raw is! Map) return;
+    wol = WolInfo.fromJson(raw.cast<String, dynamic>());
+    onWolInfo?.call(wol!);
   }
 
   void _onClosed() {

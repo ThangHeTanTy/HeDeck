@@ -279,6 +279,26 @@ Lệnh: `catalog`, `rescan`, `launch` (`app_id`, `toggle`), `close` (`app_id`),
 chờ 3 giây, còn sống thì `terminate` rồi `kill`. Agent đẩy `status` mỗi 1,5 giây với danh sách app
 đang chạy và số cửa sổ của từng app.
 
+Nguồn: `power` (`action` là `lock` | `sleep` | `restart` | `shutdown`, `force`
+để đóng luôn app chưa lưu). Agent trả `{"t":"power"}` trước rồi 0,8 giây sau
+mới thực hiện, vì tắt máy xong thì không còn kết nối để trả lời. Tắt máy dùng
+`shutdown /s /t 0` không kèm cờ hybrid, tức tắt hẳn (S5), không đi qua Fast
+Startup. Đặt `ALLOW_POWER = False` trong `agent.py` để chặn nhóm lệnh này.
+
+`paired` và `auth_ok` mang thêm khối `wol`:
+
+```json
+"wol": {"macs":["D8:43:AE:12:34:56"],"broadcast":"192.168.1.255",
+        "wired":true,"warnings":[]}
+```
+
+Điện thoại lưu `macs` và `broadcast`. Lúc máy tắt, app tự dựng magic packet
+(6 byte `FF` + MAC lặp 16 lần) và gửi UDP broadcast tới `255.255.255.255` và
+địa chỉ broadcast của mạng, cổng 9 và 7, ba lượt. Không gửi thẳng IP của máy:
+máy tắt không trả lời ARP nên gói gửi thẳng sẽ lạc. Agent lấy MAC bằng
+`Get-NetAdapter` và chỉ gửi card **có dây** — card Wi-Fi không nhận
+Wake-on-LAN khi máy tắt hẳn. Chi tiết cài đặt: `docs/BAT_MAY_TU_XA.md`.
+
 ## Bảo mật
 
 Ba tầng độc lập nhau. Một tầng thủng thì hai tầng còn lại vẫn giữ.
@@ -558,11 +578,13 @@ agent/
   kiem_tra_quet.py  chẩn đoán riêng phần quét danh mục
   win_control.py    mở app, focus/toggle cửa sổ, phím media, macro, trích icon
   catalog.py        quét Start Menu, danh mục app
+  power.py          tắt/ngủ/khoá máy, đọc MAC cho Wake-on-LAN
 flutter_app/
   lib/main.dart
   lib/theme.dart
   lib/models/deck.dart
-  lib/services/     store.dart · deck_connection.dart · discovery.dart
+  lib/services/     store.dart · deck_connection.dart · discovery.dart ·
+                    wake_on_lan.dart
   lib/screens/      pair_screen.dart · deck_screen.dart · tile_edit_screen.dart
   lib/widgets/      deck_tile_view.dart · media_bar.dart
 ```

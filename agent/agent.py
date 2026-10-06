@@ -21,6 +21,7 @@ import websockets
 
 import app_volume
 import catalog
+import power
 import security
 import win_control
 
@@ -30,6 +31,7 @@ STATE_FILE = catalog.CONFIG_DIR / "agent.json"
 PAIR_WINDOW = 300          # mã ghép cặp sống 5 phút
 STATUS_INTERVAL = 1.5      # giây
 ALLOW_MACROS = True        # đặt False nếu không muốn điện thoại gõ phím vào máy
+ALLOW_POWER = True         # đặt False nếu không muốn điện thoại tắt/ngủ máy
 
 log = lambda *a: print(time.strftime("[%H:%M:%S]"), *a, flush=True)
 
@@ -80,6 +82,8 @@ class Agent:
         self.pair_code = f"{secrets.randbelow(1000000):06d}"
         self.pair_until = time.time() + PAIR_WINDOW
         self.host_name = socket.gethostname()
+        # Địa chỉ MAC và broadcast để điện thoại bật máy bằng Wake-on-LAN.
+        self.wol = {}
         self.loop = None
 
     # -- tiện ích ---------------------------------------------------------
@@ -225,6 +229,7 @@ class Agent:
             f"Bảo vệ   : chỉ mạng nội bộ · chữ ký Ed25519 · "
             f"{st['banned']} IP bị chặn",
             f"Thiết bị : {len(self.state['devices'])} đã ghép cặp",
+            f"Bật từ xa: {power.describe(self.wol)}",
         ]
         width = max(len(line) for line in lines) + 4
         print()
@@ -233,6 +238,8 @@ class Agent:
             pad = width - len(line) - 3
             print(f"  │  {line}" + " " * pad + "│")
         print("  └" + "─" * width + "┘")
+        for warning in self.wol.get("warnings", []):
+            print(f"  [!] {warning}")
         print("  Enter: mã mới · U: gỡ chặn IP · D: xoá thiết bị đã ghép · "
               "Ctrl+C: thoát\n")
 
@@ -404,6 +411,18 @@ class Agent:
             await self.run_blocking(win_control.press_media, action)
             return {"t": "ok", "action": action}
 
+        if kind == "power":
+            if not ALLOW_POWER:
+                return {"t": "error", "msg": "Lệnh nguồn đang bị tắt trên agent"}
+            action = msg.get("action", "")
+            if action not in power.ACTIONS:
+                return {"t": "error", "msg": f"Hành động nguồn lạ: {action}"}
+            force = bool(msg.get("force", False))
+            log(f"nguồn: {action}{' (buộc đóng app)' if force else ''}")
+            # Trả lời trước, làm sau: tắt máy xong thì hết đường gửi tin.
+            self._spawn(self.power_later(action, force))
+            return {"t": "power", "action": action}
+
         if kind == "macro":
             if not ALLOW_MACROS:
                 return {"t": "error", "msg": "Macro đang bị tắt trên agent"}
@@ -420,6 +439,10 @@ class Agent:
             return {"t": "ok", "keys": combos}
 
         return {"t": "error", "msg": f"Lệnh không hỗ trợ: {kind}"}
+
+    async def power_later(self, action, force):
+        await asyncio.sleep(0.8)
+        await self.run_blocking(power.apply, action, force)
 
     # -- vòng đời một kết nối ---------------------------------------------
 
@@ -487,6 +510,7 @@ class Agent:
                         "t": "paired", "device_id": device_id,
                         "host_name": self.host_name,
                         "fingerprint": security.fingerprint(pubkey),
+                        "wol": power.public_view(self.wol),
                     }))
                     self.new_pair_code()
                     continue
@@ -519,7 +543,8 @@ class Agent:
                     name = self.state["devices"][msg["device_id"]].get("name")
                     log(f"Đã kết nối: {name} ({peer})")
                     await ws.send(json.dumps({
-                        "t": "auth_ok", "host_name": self.host_name}))
+                        "t": "auth_ok", "host_name": self.host_name,
+                        "wol": power.public_view(self.wol)}))
                     continue
 
                 if not authed:
@@ -565,6 +590,10 @@ async def main():
         await zc.async_register_service(info)
     except Exception as exc:
         log("Không bật được mDNS (vẫn dùng được bằng cách nhập IP):", exc)
+
+    # Một lượt PowerShell mất 1–3 giây, chấp nhận được lúc khởi động. Hỏng thì
+    # wol_info tự trả về danh sách rỗng kèm cảnh báo, không chặn agent.
+    agent.wol = await agent.run_blocking(power.wol_info, ip)
 
     agent.print_banner(ip, args.port)
 
