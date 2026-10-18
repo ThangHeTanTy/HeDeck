@@ -239,8 +239,18 @@ App đó chạy quyền quản trị. Chạy agent bằng quyền Administrator 
 <details>
 <summary><b>Không thấy ứng dụng nào đó trong danh sách</b></summary>
 
-Agent chỉ quét shortcut trong Start Menu. Thêm tay vào
-`%USERPROFILE%\.hedeck\catalog.json` theo mẫu có sẵn rồi khởi động lại agent.
+Agent tìm ở bốn nơi, theo thứ tự:
+
+1. **Game từ launcher** — Riot Client (Liên Minh, Đấu Trường Chân Lý,
+   VALORANT…), Steam, Epic Games. Đọc thẳng dữ liệu của launcher nên không
+   cần shortcut.
+2. **Start Menu** — shortcut `.lnk` và `.url`.
+3. **Desktop** — nhiều game chỉ tạo shortcut ở đây.
+4. **`%USERPROFILE%\.hedeck\them_ung_dung.json`** — danh sách tự thêm. File
+   mẫu được tạo sẵn ở lần quét đầu; sửa xong bấm *Quét lại ứng dụng* trên
+   điện thoại. Danh sách này không bị mất khi quét lại.
+
+Cửa sổ agent in ra mỗi nguồn tìm được bao nhiêu app.
 </details>
 
 <details>
@@ -334,7 +344,8 @@ hedeck/
 │   ├── run_agent.bat
 │   ├── agent.py           server WebSocket, ghép cặp, xác thực
 │   ├── win_control.py     mở app, focus cửa sổ, gõ phím
-│   ├── catalog.py         quét Start Menu
+│   ├── catalog.py         quét Start Menu, Desktop
+│   ├── launchers.py       tìm game từ Riot, Steam, Epic
 │   ├── icon_source.py     lấy icon độ phân giải gốc
 │   ├── app_volume.py      âm lượng riêng từng app
 │   ├── power.py           tắt/ngủ/khoá máy, thông tin Wake-on-LAN

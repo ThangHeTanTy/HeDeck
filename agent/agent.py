@@ -305,9 +305,10 @@ class Agent:
         out = {}
         want_volume = self._volume_watch
         # Một lượt duyệt cửa sổ cho tất cả app, thay vì một lượt mỗi app.
-        counts = win_control.window_counts()
+        table = win_control.window_table()
         for app in self.apps:
-            n = counts.get(app["exe"].lower(), 0)
+            procs, dirs = catalog.match_of(app)
+            n = win_control.count_windows(table, procs, dirs)
             if not n:
                 continue
             entry = {"running": True, "windows": n}
@@ -369,10 +370,12 @@ class Agent:
             app = self.by_id.get(msg.get("app_id"))
             if not app:
                 return {"t": "error", "msg": "Không tìm thấy ứng dụng"}
+            procs, dirs = catalog.match_of(app)
             result = await self.run_blocking(
-                win_control.open_or_focus, app["path"], app["exe"],
-                app.get("args", ""), app.get("workdir", ""),
-                bool(msg.get("toggle", True)),
+                win_control.open_or_focus, app["path"], procs,
+                args=app.get("args", ""), workdir=app.get("workdir", ""),
+                toggle=bool(msg.get("toggle", True)), dirs=dirs,
+                wait=45 if catalog.is_launcher_app(app) else 12,
             )
             log(f"launch {app['name']} -> {result}")
             return {"t": "launched", "app_id": app["id"], "result": result}
@@ -383,7 +386,9 @@ class Agent:
             app = self.by_id.get(msg.get("app_id"))
             if not app:
                 return {"t": "error", "msg": "Không tìm thấy ứng dụng"}
-            result = await self.run_blocking(win_control.close_app, app["exe"])
+            procs, dirs = catalog.match_of(app)
+            result = await self.run_blocking(
+                win_control.close_app, procs, dirs=dirs)
             log(f"close {app['name']} -> {result}")
             return {"t": "closed", "app_id": app["id"], "result": result}
 

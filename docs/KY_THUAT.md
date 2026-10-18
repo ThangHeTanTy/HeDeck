@@ -423,10 +423,31 @@ cho phép Python ở mạng riêng.
 hầu hết trường hợp. Vài app chạy quyền admin thì agent thường cũng phải chạy
 admin mới focus được.
 
-**Một số app không thấy trong danh sách** — agent chỉ quét shortcut trong
-Start Menu. Thêm tay vào `%USERPROFILE%\.hedeck\catalog.json` theo mẫu có sẵn
-(`id` tự đặt, `path` là đường dẫn `.exe` hoặc `.lnk`, `exe` là tên file chạy
-để khớp cửa sổ), rồi khởi động lại agent.
+**Một số app không thấy trong danh sách** — agent quét game từ launcher
+(Riot, Steam, Epic), shortcut `.lnk`/`.url` trong Start Menu và trên Desktop.
+App nằm ngoài các nơi đó thì thêm vào `%USERPROFILE%\.hedeck\them_ung_dung.json`
+(`name`, `path` là `.exe`/`.lnk`/link launcher, `args`, `procs` là tên tiến
+trình để nhận biết đang chạy), rồi bấm *Quét lại ứng dụng*.
+
+### Quét game từ launcher (`launchers.py`)
+
+Mọi shortcut game Riot đều trỏ về `RiotClientServices.exe`, chỉ khác tham số
+`--launch-product=…`. Bản cũ khử trùng lặp theo file `.exe` nên chỉ giữ được
+"Riot Client". Giờ khoá khử trùng lặp là **file đích + tham số**; shortcut
+không tham số giữ nguyên `app_id` cũ để ô đã xếp trên deck không bị mất.
+
+| Launcher | Đọc từ | Mở bằng |
+|---|---|---|
+| Riot | `%ProgramData%\Riot Games\Metadata\<sp>.<nhánh>\*.product_settings.yaml` | `RiotClientServices.exe --launch-product=<sp> --launch-patchline=<nhánh>` |
+| Steam | `libraryfolders.vdf` + `appmanifest_*.acf` | `steam://rungameid/<appid>` |
+| Epic | `%ProgramData%\Epic\EpicGamesLauncher\Data\Manifests\*.item` | `com.epicgames.launcher://apps/…?action=launch` |
+
+Game qua launcher không mở trực tiếp file của chính nó, nên mỗi app mang thêm
+`procs` (tên tiến trình) và `dir` (thư mục cài). Viền xanh và nút đóng nhận cửa
+sổ nào khớp tên **hoặc** có file chạy nằm trong thư mục cài. `dir` chỉ được đặt
+cho thư mục riêng của game — `safe_dir()` từ chối `Program Files`,
+`steamapps\common`… để không nhận nhầm app khác. Đấu Trường Chân Lý chơi trong
+client Liên Minh, nên ô của nó mở cùng lệnh với Liên Minh.
 
 **`flutter doctor` báo đỏ mục Visual Studio** — bỏ qua. Mục đó chỉ cần khi build
 app Windows desktop, không liên quan tới APK Android.
@@ -577,7 +598,8 @@ agent/
   kiem_tra_agent.py tự kiểm tra mã nguồn
   kiem_tra_quet.py  chẩn đoán riêng phần quét danh mục
   win_control.py    mở app, focus/toggle cửa sổ, phím media, macro, trích icon
-  catalog.py        quét Start Menu, danh mục app
+  catalog.py        quét Start Menu, Desktop, danh mục app
+  launchers.py      tìm game từ Riot, Steam, Epic
   power.py          tắt/ngủ/khoá máy, đọc MAC cho Wake-on-LAN
 flutter_app/
   lib/main.dart
