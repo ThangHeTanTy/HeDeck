@@ -154,16 +154,36 @@ def _pid_of(hwnd: int) -> int:
         return 0
 
 
+# Cửa sổ của chính Windows mà tiến trình explorer.exe đứng tên: màn hình
+# desktop, thanh taskbar. Không bỏ thì ô File Explorer lúc nào cũng thừa một
+# "cửa sổ" và luôn sáng xanh dù chưa mở thư mục nào.
+_SHELL_CLASSES = {
+    "progman", "workerw", "shell_traywnd", "shell_secondarytraywnd",
+}
+
+
 def _is_real_window(hwnd: int) -> bool:
+    """Đúng những cửa sổ có nút trên taskbar Windows.
+
+    Quy tắc của taskbar: hiện, không phải tool window, và hoặc không có cửa
+    sổ chủ, hoặc có cờ WS_EX_APPWINDOW. Cách cũ bỏ mọi cửa sổ có chủ, nên
+    app nào đặt cửa sổ chính dưới một cửa sổ ẩn thì không bao giờ được tính.
+    """
     if not win32gui.IsWindowVisible(hwnd):
-        return False
-    if win32gui.GetParent(hwnd):
         return False
     if not win32gui.GetWindowText(hwnd):
         return False
     ex = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
     if ex & win32con.WS_EX_TOOLWINDOW:
         return False
+    if win32gui.GetWindow(hwnd, win32con.GW_OWNER) and \
+            not ex & win32con.WS_EX_APPWINDOW:
+        return False  # hộp thoại Lưu, Mở file... thuộc về cửa sổ chính
+    try:
+        if win32gui.GetClassName(hwnd).lower() in _SHELL_CLASSES:
+            return False
+    except Exception:
+        pass
     # Bỏ cửa sổ "cloaked" của UWP (ẩn nhưng vẫn tồn tại)
     cloaked = ctypes.c_int(0)
     ctypes.windll.dwmapi.DwmGetWindowAttribute(
@@ -172,63 +192,112 @@ def _is_real_window(hwnd: int) -> bool:
     return cloaked.value == 0
 
 
-def _proc_name(pid: int) -> str:
+def _proc_info(pid: int):
+    """(tên, đường dẫn exe) viết thường. Tiến trình chạy quyền admin thì
+    không đọc được đường dẫn — vẫn còn tên để so."""
     try:
-        return psutil.Process(pid).name().lower()
+        proc = psutil.Process(pid)
+        name = proc.name().lower()
     except Exception:
-        return ""
+        return "", ""
+    try:
+        path = os.path.normpath(proc.exe()).lower()
+    except Exception:
+        path = ""
+    return name, path
 
 
-def window_counts():
-    """Đếm cửa sổ của mọi tiến trình trong MỘT lượt duyệt duy nhất.
+def _norm_procs(procs):
+    if isinstance(procs, str):
+        procs = [procs]
+    return {os.path.basename(p).lower() for p in procs if p}
+
+
+def _norm_dirs(dirs):
+    if isinstance(dirs, str):
+        dirs = [dirs]
+    return tuple(d.lower() for d in dirs if d)
+
+
+def _matches(name, path, procs, dirs):
+    if name in procs:
+        return True
+    return bool(path) and any(path.startswith(d) for d in dirs)
+
+
+def window_table():
+    """Mọi cửa sổ thật kèm tên và đường dẫn tiến trình, trong MỘT lượt duyệt.
 
     Trước đây agent gọi windows_of() cho từng app, mỗi lần lại duyệt toàn bộ
     cửa sổ của Windows và hỏi psutil tên tiến trình. Với 63 app thì thành 63
     lượt duyệt mỗi 1,5 giây — đủ để chiếm hết luồng nền và làm nghẽn cả việc
     quét danh mục. Một lượt duy nhất cho kết quả y hệt.
+
+    Cần cả đường dẫn vì game qua launcher không đoán trước được tên tiến
+    trình, nhưng biết chắc nó nằm trong thư mục cài của game.
     """
-    counts = {}
-    pid_names = {}
+    rows = []
+    cache = {}
 
     def cb(hwnd, _):
         if not _is_real_window(hwnd):
             return True
         pid = _pid_of(hwnd)
-        name = pid_names.get(pid)
-        if name is None:
-            name = _proc_name(pid)
-            pid_names[pid] = name
-        if name:
-            counts[name] = counts.get(name, 0) + 1
+        info = cache.get(pid)
+        if info is None:
+            info = cache[pid] = _proc_info(pid)
+        if info[0]:
+            rows.append((hwnd, info[0], info[1]))
         return True
 
     win32gui.EnumWindows(cb, None)
-    return counts
+    return rows
 
 
-def windows_of(exe_name: str):
-    """Trả về danh sách hwnd thuộc về tiến trình có tên exe_name."""
-    target = os.path.basename(exe_name).lower()
+def count_windows(table, procs, dirs=()):
+    procs, dirs = _norm_procs(procs), _norm_dirs(dirs)
+    if not procs and not dirs:
+        return 0
+    return sum(1 for _, name, path in table if _matches(name, path, procs, dirs))
+
+
+def windows_in(table, procs, dirs=()):
+    """Các hwnd trong bảng đã duyệt sẵn thuộc về app."""
+    procs, dirs = _norm_procs(procs), _norm_dirs(dirs)
+    if not procs and not dirs:
+        return []
+    return [hwnd for hwnd, name, path in table
+            if _matches(name, path, procs, dirs)]
+
+
+def windows_of(procs, dirs=()):
+    """Danh sách hwnd thuộc về app: theo tên tiến trình hoặc thư mục cài."""
+    procs, dirs = _norm_procs(procs), _norm_dirs(dirs)
+    if not procs and not dirs:
+        return []
+    return [hwnd for hwnd, name, path in window_table()
+            if _matches(name, path, procs, dirs)]
+
+
+def _processes(procs, dirs=()):
+    procs, dirs = _norm_procs(procs), _norm_dirs(dirs)
     found = []
-
-    def cb(hwnd, _):
-        if _is_real_window(hwnd) and _proc_name(_pid_of(hwnd)) == target:
-            found.append(hwnd)
-        return True
-
-    win32gui.EnumWindows(cb, None)
+    if not procs and not dirs:
+        return found
+    for proc in psutil.process_iter(["name", "exe"]):
+        try:
+            name = (proc.info["name"] or "").lower()
+            path = os.path.normpath(proc.info["exe"]).lower() \
+                if proc.info["exe"] else ""
+            if _matches(name, path, procs, dirs):
+                found.append(proc)
+        except (psutil.Error, TypeError, ValueError):
+            continue
     return found
 
 
-def is_running(exe_name: str) -> bool:
-    target = os.path.basename(exe_name).lower()
-    for proc in psutil.process_iter(["name"]):
-        try:
-            if (proc.info["name"] or "").lower() == target:
-                return True
-        except psutil.Error:
-            continue
-    return False
+def is_running(procs, dirs=()) -> bool:
+    return bool(_processes(procs, dirs))
 
 
 def force_foreground(hwnd: int) -> bool:
@@ -266,16 +335,102 @@ def force_foreground(hwnd: int) -> bool:
     return win32gui.GetForegroundWindow() == hwnd
 
 
+# --------------------------------------------------------------------------
+# Từng cửa sổ riêng lẻ (chọn cửa sổ như thanh taskbar)
+# --------------------------------------------------------------------------
+
+def window_title(hwnd: int) -> str:
+    try:
+        return win32gui.GetWindowText(hwnd) or ""
+    except Exception:
+        return ""
+
+
+def foreground() -> int:
+    try:
+        return win32gui.GetForegroundWindow() or 0
+    except Exception:
+        return 0
+
+
+def focus_or_minimize(hwnd: int) -> str:
+    """Giống bấm vào ô xem trước trên taskbar: cửa sổ đang ở trước thì thu
+    nhỏ, còn lại thì đưa lên trước."""
+    if not win32gui.IsWindow(hwnd):
+        return "gone"
+    if foreground() == hwnd and not win32gui.IsIconic(hwnd):
+        minimize(hwnd)
+        return "minimized"
+    force_foreground(hwnd)
+    return "focused"
+
+
+def close_window(hwnd: int) -> str:
+    """Đóng đúng một cửa sổ. Chỉ xin đóng lịch sự (như bấm dấu X), không
+    giết tiến trình: Chrome còn cửa sổ khác thì vẫn phải sống."""
+    if not win32gui.IsWindow(hwnd):
+        return "gone"
+    win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
+    return "closing"
+
+
+# Tiến trình có cửa sổ nhưng không phải "ứng dụng" để gắn vào ô.
+_NOT_AN_APP = {
+    "applicationframehost.exe", "textinputhost.exe", "shellexperiencehost.exe",
+    "searchhost.exe", "searchapp.exe", "startmenuexperiencehost.exe",
+    "lockapp.exe", "systemsettings.exe", "conhost.exe", "openconsole.exe",
+    "windowsterminal.exe", "python.exe", "pythonw.exe", "py.exe",
+    "hedeckagent.exe", "taskmgr.exe", "rundll32.exe", "dllhost.exe",
+}
+
+
+def describe_exe(path: str) -> str:
+    """Tên đẹp của chương trình, lấy từ thông tin phiên bản trong file .exe
+    (cái tên Task Manager hiển thị), thiếu thì dùng tên file."""
+    try:
+        info = win32api.GetFileVersionInfo(path, "\\VarFileInfo\\Translation")
+        if info:
+            lang, page = info[0]
+            for field in ("FileDescription", "ProductName"):
+                value = win32api.GetFileVersionInfo(
+                    path, f"\\StringFileInfo\\{lang:04x}{page:04x}\\{field}")
+                if value and value.strip():
+                    return value.strip()
+    except Exception:
+        pass
+    return os.path.splitext(os.path.basename(path))[0].replace("_", " ").title()
+
+
+def running_programs():
+    """Các chương trình đang có cửa sổ, gộp theo file .exe.
+
+    Trả về [{path, exe, windows, title}]. Chỉ có tiến trình đọc được đường
+    dẫn mới vào danh sách — không biết đường dẫn thì không mở lại được.
+    """
+    groups = {}
+    for hwnd, name, path in window_table():
+        if not path or name in _NOT_AN_APP:
+            continue
+        if "\\windows\\systemapps\\" in path:
+            continue
+        g = groups.setdefault(path, {"path": path, "exe": name,
+                                     "windows": 0, "title": ""})
+        g["windows"] += 1
+        if not g["title"]:
+            g["title"] = window_title(hwnd)
+    return list(groups.values())
+
+
 def minimize(hwnd: int) -> None:
     win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
 
 
-def cycle_or_focus(exe_name: str, toggle: bool = True) -> str:
+def cycle_or_focus(procs, toggle: bool = True, dirs=()) -> str:
     """Focus app. Nếu đang focus rồi thì thu nhỏ (toggle) hoặc xoay vòng cửa sổ.
 
     Trả về: 'focused' | 'minimized' | 'cycled' | 'not_running'
     """
-    hwnds = windows_of(exe_name)
+    hwnds = windows_of(procs, dirs)
     if not hwnds:
         return "not_running"
 
@@ -294,10 +449,13 @@ def cycle_or_focus(exe_name: str, toggle: bool = True) -> str:
 
 def launch(path: str, args: str = "", workdir: str = "") -> None:
     """Mở một chương trình, shortcut (.lnk), thư mục hoặc URL."""
-    if path.startswith(("http://", "https://", "shell:")):
+    # Link launcher (steam://, com.epicgames.launcher://...) và shortcut: để
+    # Windows tự mở. Shortcut .lnk đã chứa sẵn tham số của nó, truyền thêm
+    # args vào nữa là chạy với tham số bị lặp đôi.
+    if "://" in path or path.startswith("shell:"):
         os.startfile(path)
         return
-    if path.lower().endswith(".lnk") and not args:
+    if path.lower().endswith((".lnk", ".url")):
         os.startfile(path)
         return
     cmd = f'"{path}" {args}'.strip()
@@ -309,33 +467,52 @@ def launch(path: str, args: str = "", workdir: str = "") -> None:
     )
 
 
-def open_or_focus(path: str, exe_name: str, args: str = "", workdir: str = "",
-                  toggle: bool = True) -> str:
-    """Hành vi chính của một ô: chưa chạy thì mở, đang chạy thì focus/toggle."""
-    result = cycle_or_focus(exe_name, toggle=toggle) if exe_name else "not_running"
+def open_or_focus(path: str, procs, args: str = "", workdir: str = "",
+                  toggle: bool = True, dirs=(), wait: float = 12) -> str:
+    """Hành vi chính của một ô: chưa chạy thì mở, đang chạy thì focus/toggle.
+
+    `procs`/`dirs` cho biết cửa sổ nào là của app. Game mở qua launcher cần
+    `wait` dài hơn vì launcher phải khởi động và kiểm tra cập nhật trước.
+    """
+    known = bool(_norm_procs(procs) or _norm_dirs(dirs))
+    result = cycle_or_focus(procs, toggle=toggle, dirs=dirs) if known \
+        else "not_running"
     if result != "not_running":
         return result
     launch(path, args, workdir)
+    if not known:
+        return "launched_no_window"
     # Chờ cửa sổ xuất hiện rồi kéo lên trước
-    deadline = time.time() + 12
+    deadline = time.time() + wait
     while time.time() < deadline:
-        time.sleep(0.35)
-        hwnds = windows_of(exe_name) if exe_name else []
+        time.sleep(0.35 if wait <= 12 else 1.0)
+        hwnds = windows_of(procs, dirs)
         if hwnds:
             force_foreground(hwnds[0])
             return "launched"
     return "launched_no_window"
 
 
-def close_app(exe_name: str, grace: float = 3.0) -> str:
+# Tiến trình không bao giờ được giết: explorer.exe vừa là File Explorer vừa
+# là taskbar, desktop của Windows. Tắt "File Explorer" chỉ đóng cửa sổ thư mục.
+_NEVER_KILL = {"explorer.exe"}
+
+
+def close_app(procs, grace: float = 3.0, dirs=()) -> str:
     """Đóng app: xin đóng lịch sự trước, hết kiên nhẫn thì cưỡng bức.
 
     Trả về: 'closed' | 'killed' | 'not_running'
     """
-    if not exe_name or not is_running(exe_name):
+    if _norm_procs(procs) & _NEVER_KILL:
+        hwnds = windows_of(procs, dirs)
+        for hwnd in hwnds:
+            close_window(hwnd)
+        return "closed" if hwnds else "not_running"
+
+    if not is_running(procs, dirs):
         return "not_running"
 
-    for hwnd in windows_of(exe_name):
+    for hwnd in windows_of(procs, dirs):
         try:
             win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
         except Exception:
@@ -343,19 +520,12 @@ def close_app(exe_name: str, grace: float = 3.0) -> str:
 
     deadline = time.time() + grace
     while time.time() < deadline:
-        if not is_running(exe_name):
+        if not is_running(procs, dirs):
             return "closed"
         time.sleep(0.25)
 
     # App còn sống (thường vì có hộp thoại "Lưu thay đổi?"). Cưỡng bức.
-    target = os.path.basename(exe_name).lower()
-    victims = []
-    for proc in psutil.process_iter(["name"]):
-        try:
-            if (proc.info["name"] or "").lower() == target:
-                victims.append(proc)
-        except psutil.Error:
-            continue
+    victims = _processes(procs, dirs)
     for proc in victims:
         try:
             proc.terminate()
@@ -529,6 +699,18 @@ def extract_icon_png(path: str, size: int = 256):
         from PIL import Image
     except ImportError:
         return None
+
+    # Shortcut .url của Steam/Epic trỏ icon vào một file .ico rời.
+    if path.lower().endswith(".ico"):
+        try:
+            img = Image.open(path)
+            sizes = sorted(img.info.get("sizes") or [img.size])
+            if hasattr(img, "ico") and sizes:
+                img = img.ico.getimage(sizes[-1])
+            img = img.convert("RGBA")
+            return _finish_icon(img, max(img.size), size)
+        except Exception:
+            return None
 
     # Nguồn nét nhất trước
     direct = _from_resources(path, size)

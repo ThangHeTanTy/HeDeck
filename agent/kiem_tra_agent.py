@@ -112,8 +112,14 @@ def main():
     print("\n[Lệnh mà agent hiểu]")
     source = (HERE / "agent.py").read_text(encoding="utf-8")
     for cmd in ("ping", "catalog", "rescan", "launch", "close",
-                "media", "macro", "app_volume", "watch_volume", "power"):
+                "media", "macro", "app_volume", "watch_volume", "power",
+                "running", "adopt", "scene"):
         check(f'có xử lý lệnh "{cmd}"', f'kind == "{cmd}"' in source)
+    check('có xử lý lệnh "focus_window" và "close_window"',
+          'kind in ("focus_window", "close_window")' in source)
+    check("chỉ đụng vào cửa sổ thuộc đúng app",
+          "self._owns_window," in source,
+          "Thiếu thì điện thoại gửi hwnd bất kỳ là đóng được cửa sổ khác.")
 
     # --- Danh mục ---------------------------------------------------------
     print("\n[Danh mục ứng dụng]")
@@ -126,13 +132,25 @@ def main():
           "Quét kèm icon sẽ chậm và làm app chờ lâu.")
     check("có khởi tạo COM cho luồng nền", "CoInitialize" in cat_src)
 
+    check("khử trùng lặp theo file đích + tham số, không chỉ theo .exe",
+          "launchers.shortcut_key(target, args)" in cat_src,
+          "Chỉ so .exe thì mọi game Riot bị gộp thành 'Riot Client'.")
+    check("quét cả Desktop và game từ launcher",
+          "desktops()" in cat_src and "launchers.all_games" in cat_src)
+    check("giữ nguyên app_id cũ cho shortcut không tham số",
+          "if args:" in cat_src.split("def _app_id", 1)[1][:400])
+
     # --- Trạng thái -------------------------------------------------------
     print("\n[Đo trạng thái]")
     win_src = (HERE / "win_control.py").read_text(encoding="utf-8")
     check("đếm cửa sổ trong một lượt duyệt",
-          "def window_counts" in win_src)
-    check("vòng đo trạng thái dùng window_counts",
-          "win_control.window_counts()" in source,
+          "def window_table" in win_src)
+    check("không đếm desktop/taskbar là cửa sổ của File Explorer",
+          '"progman"' in win_src and '"shell_traywnd"' in win_src)
+    check("không bao giờ giết explorer.exe",
+          '_NEVER_KILL = {"explorer.exe"}' in win_src)
+    check("vòng đo trạng thái dùng window_table",
+          "win_control.window_table()" in source,
           "Gọi windows_of cho từng app sẽ tốn gấp hàng chục lần.")
 
     # --- Nguồn và bật máy từ xa ------------------------------------------

@@ -279,6 +279,29 @@ Lệnh: `catalog`, `rescan`, `launch` (`app_id`, `toggle`), `close` (`app_id`),
 chờ 3 giây, còn sống thì `terminate` rồi `kill`. Agent đẩy `status` mỗi 1,5 giây với danh sách app
 đang chạy và số cửa sổ của từng app.
 
+Nhiều cửa sổ: khi một app có từ hai cửa sổ, mục của nó trong `status` có
+thêm `wins: [{"h": hwnd, "t": tiêu đề, "a": đang ở trước}]`, xếp theo thứ tự
+**cửa sổ xuất hiện** (agent tự đánh số thứ tự cho từng hwnd), không theo thứ tự
+xếp chồng của Windows — nhờ vậy số 1, 2, 3 trên ô không nhảy mỗi lần đổi cửa
+sổ. Đóng một cửa sổ thì các số phía sau dồn lên. Lệnh `focus_window` /
+`close_window` (`app_id`, `hwnd`): agent kiểm tra hwnd **thuộc đúng app đó**
+rồi mới làm, nên điện thoại không đóng được cửa sổ tuỳ ý. `close_window` chỉ
+gửi `WM_CLOSE` như bấm dấu X, không giết tiến trình. Xong việc agent gửi
+`status` ngay thay vì chờ nhịp 1,5 giây. Cửa sổ được đếm theo đúng quy tắc của taskbar: hiện, có tiêu
+đề, không phải tool window, và không có cửa sổ chủ trừ khi mang cờ
+`WS_EX_APPWINDOW` — nên hộp thoại Lưu/Mở file không bị tính thành một số.
+Desktop và taskbar (lớp `Progman`, `WorkerW`, `Shell_TrayWnd`) bị loại, vì
+chúng cũng thuộc `explorer.exe`. Tắt ô File Explorer chỉ đóng cửa sổ thư mục,
+không bao giờ giết `explorer.exe`. Lưu ý: tiêu đề cửa sổ (tên tab đang
+xem) đi qua `ws://` chưa mã hoá.
+
+Thêm từ cửa sổ đang mở: `running` trả về chương trình đang có cửa sổ, mỗi cái
+kèm một `token` ngắn. Điện thoại gửi `adopt` với `token` đó; đường dẫn `.exe`
+chỉ nằm trên laptop. App được ghi vào `them_ung_dung.json`.
+
+Ô chế độ: `scene` với `steps: [{"app_id", "close"}]`, tối đa 20 bước. Chạy ở
+tác vụ nền, lần lượt: `close` thì đóng app, còn lại mở nếu chưa chạy.
+
 Nguồn: `power` (`action` là `lock` | `sleep` | `restart` | `shutdown`, `force`
 để đóng luôn app chưa lưu). Agent trả `{"t":"power"}` trước rồi 0,8 giây sau
 mới thực hiện, vì tắt máy xong thì không còn kết nối để trả lời. Tắt máy dùng
@@ -423,10 +446,31 @@ cho phép Python ở mạng riêng.
 hầu hết trường hợp. Vài app chạy quyền admin thì agent thường cũng phải chạy
 admin mới focus được.
 
-**Một số app không thấy trong danh sách** — agent chỉ quét shortcut trong
-Start Menu. Thêm tay vào `%USERPROFILE%\.hedeck\catalog.json` theo mẫu có sẵn
-(`id` tự đặt, `path` là đường dẫn `.exe` hoặc `.lnk`, `exe` là tên file chạy
-để khớp cửa sổ), rồi khởi động lại agent.
+**Một số app không thấy trong danh sách** — agent quét game từ launcher
+(Riot, Steam, Epic), shortcut `.lnk`/`.url` trong Start Menu và trên Desktop.
+App nằm ngoài các nơi đó thì thêm vào `%USERPROFILE%\.hedeck\them_ung_dung.json`
+(`name`, `path` là `.exe`/`.lnk`/link launcher, `args`, `procs` là tên tiến
+trình để nhận biết đang chạy), rồi bấm *Quét lại ứng dụng*.
+
+### Quét game từ launcher (`launchers.py`)
+
+Mọi shortcut game Riot đều trỏ về `RiotClientServices.exe`, chỉ khác tham số
+`--launch-product=…`. Bản cũ khử trùng lặp theo file `.exe` nên chỉ giữ được
+"Riot Client". Giờ khoá khử trùng lặp là **file đích + tham số**; shortcut
+không tham số giữ nguyên `app_id` cũ để ô đã xếp trên deck không bị mất.
+
+| Launcher | Đọc từ | Mở bằng |
+|---|---|---|
+| Riot | `%ProgramData%\Riot Games\Metadata\<sp>.<nhánh>\*.product_settings.yaml` | `RiotClientServices.exe --launch-product=<sp> --launch-patchline=<nhánh>` |
+| Steam | `libraryfolders.vdf` + `appmanifest_*.acf` | `steam://rungameid/<appid>` |
+| Epic | `%ProgramData%\Epic\EpicGamesLauncher\Data\Manifests\*.item` | `com.epicgames.launcher://apps/…?action=launch` |
+
+Game qua launcher không mở trực tiếp file của chính nó, nên mỗi app mang thêm
+`procs` (tên tiến trình) và `dir` (thư mục cài). Viền xanh và nút đóng nhận cửa
+sổ nào khớp tên **hoặc** có file chạy nằm trong thư mục cài. `dir` chỉ được đặt
+cho thư mục riêng của game — `safe_dir()` từ chối `Program Files`,
+`steamapps\common`… để không nhận nhầm app khác. Đấu Trường Chân Lý chơi trong
+client Liên Minh, nên ô của nó mở cùng lệnh với Liên Minh.
 
 **`flutter doctor` báo đỏ mục Visual Studio** — bỏ qua. Mục đó chỉ cần khi build
 app Windows desktop, không liên quan tới APK Android.
@@ -577,7 +621,8 @@ agent/
   kiem_tra_agent.py tự kiểm tra mã nguồn
   kiem_tra_quet.py  chẩn đoán riêng phần quét danh mục
   win_control.py    mở app, focus/toggle cửa sổ, phím media, macro, trích icon
-  catalog.py        quét Start Menu, danh mục app
+  catalog.py        quét Start Menu, Desktop, danh mục app
+  launchers.py      tìm game từ Riot, Steam, Epic
   power.py          tắt/ngủ/khoá máy, đọc MAC cho Wake-on-LAN
 flutter_app/
   lib/main.dart

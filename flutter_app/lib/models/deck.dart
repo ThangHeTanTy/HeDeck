@@ -1,9 +1,22 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-/// Một ô có thể là: trống, mở ứng dụng, gõ macro, điều khiển media, hoặc
-/// chỉnh âm lượng riêng của một ứng dụng.
-enum TileKind { empty, app, macro, media, appVolume }
+/// Một ô có thể là: trống, mở ứng dụng, gõ macro, điều khiển media, chỉnh
+/// âm lượng riêng của một ứng dụng, hoặc một "chế độ" mở/đóng nhiều app.
+enum TileKind { empty, app, macro, media, appVolume, scene }
+
+/// Một bước của ô chế độ: mở hoặc đóng một ứng dụng.
+class SceneStep {
+  final String appId;
+  final bool close;
+
+  const SceneStep(this.appId, {this.close = false});
+
+  Map<String, dynamic> toJson() => {'app_id': appId, 'close': close};
+
+  factory SceneStep.fromJson(Map<String, dynamic> j) =>
+      SceneStep(j['app_id'] as String? ?? '', close: j['close'] as bool? ?? false);
+}
 
 /// Một mặt của ô. Ô thường chỉ có mặt chính; ô hai trạng thái có thêm mặt phụ,
 /// bấm một lần là lật qua lại giữa hai mặt.
@@ -71,6 +84,9 @@ class DeckTile {
   final TileFace back;
   final bool isToggle;
 
+  /// Các bước của ô chế độ, chạy lần lượt từ trên xuống.
+  final List<SceneStep> steps;
+
   const DeckTile({
     this.kind = TileKind.empty,
     this.appId,
@@ -78,6 +94,7 @@ class DeckTile {
     this.front = const TileFace(),
     this.back = const TileFace(),
     this.isToggle = false,
+    this.steps = const [],
   });
 
   static const empty = DeckTile();
@@ -94,6 +111,7 @@ class DeckTile {
     TileFace? front,
     TileFace? back,
     bool? isToggle,
+    List<SceneStep>? steps,
   }) =>
       DeckTile(
         kind: kind ?? this.kind,
@@ -102,6 +120,7 @@ class DeckTile {
         front: front ?? this.front,
         back: back ?? this.back,
         isToggle: isToggle ?? this.isToggle,
+        steps: steps ?? this.steps,
       );
 
   Map<String, dynamic> toJson() => {
@@ -111,6 +130,7 @@ class DeckTile {
         'front': front.toJson(),
         'back': back.toJson(),
         'isToggle': isToggle,
+        if (steps.isNotEmpty) 'steps': steps.map((s) => s.toJson()).toList(),
       };
 
   factory DeckTile.fromJson(Map<String, dynamic> j) {
@@ -137,6 +157,10 @@ class DeckTile {
           ? TileFace.fromJson(j['back'] as Map<String, dynamic>)
           : const TileFace(),
       isToggle: j['isToggle'] as bool? ?? false,
+      steps: (j['steps'] as List? ?? const [])
+          .map((e) => SceneStep.fromJson(e as Map<String, dynamic>))
+          .where((s) => s.appId.isNotEmpty)
+          .toList(),
     );
   }
 }
@@ -217,6 +241,24 @@ class RemoteApp {
   }
 }
 
+/// Một cửa sổ của app trên laptop. Agent chỉ gửi danh sách này khi app có
+/// từ hai cửa sổ trở lên — lúc đó ô mới hiện số 1, 2, 3...
+class RemoteWindow {
+  final int hwnd;
+  final String title;
+
+  /// Đang là cửa sổ ở trước nhất trên laptop.
+  final bool active;
+
+  const RemoteWindow(this.hwnd, this.title, {this.active = false});
+
+  factory RemoteWindow.fromJson(Map<String, dynamic> j) => RemoteWindow(
+        (j['h'] as num).toInt(),
+        j['t'] as String? ?? '',
+        active: j['a'] as bool? ?? false,
+      );
+}
+
 class AppStatus {
   final bool running;
   final int windows;
@@ -225,12 +267,57 @@ class AppStatus {
   final double volume;
   final bool muted;
 
+  /// Từng cửa sổ, theo thứ tự mở. Rỗng khi app chỉ có một cửa sổ.
+  final List<RemoteWindow> wins;
+
   const AppStatus({
     this.running = false,
     this.windows = 0,
     this.volume = -1,
     this.muted = false,
+    this.wins = const [],
   });
+}
+
+/// Chương trình đang mở trên laptop, cho mục "Thêm từ cửa sổ đang mở".
+class RunningProgram {
+  /// Mã ngắn do agent cấp. Gửi lại mã này để thêm, không bao giờ gửi đường
+  /// dẫn — đường dẫn chỉ nằm trên laptop.
+  final String token;
+  final String name;
+  final String exe;
+  final int windows;
+  final String title;
+
+  /// Đã có trong danh sách ứng dụng thì là id của nó.
+  final String? appId;
+  final Uint8List? icon;
+  final int iconNative;
+
+  RunningProgram({
+    required this.token,
+    required this.name,
+    required this.exe,
+    this.windows = 1,
+    this.title = '',
+    this.appId,
+    this.icon,
+    this.iconNative = 0,
+  });
+
+  factory RunningProgram.fromJson(Map<String, dynamic> j) {
+    final raw = j['icon'] as String?;
+    return RunningProgram(
+      token: j['token'] as String,
+      name: j['name'] as String? ?? '',
+      exe: j['exe'] as String? ?? '',
+      windows: (j['windows'] as num?)?.toInt() ?? 1,
+      title: j['title'] as String? ?? '',
+      appId: j['app_id'] as String?,
+      icon: (raw == null || raw.isEmpty) ? null : base64Decode(raw),
+      iconNative: (j['icon_native'] as num?)?.toInt() ?? 0,
+    );
+  }
 }
 
 /// Nhãn tiếng Việt cho các hành động media.

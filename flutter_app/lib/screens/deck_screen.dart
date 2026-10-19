@@ -138,6 +138,12 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
           conn.appVolume(tile.appId!, tile.volumeAction!);
         }
         break;
+      case TileKind.scene:
+        if (tile.steps.isEmpty) return;
+        conn.scene(tile.steps);
+        final label = tile.front.label;
+        _snack(label.isEmpty ? 'Đang chạy chế độ…' : 'Đang chạy "$label"…');
+        break;
       case TileKind.empty:
         return;
     }
@@ -151,6 +157,119 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     conn.close(tile.appId!);
     final name = conn.catalogById[tile.appId]?.name ?? 'Ứng dụng';
     _snack('Đã tắt $name');
+  }
+
+  /// Danh sách đầy đủ các cửa sổ của một app, như khi rê chuột lên biểu
+  /// tượng trên taskbar. Tự cập nhật: đóng cửa sổ nào là dòng đó biến mất và
+  /// các số phía sau dồn lên, khớp với hàng số trên ô.
+  Future<void> _windowSheet(DeckTile tile) async {
+    final appId = tile.appId;
+    if (appId == null) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: DeckColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.8),
+          child: Consumer<DeckConnection>(
+            builder: (_, conn, __) {
+              final name = conn.catalogById[appId]?.name ?? 'Ứng dụng';
+              final status = conn.statusOf(appId);
+              final wins = status.wins;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Text(
+                      '$name · ${status.windows} cửa sổ',
+                      style: const TextStyle(
+                          color: DeckColors.muted, fontSize: 12),
+                    ),
+                  ),
+                  if (wins.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                      child: Text(
+                        status.running
+                            ? 'Chỉ còn một cửa sổ — chạm vào ô để mở nó.'
+                            : 'Ứng dụng đã đóng hết.',
+                        style: const TextStyle(
+                            color: DeckColors.text, fontSize: 13),
+                      ),
+                    )
+                  else
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: wins.length,
+                        itemBuilder: (_, i) {
+                          final w = wins[i];
+                          return ListTile(
+                            dense: true,
+                            leading: Container(
+                              width: 26,
+                              height: 26,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: w.active
+                                    ? DeckColors.live
+                                    : DeckColors.bg,
+                                borderRadius: BorderRadius.circular(7),
+                                border: Border.all(color: DeckColors.live),
+                              ),
+                              child: Text('${i + 1}',
+                                  style: TextStyle(
+                                      color: w.active
+                                          ? DeckColors.bg
+                                          : DeckColors.text,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700)),
+                            ),
+                            title: Text(
+                              w.title.isEmpty ? '(không có tiêu đề)' : w.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  color: DeckColors.text, fontSize: 13),
+                            ),
+                            subtitle: w.active
+                                ? const Text('Đang ở trước',
+                                    style: TextStyle(
+                                        color: DeckColors.live, fontSize: 11))
+                                : null,
+                            trailing: IconButton(
+                              tooltip: 'Đóng cửa sổ này',
+                              icon: const Icon(Icons.close_rounded,
+                                  size: 20, color: DeckColors.danger),
+                              onPressed: () {
+                                HapticFeedback.mediumImpact();
+                                conn.closeWindow(appId, w.hwnd);
+                              },
+                            ),
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              conn.focusWindow(appId, w.hwnd);
+                              Navigator.pop(sheetContext);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _edit(int pageIndex, int slot, DeckTile tile) async {
@@ -873,6 +992,10 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                       : _fire(pageIndex, slot, tile),
                   onEdit: () => _edit(pageIndex, slot, tile),
                   onForceClose: () => _forceClose(tile),
+                  onPickWindow: tile.appId == null
+                      ? null
+                      : (w) => conn.focusWindow(tile.appId!, w.hwnd),
+                  onWindowList: () => _windowSheet(tile),
                 );
               },
             ),

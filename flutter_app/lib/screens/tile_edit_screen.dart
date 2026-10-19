@@ -22,6 +22,9 @@ class _TileEditScreenState extends State<TileEditScreen> {
   String _volumeAction = 'up';
   bool _isToggle = false;
 
+  /// Các bước của ô chế độ.
+  late List<SceneStep> _steps;
+
   /// Mặt đang sửa: 0 là mặt chính, 1 là mặt phụ.
   int _editingFace = 0;
 
@@ -52,6 +55,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
     _appId = t.appId;
     _volumeAction = t.volumeAction ?? 'up';
     _isToggle = t.isToggle;
+    _steps = List.of(t.steps);
 
     _label = [
       TextEditingController(text: t.front.label),
@@ -99,6 +103,10 @@ class _TileEditScreenState extends State<TileEditScreen> {
       _toast('Nhập ít nhất một tổ hợp phím cho mặt chính');
       return;
     }
+    if (_kind == TileKind.scene && _steps.isEmpty) {
+      _toast('Thêm ít nhất một ứng dụng cho chế độ này');
+      return;
+    }
     if (_isToggle && _kind == TileKind.macro && _keysOf(1).isEmpty) {
       _toast('Ô hai trạng thái cần tổ hợp phím cho cả mặt phụ');
       return;
@@ -115,6 +123,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
         front: _buildFace(0),
         back: _isToggle ? _buildFace(1) : const TileFace(),
         isToggle: _isToggle,
+        steps: _kind == TileKind.scene ? _steps : const [],
       ),
     );
   }
@@ -165,6 +174,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
               _volumePicker(),
             ],
             if (_kind == TileKind.macro) _macroEditor(),
+            if (_kind == TileKind.scene) _sceneEditor(),
             if (_kind == TileKind.media) _mediaPicker(),
             const SizedBox(height: 18),
             TextField(
@@ -233,6 +243,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
         chip(TileKind.macro, 'Macro', Icons.keyboard_rounded),
         chip(TileKind.media, 'Media', Icons.music_note_rounded),
         chip(TileKind.appVolume, 'Âm lượng', Icons.volume_up_rounded),
+        chip(TileKind.scene, 'Chế độ', Icons.auto_awesome_rounded),
       ],
     );
   }
@@ -342,6 +353,19 @@ class _TileEditScreenState extends State<TileEditScreen> {
               onPressed: conn.isOnline ? conn.rescan : null,
             ),
           ],
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: conn.isOnline
+                ? () async {
+                    final id = await _pickRunning();
+                    if (id != null && mounted) setState(() => _appId = id);
+                  }
+                : null,
+            icon: const Icon(Icons.web_asset_rounded, size: 18),
+            label: const Text('Chọn từ cửa sổ đang mở trên PC'),
+          ),
         ),
         const SizedBox(height: 10),
         if (!conn.isOnline)
@@ -529,6 +553,140 @@ class _TileEditScreenState extends State<TileEditScreen> {
     );
   }
 
+  // --------------------------------------------------------------- chế độ
+
+  Widget _sceneEditor() {
+    final conn = context.watch<DeckConnection>();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Bấm ô là chạy lần lượt từ trên xuống. "Mở" bỏ qua app đã chạy sẵn, '
+          '"Đóng" tắt hẳn app.',
+          style: TextStyle(color: DeckColors.muted, fontSize: 12, height: 1.4),
+        ),
+        const SizedBox(height: 10),
+        for (var i = 0; i < _steps.length; i++) _stepRow(conn, i),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _addStep(fromRunning: false),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Thêm ứng dụng'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: conn.isOnline
+                    ? () => _addStep(fromRunning: true)
+                    : null,
+                icon: const Icon(Icons.web_asset_rounded, size: 18),
+                label: const Text('Từ cửa sổ đang mở'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _stepRow(DeckConnection conn, int i) {
+    final step = _steps[i];
+    final app = conn.catalogById[step.appId];
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.fromLTRB(10, 6, 4, 6),
+      decoration: BoxDecoration(
+        color: DeckColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: DeckColors.line, width: 0.8),
+      ),
+      child: Row(
+        children: [
+          Text('${i + 1}',
+              style: const TextStyle(color: DeckColors.muted, fontSize: 12)),
+          const SizedBox(width: 10),
+          if (app?.icon != null)
+            AppIcon(bytes: app!.icon!, size: 22, nativePixels: app.iconNative)
+          else
+            const Icon(Icons.apps_rounded, size: 20, color: DeckColors.muted),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              app?.name ?? 'App không còn trên laptop',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  color: app == null ? DeckColors.danger : DeckColors.text,
+                  fontSize: 13),
+            ),
+          ),
+          // Mở / Đóng: chạm để đổi.
+          GestureDetector(
+            onTap: () => setState(() =>
+                _steps[i] = SceneStep(step.appId, close: !step.close)),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: (step.close ? DeckColors.danger : DeckColors.live)
+                    .withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(step.close ? 'Đóng' : 'Mở',
+                  style: TextStyle(
+                      color: step.close ? DeckColors.danger : DeckColors.live,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Bỏ bước này',
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.remove_circle_outline_rounded,
+                size: 18, color: DeckColors.muted),
+            onPressed: () => setState(() => _steps.removeAt(i)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addStep({required bool fromRunning}) async {
+    final id = fromRunning ? await _pickRunning() : await _pickCatalogApp();
+    if (id == null || !mounted) return;
+    setState(() => _steps.add(SceneStep(id)));
+  }
+
+  /// Chọn một app trong danh sách đã quét. Trả về app_id.
+  Future<String?> _pickCatalogApp() {
+    return showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: DeckColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => const _CatalogSheet(),
+    );
+  }
+
+  /// Chọn một chương trình đang mở trên laptop. Chưa có trong danh sách thì
+  /// nhờ agent thêm vào trước. Trả về app_id.
+  Future<String?> _pickRunning() {
+    return showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: DeckColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => const _RunningSheet(),
+    );
+  }
+
   // ------------------------------------------------------------------ media
 
   Widget _mediaPicker() {
@@ -674,6 +832,228 @@ class _TileEditScreenState extends State<TileEditScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Danh sách chương trình đang có cửa sổ trên laptop, giống thanh taskbar.
+class _RunningSheet extends StatefulWidget {
+  const _RunningSheet();
+
+  @override
+  State<_RunningSheet> createState() => _RunningSheetState();
+}
+
+class _RunningSheetState extends State<_RunningSheet> {
+  late Future<List<RunningProgram>> _list;
+  String? _adopting;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _list = context.read<DeckConnection>().listRunning();
+  }
+
+  Future<void> _choose(RunningProgram p) async {
+    if (p.appId != null) {
+      Navigator.pop(context, p.appId);
+      return;
+    }
+    setState(() {
+      _adopting = p.token;
+      _error = null;
+    });
+    try {
+      final id = await context.read<DeckConnection>().adopt(p.token);
+      if (mounted) Navigator.pop(context, id);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _adopting = null;
+        _error = e.toString().replaceFirst(RegExp(r'^\w+Error: '), '');
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      maxChildSize: 0.92,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (context, controller) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text('Đang mở trên PC',
+                style: TextStyle(
+                    color: DeckColors.text,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600)),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              'Mở app trên PC trước rồi chọn ở đây. App chưa có trong danh '
+              'sách sẽ được thêm và giữ lại cả khi quét lại.',
+              style:
+                  TextStyle(color: DeckColors.muted, fontSize: 11, height: 1.4),
+            ),
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(_error!,
+                  style:
+                      const TextStyle(color: DeckColors.danger, fontSize: 12)),
+            ),
+          Expanded(
+            child: FutureBuilder<List<RunningProgram>>(
+              future: _list,
+              builder: (context, snap) {
+                if (snap.hasError) {
+                  return Center(
+                    child: Text('Không lấy được danh sách: ${snap.error}',
+                        style: const TextStyle(
+                            color: DeckColors.muted, fontSize: 13)),
+                  );
+                }
+                if (!snap.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: DeckColors.muted),
+                  );
+                }
+                final items = snap.data!;
+                if (items.isEmpty) {
+                  return const Center(
+                    child: Text('Không thấy cửa sổ nào đang mở',
+                        style:
+                            TextStyle(color: DeckColors.muted, fontSize: 13)),
+                  );
+                }
+                return ListView.builder(
+                  controller: controller,
+                  itemCount: items.length,
+                  itemBuilder: (_, i) {
+                    final p = items[i];
+                    final busy = _adopting == p.token;
+                    return ListTile(
+                      enabled: _adopting == null,
+                      leading: p.icon != null
+                          ? AppIcon(
+                              bytes: p.icon!,
+                              size: 28,
+                              nativePixels: p.iconNative)
+                          : const Icon(Icons.web_asset_rounded,
+                              size: 24, color: DeckColors.muted),
+                      title: Text(p.name,
+                          style: const TextStyle(
+                              color: DeckColors.text, fontSize: 14)),
+                      subtitle: Text(
+                        p.windows > 1
+                            ? '${p.windows} cửa sổ · ${p.exe}'
+                            : (p.title.isEmpty ? p.exe : p.title),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: DeckColors.muted, fontSize: 11),
+                      ),
+                      trailing: busy
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: DeckColors.muted))
+                          : (p.appId != null
+                              ? const Text('Đã có',
+                                  style: TextStyle(
+                                      color: DeckColors.live, fontSize: 11))
+                              : const Icon(Icons.add_rounded,
+                                  size: 20, color: DeckColors.accent)),
+                      onTap: () => _choose(p),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Chọn nhanh một app trong danh sách đã quét, có ô tìm.
+class _CatalogSheet extends StatefulWidget {
+  const _CatalogSheet();
+
+  @override
+  State<_CatalogSheet> createState() => _CatalogSheetState();
+}
+
+class _CatalogSheetState extends State<_CatalogSheet> {
+  String _q = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final conn = context.watch<DeckConnection>();
+    final q = _q.toLowerCase();
+    final apps = conn.catalog
+        .where((a) => q.isEmpty || a.name.toLowerCase().contains(q))
+        .toList();
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      maxChildSize: 0.92,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (context, controller) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+            child: TextField(
+              onChanged: (v) => setState(() => _q = v),
+              style: const TextStyle(color: DeckColors.text),
+              decoration: const InputDecoration(
+                hintText: 'Tìm ứng dụng trên laptop',
+                prefixIcon: Icon(Icons.search_rounded,
+                    size: 18, color: DeckColors.muted),
+              ),
+            ),
+          ),
+          Expanded(
+            child: apps.isEmpty
+                ? const Center(
+                    child: Text('Không có ứng dụng nào',
+                        style:
+                            TextStyle(color: DeckColors.muted, fontSize: 13)))
+                : ListView.builder(
+                    controller: controller,
+                    itemCount: apps.length,
+                    itemBuilder: (_, i) {
+                      final app = apps[i];
+                      return ListTile(
+                        dense: true,
+                        leading: app.icon != null
+                            ? AppIcon(
+                                bytes: app.icon!,
+                                size: 26,
+                                nativePixels: app.iconNative)
+                            : const Icon(Icons.apps_rounded,
+                                size: 22, color: DeckColors.muted),
+                        title: Text(app.name,
+                            style: const TextStyle(
+                                color: DeckColors.text, fontSize: 14)),
+                        onTap: () => Navigator.pop(context, app.id),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
