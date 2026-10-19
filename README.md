@@ -20,6 +20,8 @@ nhạc, âm lượng riêng từng ứng dụng, và các ô macro gõ tổ hợ
 | | |
 |---|---|
 | **Mở và chuyển ứng dụng** | Chạm ô là app mở lên rồi nhảy ra trước. Đang chạy thì chạm để thu nhỏ, giữ 3 giây để tắt hẳn. |
+| **Chọn từng cửa sổ** | Mở 3 cửa sổ Chrome thì ô hiện số 1, 2, 3 phía trên icon — chạm số nào ra cửa sổ đó, như taskbar Windows. |
+| **Ô chế độ** | Một chạm mở và đóng nhiều app: "Chơi game" mở Discord + Liên Minh, tắt Chrome. |
 | **Macro phím tắt** | Một ô gõ `ctrl+shift+p`, hoặc cả chuỗi nhiều bước. |
 | **Âm lượng riêng từng app** | Hạ nhạc nền mà không hạ giọng nói — thứ mà nút âm lượng trên bàn phím không làm được. |
 | **Ô hai trạng thái** | Bấm bật, bấm lại tắt. Mỗi mặt có icon và màu riêng, nhìn từ xa là biết mic đang bật hay tắt. |
@@ -127,6 +129,8 @@ những lần mở app sau — kể cả khi router đổi IP của laptop.
 | Chạm ô ứng dụng chưa chạy | Mở app rồi đưa ra trước |
 | Chạm ô đang chạy | Thu nhỏ cửa sổ |
 | Chạm ô app có nhiều cửa sổ | Xoay vòng qua từng cửa sổ |
+| Chạm **ô số** trên ô (từ 2 cửa sổ) | Ra đúng cửa sổ đó; số tô xanh đặc là cửa sổ đang ở trước, chạm lại để thu nhỏ |
+| Giữ ô số, hoặc chạm **+N** | Danh sách cửa sổ kèm tiêu đề, có nút đóng từng cái |
 | **Giữ 3 giây** ô đang chạy | Tắt hẳn app, viền đỏ chạy dần làm đồng hồ đếm |
 | Giữ ô chưa chạy, macro, media | Mở màn hình sửa ô |
 | Vuốt trái phải | Đổi trang |
@@ -152,6 +156,11 @@ Chạm dấu cộng → chọn loại ô:
 - **Macro** — nhập tổ hợp phím, nhiều bước thì ngăn bằng dấu phẩy: `win+d, alt+tab`
 - **Media** — phát, tạm dừng, bài kế, âm lượng chung
 - **Âm lượng** — chỉnh tiếng của đúng một app, mỗi lần bấm đổi 5%
+- **Chế độ** — danh sách app cần mở hoặc đóng, chạy lần lượt khi bấm
+
+App quét không ra thì mở nó trên PC, rồi trong màn hình sửa ô chọn
+**Chọn từ cửa sổ đang mở trên PC**. App được thêm vào danh sách và giữ lại cả
+khi quét lại.
 
 Rồi đặt tên (không bắt buộc), chọn icon và màu. Bật **Ô hai trạng thái** nếu
 muốn bấm bật bấm tắt.

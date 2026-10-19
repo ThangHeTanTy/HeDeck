@@ -84,6 +84,14 @@ class Agent:
         self.host_name = socket.gethostname()
         # Địa chỉ MAC và broadcast để điện thoại bật máy bằng Wake-on-LAN.
         self.wol = {}
+        # Thứ tự xuất hiện của từng cửa sổ, để số 1, 2, 3... trên ô không
+        # nhảy lung tung mỗi lần Windows đổi thứ tự xếp chồng.
+        self._win_seq = {}
+        self._next_seq = 0
+        # "Thêm từ cửa sổ đang mở": mã ngắn -> chương trình. Điện thoại chỉ
+        # gửi lại mã, không bao giờ gửi đường dẫn.
+        self._running = {}
+        self._icon_cache = {}
         self.loop = None
 
     # -- tiện ích ---------------------------------------------------------
@@ -306,12 +314,31 @@ class Agent:
         want_volume = self._volume_watch
         # Một lượt duyệt cửa sổ cho tất cả app, thay vì một lượt mỗi app.
         table = win_control.window_table()
+        fg = win_control.foreground()
+
+        alive = {row[0] for row in table}
+        for hwnd in list(self._win_seq):
+            if hwnd not in alive:
+                del self._win_seq[hwnd]
+        for hwnd, _, _ in table:
+            if hwnd not in self._win_seq:
+                self._next_seq += 1
+                self._win_seq[hwnd] = self._next_seq
+
         for app in self.apps:
             procs, dirs = catalog.match_of(app)
-            n = win_control.count_windows(table, procs, dirs)
-            if not n:
+            mine = win_control.windows_in(table, procs, dirs)
+            if not mine:
                 continue
-            entry = {"running": True, "windows": n}
+            entry = {"running": True, "windows": len(mine)}
+            # Từ hai cửa sổ trở lên mới cần danh sách để đánh số 1, 2, 3...
+            if len(mine) >= 2:
+                mine.sort(key=lambda h: self._win_seq.get(h, 0))
+                entry["wins"] = [
+                    {"h": h, "t": win_control.window_title(h)[:120],
+                     "a": h == fg}
+                    for h in mine
+                ]
             # Chỉ hỏi âm lượng của app đang có ô âm lượng trên deck. Hỏi tất
             # cả mỗi giây rưỡi thì tốn vô ích.
             if app["id"] in want_volume:
@@ -321,25 +348,106 @@ class Agent:
             out[app["id"]] = entry
         return out
 
+    async def send_status(self):
+        if not self.clients:
+            return
+        try:
+            apps = await self.run_blocking(self.snapshot)
+        except Exception as exc:
+            log("Lỗi lấy trạng thái:", exc)
+            return
+        msg = json.dumps({"t": "status", "apps": apps})
+        dead = []
+        for ws in list(self.clients):
+            try:
+                await ws.send(msg)
+            except Exception:
+                dead.append(ws)
+        for ws in dead:
+            self.clients.discard(ws)
+
     async def status_loop(self):
         while True:
             await asyncio.sleep(STATUS_INTERVAL)
-            if not self.clients:
-                continue
-            try:
-                apps = await self.run_blocking(self.snapshot)
-            except Exception as exc:
-                log("Lỗi lấy trạng thái:", exc)
-                continue
-            msg = json.dumps({"t": "status", "apps": apps})
-            dead = []
-            for ws in list(self.clients):
+            await self.send_status()
+
+    async def status_soon(self, delay=0.6):
+        """Đóng hay chọn cửa sổ xong thì báo lại ngay, khỏi chờ nhịp 1,5 giây
+        — số trên ô phải khớp với cửa sổ thật càng sớm càng tốt."""
+        await asyncio.sleep(delay)
+        await self.send_status()
+
+    def _owns_window(self, app, hwnd):
+        procs, dirs = catalog.match_of(app)
+        return hwnd in win_control.windows_of(procs, dirs)
+
+    def _describe_running(self):
+        """Chạy ở luồng nền: liệt kê chương trình đang mở kèm tên và icon."""
+        out, tokens = [], {}
+        for prog in win_control.running_programs():
+            path = prog["path"]
+            token = hashlib.sha1(path.encode()).hexdigest()[:12]
+            existing = next(
+                (a["id"] for a in self.apps
+                 if win_control.count_windows(
+                     [(0, prog["exe"], path)], *catalog.match_of(a))), None)
+            if path not in self._icon_cache:
                 try:
-                    await ws.send(msg)
+                    self._icon_cache[path] = win_control.extract_icon_png(path)
                 except Exception:
-                    dead.append(ws)
-            for ws in dead:
-                self.clients.discard(ws)
+                    self._icon_cache[path] = None
+            icon = self._icon_cache[path]
+            name = win_control.describe_exe(path)
+            tokens[token] = (path, name, icon)
+            out.append({
+                "token": token, "name": name, "exe": prog["exe"],
+                "windows": prog["windows"], "title": prog["title"][:120],
+                "app_id": existing,
+                "icon": icon[0] if icon else None,
+                "icon_native": icon[1] if icon else 0,
+            })
+        out.sort(key=lambda r: (r["app_id"] is not None, r["name"].lower()))
+        return out, tokens
+
+    async def adopt(self, token):
+        found = self._running.get(token)
+        if not found:
+            return {"t": "error",
+                    "msg": "Danh sách đã cũ, mở lại danh sách cửa sổ"}
+        path, name, icon = found
+        app = catalog.add_custom(name, path)
+        if app["id"] not in self.by_id:
+            if icon:
+                app["icon"], app["icon_native"] = icon
+            self._set_apps(sorted(self.apps + [app],
+                                  key=lambda a: a["name"].lower()))
+            await self.run_scan(catalog.save, self.apps)
+            await self.broadcast(
+                {"t": "catalog", "apps": catalog.public_view(self.apps)})
+            log(f"Đã thêm từ cửa sổ đang mở: {name} ({path})")
+        return {"t": "adopted", "app_id": app["id"]}
+
+    async def run_scene(self, steps):
+        """Ô chế độ: mở/đóng lần lượt từng app. Chạy nền vì đóng app có thể
+        mất vài giây mỗi cái, không được chặn các lệnh khác."""
+        names = []
+        for app, close in steps:
+            procs, dirs = catalog.match_of(app)
+            try:
+                if close:
+                    await self.run_blocking(win_control.close_app, procs,
+                                            dirs=dirs)
+                elif not await self.run_blocking(win_control.is_running,
+                                                 procs, dirs):
+                    await self.run_blocking(
+                        win_control.launch, app["path"],
+                        app.get("args", ""), app.get("workdir", ""))
+                    await asyncio.sleep(0.4)
+            except Exception as exc:
+                log(f"chế độ: lỗi ở {app['name']}: {exc}")
+            names.append(("đóng " if close else "mở ") + app["name"])
+        log("chế độ:", ", ".join(names))
+        await self.status_soon(1.0)
 
     # -- xử lý lệnh -------------------------------------------------------
 
@@ -408,6 +516,48 @@ class Agent:
                 f"{'tắt tiếng' if muted else f'{level * 100:.0f}%'}")
             return {"t": "volume", "app_id": app["id"],
                     "volume": level, "muted": muted}
+
+        if kind in ("focus_window", "close_window"):
+            app = self.by_id.get(msg.get("app_id"))
+            hwnd = msg.get("hwnd")
+            if not app or not isinstance(hwnd, int):
+                return {"t": "error", "msg": "Không tìm thấy cửa sổ"}
+            # Chỉ cho đụng vào cửa sổ của đúng app đó. Điện thoại không thể
+            # gửi một số hwnd bất kỳ để đóng cửa sổ của chương trình khác.
+            if not await self.run_blocking(self._owns_window, app, hwnd):
+                return {"t": "error", "msg": "Cửa sổ đã đóng hoặc không thuộc app này"}
+            fn = (win_control.focus_or_minimize if kind == "focus_window"
+                  else win_control.close_window)
+            result = await self.run_blocking(fn, hwnd)
+            self._spawn(self.status_soon())
+            return {"t": "window", "app_id": app["id"], "hwnd": hwnd,
+                    "result": result}
+
+        if kind == "running":
+            out, tokens = await self.run_blocking(self._describe_running)
+            self._running = tokens
+            return {"t": "running", "apps": out}
+
+        if kind == "adopt":
+            if not self.catalog_ready:
+                return {"t": "error", "msg": "Đang quét danh mục, thử lại sau"}
+            return await self.adopt(msg.get("token"))
+
+        if kind == "scene":
+            if not self.catalog_ready:
+                return {"t": "error", "msg": "Đang quét danh mục, thử lại sau"}
+            raw = msg.get("steps")
+            steps = []
+            for step in (raw if isinstance(raw, list) else [])[:20]:
+                if not isinstance(step, dict):
+                    continue
+                app = self.by_id.get(step.get("app_id"))
+                if app:
+                    steps.append((app, bool(step.get("close", False))))
+            if not steps:
+                return {"t": "error", "msg": "Chế độ không có app nào hợp lệ"}
+            self._spawn(self.run_scene(steps))
+            return {"t": "ok", "scene": len(steps)}
 
         if kind == "media":
             action = msg.get("action", "")

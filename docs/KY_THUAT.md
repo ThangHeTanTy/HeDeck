@@ -279,6 +279,24 @@ Lệnh: `catalog`, `rescan`, `launch` (`app_id`, `toggle`), `close` (`app_id`),
 chờ 3 giây, còn sống thì `terminate` rồi `kill`. Agent đẩy `status` mỗi 1,5 giây với danh sách app
 đang chạy và số cửa sổ của từng app.
 
+Nhiều cửa sổ: khi một app có từ hai cửa sổ, mục của nó trong `status` có
+thêm `wins: [{"h": hwnd, "t": tiêu đề, "a": đang ở trước}]`, xếp theo thứ tự
+**cửa sổ xuất hiện** (agent tự đánh số thứ tự cho từng hwnd), không theo thứ tự
+xếp chồng của Windows — nhờ vậy số 1, 2, 3 trên ô không nhảy mỗi lần đổi cửa
+sổ. Đóng một cửa sổ thì các số phía sau dồn lên. Lệnh `focus_window` /
+`close_window` (`app_id`, `hwnd`): agent kiểm tra hwnd **thuộc đúng app đó**
+rồi mới làm, nên điện thoại không đóng được cửa sổ tuỳ ý. `close_window` chỉ
+gửi `WM_CLOSE` như bấm dấu X, không giết tiến trình. Xong việc agent gửi
+`status` ngay thay vì chờ nhịp 1,5 giây. Lưu ý: tiêu đề cửa sổ (tên tab đang
+xem) đi qua `ws://` chưa mã hoá.
+
+Thêm từ cửa sổ đang mở: `running` trả về chương trình đang có cửa sổ, mỗi cái
+kèm một `token` ngắn. Điện thoại gửi `adopt` với `token` đó; đường dẫn `.exe`
+chỉ nằm trên laptop. App được ghi vào `them_ung_dung.json`.
+
+Ô chế độ: `scene` với `steps: [{"app_id", "close"}]`, tối đa 20 bước. Chạy ở
+tác vụ nền, lần lượt: `close` thì đóng app, còn lại mở nếu chưa chạy.
+
 Nguồn: `power` (`action` là `lock` | `sleep` | `restart` | `shutdown`, `force`
 để đóng luôn app chưa lưu). Agent trả `{"t":"power"}` trước rồi 0,8 giây sau
 mới thực hiện, vì tắt máy xong thì không còn kết nối để trả lời. Tắt máy dùng

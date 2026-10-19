@@ -40,6 +40,12 @@ class DeckTileView extends StatefulWidget {
   /// Gọi khi giữ đủ 5 giây trên một ô đang chạy.
   final VoidCallback onForceClose;
 
+  /// Chạm một ô số: chọn đúng cửa sổ đó, như ô xem trước trên taskbar.
+  final void Function(RemoteWindow window)? onPickWindow;
+
+  /// Giữ một ô số hoặc chạm "+N": mở danh sách đầy đủ các cửa sổ.
+  final VoidCallback? onWindowList;
+
   const DeckTileView({
     super.key,
     required this.tile,
@@ -52,6 +58,8 @@ class DeckTileView extends StatefulWidget {
     this.editing = false,
     this.flipped = false,
     this.isFirstEmpty = false,
+    this.onPickWindow,
+    this.onWindowList,
   });
 
   @override
@@ -82,6 +90,13 @@ class _DeckTileViewState extends State<DeckTileView>
   }
 
   TileFace get _face => widget.tile.face(widget.flipped);
+
+  /// Hàng số 1, 2, 3... chỉ hiện khi app có từ hai cửa sổ trở lên.
+  bool get _showWindows =>
+      !widget.editing &&
+      widget.tile.kind == TileKind.app &&
+      widget.status.wins.length >= 2 &&
+      widget.onPickWindow != null;
 
   /// Chỉ ô ứng dụng đang chạy mới cho giữ để tắt.
   bool get _canForceClose =>
@@ -137,6 +152,9 @@ class _DeckTileViewState extends State<DeckTileView>
     if (tile.kind == TileKind.macro && _face.keys.isNotEmpty) {
       return _face.keys.join(' › ');
     }
+    if (tile.kind == TileKind.scene && tile.steps.isNotEmpty) {
+      return '${tile.steps.length} bước';
+    }
     return null;
   }
 
@@ -161,6 +179,8 @@ class _DeckTileViewState extends State<DeckTileView>
           'down' => Icons.volume_down_rounded,
           _ => Icons.volume_off_rounded,
         };
+      case TileKind.scene:
+        return Icons.auto_awesome_rounded;
       case TileKind.empty:
         return Icons.add_rounded;
     }
@@ -183,7 +203,7 @@ class _DeckTileViewState extends State<DeckTileView>
     final tile = widget.tile;
     final caption = _caption;
 
-    return GestureDetector(
+    final body = GestureDetector(
       onTapDown: (_) {
         setState(() => _down = true);
         _startHold();
@@ -207,6 +227,35 @@ class _DeckTileViewState extends State<DeckTileView>
           builder: (context, _) => _surface(tile, caption),
         ),
       ),
+    );
+
+    if (!_showWindows) return body;
+
+    // Hàng số nằm ở lớp riêng phía trên, KHÔNG nằm trong vùng chạm của ô.
+    // Nằm trong thì chạm một số cũng kích hoạt luôn đồng hồ giữ-để-tắt của
+    // ô, viền đỏ chớp lên dù người dùng chỉ muốn chọn cửa sổ.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        body,
+        Positioned(
+          left: 5,
+          right: 5,
+          top: 5,
+          height: _WindowChips.height,
+          child: _WindowChips(
+            windows: widget.status.wins,
+            onPick: (w) {
+              HapticFeedback.selectionClick();
+              widget.onPickWindow?.call(w);
+            },
+            onList: () {
+              HapticFeedback.mediumImpact();
+              widget.onWindowList?.call();
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -251,7 +300,12 @@ class _DeckTileViewState extends State<DeckTileView>
             ),
           ),
           // Lề mỏng nhất có thể để icon chiếm tối đa diện tích
-          padding: EdgeInsets.fromLTRB(3, 3, 3, showCaption ? 4 : 3),
+          padding: EdgeInsets.fromLTRB(
+              3,
+              // Chừa chỗ cho hàng số phía trên icon.
+              _showWindows ? _WindowChips.height + 8 : 3,
+              3,
+              showCaption ? 4 : 3),
           child: Column(
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -351,6 +405,97 @@ class _DeckTileViewState extends State<DeckTileView>
       _glyph,
       size: box.clamp(24.0, 140.0),
       color: DeckColors.swatch(_face.accent),
+    );
+  }
+}
+
+/// Hàng ô số 1, 2, 3... phía trên icon, mỗi số là một cửa sổ đang mở.
+///
+/// Chạm số: chọn cửa sổ đó (đang ở trước thì thu nhỏ). Giữ số, hoặc chạm
+/// "+N" khi không đủ chỗ: mở danh sách đầy đủ kèm tên cửa sổ và nút đóng.
+class _WindowChips extends StatelessWidget {
+  static const height = 18.0;
+  static const _gap = 3.0;
+
+  final List<RemoteWindow> windows;
+  final void Function(RemoteWindow) onPick;
+  final VoidCallback onList;
+
+  const _WindowChips({
+    required this.windows,
+    required this.onPick,
+    required this.onList,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, box) {
+      final fit = ((box.maxWidth + _gap) / (height + _gap)).floor();
+      final overflow = windows.length > fit;
+      final shown = overflow ? math.max(fit - 1, 0) : windows.length;
+
+      final chips = <Widget>[
+        for (var i = 0; i < shown; i++)
+          _chip(
+            label: '${i + 1}',
+            active: windows[i].active,
+            onTap: () => onPick(windows[i]),
+            onLongPress: onList,
+          ),
+        if (overflow)
+          _chip(
+            label: '+${windows.length - shown}',
+            active: false,
+            onTap: onList,
+            onLongPress: onList,
+            wide: true,
+          ),
+      ];
+
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (var i = 0; i < chips.length; i++) ...[
+            if (i > 0) const SizedBox(width: _gap),
+            chips[i],
+          ],
+        ],
+      );
+    });
+  }
+
+  Widget _chip({
+    required String label,
+    required bool active,
+    required VoidCallback onTap,
+    required VoidCallback onLongPress,
+    bool wide = false,
+  }) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Container(
+        height: height,
+        constraints: BoxConstraints(minWidth: wide ? height + 6 : height),
+        padding: const EdgeInsets.symmetric(horizontal: 3),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          // Cửa sổ đang ở trước trên laptop: tô đặc, nhìn là biết đang ở đâu.
+          color: active ? DeckColors.live : DeckColors.bg,
+          borderRadius: BorderRadius.circular(5),
+          border: Border.all(color: DeckColors.live, width: 1),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10.5,
+            height: 1,
+            fontWeight: FontWeight.w700,
+            color: active ? DeckColors.bg : DeckColors.text,
+          ),
+        ),
+      ),
     );
   }
 }

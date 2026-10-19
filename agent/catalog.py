@@ -388,6 +388,28 @@ def save(apps) -> None:
     )
 
 
+def add_custom(name, path):
+    """Thêm một chương trình vào them_ung_dung.json rồi trả về app mới.
+
+    Dùng cho "Thêm từ cửa sổ đang mở". `path` luôn do agent tự đọc từ tiến
+    trình đang chạy, không bao giờ do điện thoại gửi lên.
+    """
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    if not CUSTOM_FILE.exists():
+        _custom_apps()  # tạo file mẫu trước
+    try:
+        data = json.loads(CUSTOM_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        data = {}
+    items = data.setdefault("apps", [])
+    exe = os.path.basename(path)
+    if not any(str(i.get("path", "")).lower() == path.lower() for i in items):
+        items.append({"name": name, "path": path, "args": "", "procs": [exe]})
+        CUSTOM_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2),
+                               encoding="utf-8")
+    return _entry(name, path, path, exe=exe, procs=[exe], source="custom")
+
+
 def match_of(app):
     """(tên tiến trình, thư mục cài) để nhận ra cửa sổ nào là của app."""
     procs = [app.get("exe", "")] + list(app.get("procs") or [])

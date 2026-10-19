@@ -241,6 +241,15 @@ def count_windows(table, procs, dirs=()):
     return sum(1 for _, name, path in table if _matches(name, path, procs, dirs))
 
 
+def windows_in(table, procs, dirs=()):
+    """Các hwnd trong bảng đã duyệt sẵn thuộc về app."""
+    procs, dirs = _norm_procs(procs), _norm_dirs(dirs)
+    if not procs and not dirs:
+        return []
+    return [hwnd for hwnd, name, path in table
+            if _matches(name, path, procs, dirs)]
+
+
 def windows_of(procs, dirs=()):
     """Danh sách hwnd thuộc về app: theo tên tiến trình hoặc thư mục cài."""
     procs, dirs = _norm_procs(procs), _norm_dirs(dirs)
@@ -304,6 +313,92 @@ def force_foreground(hwnd: int) -> bool:
         for tid in attached:
             user32.AttachThreadInput(cur_tid, tid, False)
     return win32gui.GetForegroundWindow() == hwnd
+
+
+# --------------------------------------------------------------------------
+# Từng cửa sổ riêng lẻ (chọn cửa sổ như thanh taskbar)
+# --------------------------------------------------------------------------
+
+def window_title(hwnd: int) -> str:
+    try:
+        return win32gui.GetWindowText(hwnd) or ""
+    except Exception:
+        return ""
+
+
+def foreground() -> int:
+    try:
+        return win32gui.GetForegroundWindow() or 0
+    except Exception:
+        return 0
+
+
+def focus_or_minimize(hwnd: int) -> str:
+    """Giống bấm vào ô xem trước trên taskbar: cửa sổ đang ở trước thì thu
+    nhỏ, còn lại thì đưa lên trước."""
+    if not win32gui.IsWindow(hwnd):
+        return "gone"
+    if foreground() == hwnd and not win32gui.IsIconic(hwnd):
+        minimize(hwnd)
+        return "minimized"
+    force_foreground(hwnd)
+    return "focused"
+
+
+def close_window(hwnd: int) -> str:
+    """Đóng đúng một cửa sổ. Chỉ xin đóng lịch sự (như bấm dấu X), không
+    giết tiến trình: Chrome còn cửa sổ khác thì vẫn phải sống."""
+    if not win32gui.IsWindow(hwnd):
+        return "gone"
+    win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
+    return "closing"
+
+
+# Tiến trình có cửa sổ nhưng không phải "ứng dụng" để gắn vào ô.
+_NOT_AN_APP = {
+    "applicationframehost.exe", "textinputhost.exe", "shellexperiencehost.exe",
+    "searchhost.exe", "searchapp.exe", "startmenuexperiencehost.exe",
+    "lockapp.exe", "systemsettings.exe", "conhost.exe", "openconsole.exe",
+    "windowsterminal.exe", "python.exe", "pythonw.exe", "py.exe",
+    "hedeckagent.exe", "taskmgr.exe", "rundll32.exe", "dllhost.exe",
+}
+
+
+def describe_exe(path: str) -> str:
+    """Tên đẹp của chương trình, lấy từ thông tin phiên bản trong file .exe
+    (cái tên Task Manager hiển thị), thiếu thì dùng tên file."""
+    try:
+        info = win32api.GetFileVersionInfo(path, "\\VarFileInfo\\Translation")
+        if info:
+            lang, page = info[0]
+            for field in ("FileDescription", "ProductName"):
+                value = win32api.GetFileVersionInfo(
+                    path, f"\\StringFileInfo\\{lang:04x}{page:04x}\\{field}")
+                if value and value.strip():
+                    return value.strip()
+    except Exception:
+        pass
+    return os.path.splitext(os.path.basename(path))[0].replace("_", " ").title()
+
+
+def running_programs():
+    """Các chương trình đang có cửa sổ, gộp theo file .exe.
+
+    Trả về [{path, exe, windows, title}]. Chỉ có tiến trình đọc được đường
+    dẫn mới vào danh sách — không biết đường dẫn thì không mở lại được.
+    """
+    groups = {}
+    for hwnd, name, path in window_table():
+        if not path or name in _NOT_AN_APP:
+            continue
+        if "\\windows\\systemapps\\" in path:
+            continue
+        g = groups.setdefault(path, {"path": path, "exe": name,
+                                     "windows": 0, "title": ""})
+        g["windows"] += 1
+        if not g["title"]:
+            g["title"] = window_title(hwnd)
+    return list(groups.values())
 
 
 def minimize(hwnd: int) -> None:

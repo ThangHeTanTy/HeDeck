@@ -94,6 +94,8 @@ class DeckConnection extends ChangeNotifier {
   bool _stopped = true;
   int _backoff = 1;
   Completer<PairResult>? _pairing;
+  Completer<List<RunningProgram>>? _runningReq;
+  Completer<String>? _adoptReq;
 
   bool get isOnline => state == ConnState.online;
 
@@ -299,6 +301,50 @@ class DeckConnection extends ChangeNotifier {
 
   void macro(List<String> keys) => _send({'t': 'macro', 'keys': keys});
 
+  /// Chọn đúng một cửa sổ, như bấm ô xem trước trên taskbar. Cửa sổ đang ở
+  /// trước thì agent thu nhỏ nó.
+  void focusWindow(String appId, int hwnd) =>
+      _send({'t': 'focus_window', 'app_id': appId, 'hwnd': hwnd});
+
+  /// Đóng một cửa sổ. Bỏ nó khỏi danh sách ngay để số trên ô cập nhật tức
+  /// thì; agent gửi trạng thái thật ngay sau đó để sửa nếu đoán sai.
+  void closeWindow(String appId, int hwnd) {
+    _send({'t': 'close_window', 'app_id': appId, 'hwnd': hwnd});
+    final old = statuses[appId];
+    if (old == null) return;
+    final left = old.wins.where((w) => w.hwnd != hwnd).toList();
+    statuses[appId] = AppStatus(
+      running: old.running,
+      windows: old.windows > 1 ? old.windows - 1 : old.windows,
+      volume: old.volume,
+      muted: old.muted,
+      wins: left.length >= 2 ? left : const [],
+    );
+    notifyListeners();
+  }
+
+  /// Ô chế độ: mở/đóng nhiều app theo thứ tự.
+  void scene(List<SceneStep> steps) =>
+      _send({'t': 'scene', 'steps': steps.map((s) => s.toJson()).toList()});
+
+  /// Danh sách chương trình đang có cửa sổ trên laptop.
+  Future<List<RunningProgram>> listRunning() {
+    _runningReq?.completeError(StateError('Đã thay bằng yêu cầu mới'));
+    final req = _runningReq = Completer<List<RunningProgram>>();
+    _send({'t': 'running'});
+    return req.future.timeout(const Duration(seconds: 20),
+        onTimeout: () => throw StateError('Laptop không trả lời'));
+  }
+
+  /// Thêm một chương trình đang mở vào danh sách ứng dụng. Trả về app_id.
+  Future<String> adopt(String token) {
+    _adoptReq?.completeError(StateError('Đã thay bằng yêu cầu mới'));
+    final req = _adoptReq = Completer<String>();
+    _send({'t': 'adopt', 'token': token});
+    return req.future.timeout(const Duration(seconds: 15),
+        onTimeout: () => throw StateError('Laptop không trả lời'));
+  }
+
   /// lock | sleep | restart | shutdown. `force` đóng luôn app chưa lưu thay
   /// vì để Windows dừng lại hỏi — mà lúc đó không ai ngồi trước máy để bấm.
   void power(String action, {bool force = false}) =>
@@ -374,6 +420,7 @@ class DeckConnection extends ChangeNotifier {
             windows: old.windows,
             volume: (msg['volume'] as num?)?.toDouble() ?? old.volume,
             muted: msg['muted'] as bool? ?? old.muted,
+            wins: old.wins,
           );
           notifyListeners();
         }
@@ -388,6 +435,10 @@ class DeckConnection extends ChangeNotifier {
               windows: (e.value as Map)['windows'] as int? ?? 0,
               volume: ((e.value as Map)['volume'] as num?)?.toDouble() ?? -1,
               muted: (e.value as Map)['muted'] as bool? ?? false,
+              wins: ((e.value as Map)['wins'] as List? ?? const [])
+                  .map((w) =>
+                      RemoteWindow.fromJson((w as Map).cast<String, dynamic>()))
+                  .toList(),
             )
         };
         // Cửa sổ đã hiện ra thì thôi chờ: viền tím nhường chỗ cho viền xanh.
@@ -395,6 +446,21 @@ class DeckConnection extends ChangeNotifier {
           if (statuses[id]?.running == true) _clearPending(id);
         }
         notifyListeners();
+        break;
+
+      case 'running':
+        final req = _runningReq;
+        _runningReq = null;
+        req?.complete((msg['apps'] as List? ?? const [])
+            .map((e) =>
+                RunningProgram.fromJson((e as Map).cast<String, dynamic>()))
+            .toList());
+        break;
+
+      case 'adopted':
+        final req = _adoptReq;
+        _adoptReq = null;
+        req?.complete(msg['app_id'] as String);
         break;
 
       case 'pong':
@@ -410,6 +476,15 @@ class DeckConnection extends ChangeNotifier {
         if (_pairing != null && !_pairing!.isCompleted) {
           _pairing!.completeError(StateError(lastError!));
         }
+        // Lỗi trả về khi đang chờ danh sách cửa sổ hay đang thêm app thì là
+        // lỗi của yêu cầu đó, đừng để màn hình chờ mãi.
+        for (final req in [_runningReq, _adoptReq]) {
+          if (req != null && !req.isCompleted) {
+            req.completeError(StateError(lastError!));
+          }
+        }
+        _runningReq = null;
+        _adoptReq = null;
         if (msg['fatal'] == true) {
           final code = msg['code'] as String? ?? '';
           final text = lastError ?? '';

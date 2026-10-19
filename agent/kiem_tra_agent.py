@@ -112,8 +112,14 @@ def main():
     print("\n[Lệnh mà agent hiểu]")
     source = (HERE / "agent.py").read_text(encoding="utf-8")
     for cmd in ("ping", "catalog", "rescan", "launch", "close",
-                "media", "macro", "app_volume", "watch_volume", "power"):
+                "media", "macro", "app_volume", "watch_volume", "power",
+                "running", "adopt", "scene"):
         check(f'có xử lý lệnh "{cmd}"', f'kind == "{cmd}"' in source)
+    check('có xử lý lệnh "focus_window" và "close_window"',
+          'kind in ("focus_window", "close_window")' in source)
+    check("chỉ đụng vào cửa sổ thuộc đúng app",
+          "self._owns_window," in source,
+          "Thiếu thì điện thoại gửi hwnd bất kỳ là đóng được cửa sổ khác.")
 
     # --- Danh mục ---------------------------------------------------------
     print("\n[Danh mục ứng dụng]")
