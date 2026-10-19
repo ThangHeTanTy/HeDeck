@@ -145,6 +145,10 @@ def main():
     win_src = (HERE / "win_control.py").read_text(encoding="utf-8")
     check("đếm cửa sổ trong một lượt duyệt",
           "def window_table" in win_src)
+    check("không đếm desktop/taskbar là cửa sổ của File Explorer",
+          '"progman"' in win_src and '"shell_traywnd"' in win_src)
+    check("không bao giờ giết explorer.exe",
+          '_NEVER_KILL = {"explorer.exe"}' in win_src)
     check("vòng đo trạng thái dùng window_table",
           "win_control.window_table()" in source,
           "Gọi windows_of cho từng app sẽ tốn gấp hàng chục lần.")

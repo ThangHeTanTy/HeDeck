@@ -287,7 +287,12 @@ sổ. Đóng một cửa sổ thì các số phía sau dồn lên. Lệnh `focus
 `close_window` (`app_id`, `hwnd`): agent kiểm tra hwnd **thuộc đúng app đó**
 rồi mới làm, nên điện thoại không đóng được cửa sổ tuỳ ý. `close_window` chỉ
 gửi `WM_CLOSE` như bấm dấu X, không giết tiến trình. Xong việc agent gửi
-`status` ngay thay vì chờ nhịp 1,5 giây. Lưu ý: tiêu đề cửa sổ (tên tab đang
+`status` ngay thay vì chờ nhịp 1,5 giây. Cửa sổ được đếm theo đúng quy tắc của taskbar: hiện, có tiêu
+đề, không phải tool window, và không có cửa sổ chủ trừ khi mang cờ
+`WS_EX_APPWINDOW` — nên hộp thoại Lưu/Mở file không bị tính thành một số.
+Desktop và taskbar (lớp `Progman`, `WorkerW`, `Shell_TrayWnd`) bị loại, vì
+chúng cũng thuộc `explorer.exe`. Tắt ô File Explorer chỉ đóng cửa sổ thư mục,
+không bao giờ giết `explorer.exe`. Lưu ý: tiêu đề cửa sổ (tên tab đang
 xem) đi qua `ws://` chưa mã hoá.
 
 Thêm từ cửa sổ đang mở: `running` trả về chương trình đang có cửa sổ, mỗi cái

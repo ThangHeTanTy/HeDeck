@@ -154,16 +154,36 @@ def _pid_of(hwnd: int) -> int:
         return 0
 
 
+# Cửa sổ của chính Windows mà tiến trình explorer.exe đứng tên: màn hình
+# desktop, thanh taskbar. Không bỏ thì ô File Explorer lúc nào cũng thừa một
+# "cửa sổ" và luôn sáng xanh dù chưa mở thư mục nào.
+_SHELL_CLASSES = {
+    "progman", "workerw", "shell_traywnd", "shell_secondarytraywnd",
+}
+
+
 def _is_real_window(hwnd: int) -> bool:
+    """Đúng những cửa sổ có nút trên taskbar Windows.
+
+    Quy tắc của taskbar: hiện, không phải tool window, và hoặc không có cửa
+    sổ chủ, hoặc có cờ WS_EX_APPWINDOW. Cách cũ bỏ mọi cửa sổ có chủ, nên
+    app nào đặt cửa sổ chính dưới một cửa sổ ẩn thì không bao giờ được tính.
+    """
     if not win32gui.IsWindowVisible(hwnd):
-        return False
-    if win32gui.GetParent(hwnd):
         return False
     if not win32gui.GetWindowText(hwnd):
         return False
     ex = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
     if ex & win32con.WS_EX_TOOLWINDOW:
         return False
+    if win32gui.GetWindow(hwnd, win32con.GW_OWNER) and \
+            not ex & win32con.WS_EX_APPWINDOW:
+        return False  # hộp thoại Lưu, Mở file... thuộc về cửa sổ chính
+    try:
+        if win32gui.GetClassName(hwnd).lower() in _SHELL_CLASSES:
+            return False
+    except Exception:
+        pass
     # Bỏ cửa sổ "cloaked" của UWP (ẩn nhưng vẫn tồn tại)
     cloaked = ctypes.c_int(0)
     ctypes.windll.dwmapi.DwmGetWindowAttribute(
@@ -473,11 +493,22 @@ def open_or_focus(path: str, procs, args: str = "", workdir: str = "",
     return "launched_no_window"
 
 
+# Tiến trình không bao giờ được giết: explorer.exe vừa là File Explorer vừa
+# là taskbar, desktop của Windows. Tắt "File Explorer" chỉ đóng cửa sổ thư mục.
+_NEVER_KILL = {"explorer.exe"}
+
+
 def close_app(procs, grace: float = 3.0, dirs=()) -> str:
     """Đóng app: xin đóng lịch sự trước, hết kiên nhẫn thì cưỡng bức.
 
     Trả về: 'closed' | 'killed' | 'not_running'
     """
+    if _norm_procs(procs) & _NEVER_KILL:
+        hwnds = windows_of(procs, dirs)
+        for hwnd in hwnds:
+            close_window(hwnd)
+        return "closed" if hwnds else "not_running"
+
     if not is_running(procs, dirs):
         return "not_running"
 

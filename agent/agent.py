@@ -437,7 +437,10 @@ class Agent:
                 if close:
                     await self.run_blocking(win_control.close_app, procs,
                                             dirs=dirs)
-                elif not await self.run_blocking(win_control.is_running,
+                # Xét theo cửa sổ chứ không theo tiến trình: app chỉ còn chạy
+                # ngầm ở khay hệ thống (Discord, Zalo...) hay explorer.exe
+                # vốn luôn chạy vẫn phải được mở cửa sổ ra.
+                elif not await self.run_blocking(win_control.windows_of,
                                                  procs, dirs):
                     await self.run_blocking(
                         win_control.launch, app["path"],
