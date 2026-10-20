@@ -4,7 +4,7 @@
 > Hướng dẫn cài đặt từng bước nằm ở [BAT_DAU.md](BAT_DAU.md).
 
 Điện thoại Android trở thành một Steam Deck nhỏ: 8 ô lớn, chạm một cái là
-ứng dụng trên laptop mở lên và được đưa ra trước. Kèm điều khiển nhạc, âm
+ứng dụng trên thiết bị mở lên và được đưa ra trước. Kèm điều khiển nhạc, âm
 lượng, và các ô macro gõ tổ hợp phím.
 
 ```
@@ -12,7 +12,7 @@ Android (Flutter)  ──  WebSocket ws://<ip>:8787  ──  Agent Python (Windo
    8 ô, media, macro         cùng mạng Wi-Fi          mở app, focus cửa sổ
 ```
 
-## Phần 1 — Chạy agent trên laptop
+## Phần 1 — Chạy agent trên thiết bị
 
 Cần Python 3.10 trở lên trên Windows 10/11.
 
@@ -188,7 +188,7 @@ App tự thử lại mãi, thời gian chờ tăng dần rồi dừng ở 20 gi�
 tắt cả ngày thì bật lên là app nối lại trong vòng 20 giây. Thanh trên đếm ngược
 tới lần thử kế tiếp để bạn biết nó đang chạy chứ không phải treo.
 
-Cứ ba lần hụt liên tiếp, app **dò lại bằng mDNS**: router cấp IP khác cho laptop
+Cứ ba lần hụt liên tiếp, app **dò lại bằng mDNS**: router cấp IP khác cho thiết bị
 thì app tự cập nhật địa chỉ và lưu lại, không cần ghép cặp lại. Ngoại lệ quan
 trọng — nếu địa chỉ đang lưu là `127.0.0.1` (máy ảo hoặc cáp USB qua
 `adb reverse`), app **không** dò lại, vì địa chỉ LAN tìm được sẽ không tới nơi.
@@ -297,7 +297,7 @@ xem) đi qua `ws://` chưa mã hoá.
 
 Thêm từ cửa sổ đang mở: `running` trả về chương trình đang có cửa sổ, mỗi cái
 kèm một `token` ngắn. Điện thoại gửi `adopt` với `token` đó; đường dẫn `.exe`
-chỉ nằm trên laptop. App được ghi vào `them_ung_dung.json`.
+chỉ nằm trên thiết bị. App được ghi vào `them_ung_dung.json`.
 
 Ô chế độ: `scene` với `steps: [{"app_id", "close"}]`, tối đa 20 bước. Chạy ở
 tác vụ nền, lần lượt: `close` thì đóng app, còn lại mở nếu chưa chạy.
@@ -351,12 +351,12 @@ số IP đang bị chặn. Nhấn **U** rồi Enter để gỡ toàn bộ danh s
 
 Điện thoại sinh một cặp khoá **Ed25519** trong lần chạy đầu. Khoá bí mật nằm
 trong vùng dữ liệu riêng của app và **không bao giờ rời khỏi máy**. Lúc ghép
-cặp, chỉ khoá công khai được gửi sang laptop.
+cặp, chỉ khoá công khai được gửi sang thiết bị.
 
 Bản trước dùng `flutter_secure_storage`. Thư viện đó dựa trên
 `EncryptedSharedPreferences` của Jetpack Security — đã bị Google ngừng phát
 triển và ghi/đọc hỏng lặng lẽ trên Android mới (thấy rõ trên Android 17). Khoá
-bị sinh lại mà app không hay biết, laptop không còn nhận ra thiết bị, và lỗi
+bị sinh lại mà app không hay biết, thiết bị không còn nhận ra thiết bị, và lỗi
 hiện ra dưới dạng *Chữ ký không hợp lệ* — rất khó lần. Vùng dữ liệu riêng của
 app không đọc được từ app khác trên máy chưa root, đủ an toàn cho mục đích ở
 đây và quan trọng hơn là hoạt động ổn định. Khi nạp, app còn dựng lại khoá công
@@ -366,7 +366,7 @@ hỏng.
 Mỗi lần kết nối, điện thoại ký `device_id|timestamp|nonce` bằng khoá bí mật.
 Agent xác minh bằng khoá công khai đang giữ. Điều này có nghĩa:
 
-- **Đọc trộm `agent.json` trên laptop không giả mạo được thiết bị.** File đó
+- **Đọc trộm `agent.json` trên thiết bị không giả mạo được điện thoại.** File đó
   chỉ chứa khoá công khai. Đây là khác biệt căn bản so với HMAC khoá chung,
   nơi hai bên giữ cùng một bí mật và lộ một bên là lộ cả hai.
 - **Không phát lại được.** Mỗi nonce chỉ dùng một lần, agent nhớ 4096 nonce gần
@@ -381,7 +381,7 @@ App cũng tự kiểm tra ngay lúc khởi động: vân tay khoá hiện tại 
 tay đã lưu lúc ghép cặp. Lệch là dọn ghép cặp cũ luôn, không phí thời gian thử
 kết nối.
 
-Vân tay khoá hiện ở hai nơi để đối chiếu: dòng log lúc ghép cặp trên laptop, và
+Vân tay khoá hiện ở hai nơi để đối chiếu: dòng log lúc ghép cặp trên thiết bị, và
 khối thông tin trong menu tuỳ chọn trên điện thoại. Hai chỗ khác nhau nghĩa là
 có thiết bị khác đã ghép cặp.
 
@@ -393,7 +393,7 @@ tự mở app được. Ở mạng nhà thì chấp nhận được; ở Wi-Fi c
 
 Điện thoại cũng chỉ gửi `app_id`, không bao giờ gửi đường dẫn hay lệnh shell.
 Kể cả khi ai đó vượt được cả ba tầng, họ chỉ mở được đúng những app đã có trong
-danh mục trên laptop.
+danh mục trên thiết bị.
 
 ## Build bản phát hành
 
@@ -525,11 +525,11 @@ mở khoá trạng thái kể cả khi quét hỏng, nên nếu app vẫn kẹt 
 kết nối đã đứt chứ không phải quét treo — bấm nút ↻ ở thanh trên.
 
 **Ghép cặp được nhưng danh sách app trống** — agent còn đang quét. Thanh trên
-sẽ hiện *Đang quét ứng dụng trên laptop…*, danh mục tự đến khi xong.
+sẽ hiện *Đang quét ứng dụng trên thiết bị…*, danh mục tự đến khi xong.
 
 **Ghép cặp báo "Thiếu khoá công khai"** — điện thoại chưa tạo được cặp khoá.
-Màn hình ghép cặp có dòng *Khoá thiết bị XXXX:XXXX:XXXX* ở gần nút bấm: hiện
-vân tay là khoá đã có; hiện *Máy này chưa tạo được khoá thiết bị* màu đỏ nghĩa
+Màn hình ghép cặp có dòng *Khoá điện thoại XXXX:XXXX:XXXX* ở gần nút bấm: hiện
+vân tay là khoá đã có; hiện *Máy này chưa tạo được khoá điện thoại* màu đỏ nghĩa
 là khâu tạo khoá hỏng, và thông báo lúc bấm Ghép cặp sẽ nói rõ lý do.
 
 Nguyên nhân hay gặp nhất là bản release bị R8 cắt mất lớp của
@@ -537,7 +537,7 @@ Nguyên nhân hay gặp nhất là bản release bị R8 cắt mất lớp của
 giữ trong bộ nhớ trước rồi mới lưu xuống đĩa, nên máy không ghi được vẫn ghép
 cặp và dùng bình thường trong phiên đó.
 
-**Agent báo "Chữ ký không hợp lệ" hoặc "Khoá thiết bị đã thay đổi"** — điện
+**Agent báo "Chữ ký không hợp lệ" hoặc "Khoá điện thoại đã thay đổi"** — điện
 thoại đã sinh khoá mới, thường sau khi cài lại app. Nhấn **D** rồi Enter trong
 cửa sổ agent để xoá thiết bị cũ, sau đó ghép cặp lại. Dòng log kèm theo cho biết
 vân tay đã lưu và vân tay máy gửi, đối chiếu được ngay.
@@ -571,7 +571,7 @@ Cách hiện tại không có điểm chết đó. Kèm theo một lưới an to
 hoạt ảnh cộng 2 giây thì lớp phủ tự biến mất dù có chuyện gì xảy ra.
 
 Việc chọn hiện deck hay màn hình ghép cặp cũng do **một nơi duy nhất** quyết
-định — `store.isPaired` ở gốc app. Ghép cặp xong hay quên laptop đều chỉ cần
+định — `store.isPaired` ở gốc app. Ghép cặp xong hay quên thiết bị đều chỉ cần
 đổi trạng thái đó, không màn hình nào tự đẩy màn hình khác nữa.
 
 Nền khởi động của Android cũng được đặt trắng (`android_patch/launch_background.xml`)

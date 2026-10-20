@@ -21,7 +21,7 @@ if "android.permission.INTERNET" not in m:
     <!-- Nói chuyện với agent qua LAN -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- Cần cho mDNS: nhận gói multicast khi dò tìm laptop -->
+    <!-- Cần cho mDNS: nhận gói multicast khi dò tìm thiết bị -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 """

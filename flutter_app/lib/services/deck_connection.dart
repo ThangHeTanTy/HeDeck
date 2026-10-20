@@ -29,7 +29,7 @@ class PairResult {
   PairResult(this.deviceId, this.hostName, this.fingerprint);
 }
 
-/// Kênh liên lạc duy nhất tới agent trên laptop.
+/// Kênh liên lạc duy nhất tới agent trên thiết bị.
 class DeckConnection extends ChangeNotifier {
   DeckConnection(this.identity);
 
@@ -43,6 +43,18 @@ class DeckConnection extends ChangeNotifier {
   String? lastError;
   int? latencyMs;
   String hostName = '';
+
+  /// Phiên bản agent báo lúc kết nối. 0 nghĩa là agent quá cũ, chưa biết
+  /// báo phiên bản.
+  int agentVersion = 0;
+
+  /// Bản app này cần agent tối thiểu bản này: đánh số cửa sổ, thêm từ cửa
+  /// sổ đang mở, ô chế độ, quét game từ launcher.
+  static const minAgentVersion = 4;
+
+  /// Đã kết nối nhưng agent trên thiết bị vẫn chạy code cũ — thường do pull
+  /// code xong mà chưa tắt cửa sổ agent đi chạy lại.
+  bool get agentOutdated => isOnline && agentVersion < minAgentVersion;
 
   Map<String, AppStatus> statuses = {};
 
@@ -69,7 +81,7 @@ class DeckConnection extends ChangeNotifier {
   int _port = 8787;
   String _deviceId = '';
 
-  /// Gọi khi tự dò lại thấy laptop ở địa chỉ IP mới, để lưu lại.
+  /// Gọi khi tự dò lại thấy thiết bị ở địa chỉ IP mới, để lưu lại.
   void Function(String host, int port)? onHostChanged;
 
   /// Thông tin bật máy agent gửi lúc kết nối. Null khi chưa kết nối lần nào,
@@ -192,7 +204,7 @@ class DeckConnection extends ChangeNotifier {
     await _connectOnce();
     if (isOnline || _stopped || _isTunnelled) return;
 
-    // Không được thì dò ngay lập tức thay vì đợi ba lần hụt. Laptop đổi IP là
+    // Không được thì dò ngay lập tức thay vì đợi ba lần hụt. Thiết bị đổi IP là
     // chuyện thường, không việc gì bắt người dùng chờ cả phút.
     _retry?.cancel();
     await _rediscoverThenConnect();
@@ -327,13 +339,13 @@ class DeckConnection extends ChangeNotifier {
   void scene(List<SceneStep> steps) =>
       _send({'t': 'scene', 'steps': steps.map((s) => s.toJson()).toList()});
 
-  /// Danh sách chương trình đang có cửa sổ trên laptop.
+  /// Danh sách chương trình đang có cửa sổ trên thiết bị.
   Future<List<RunningProgram>> listRunning() {
     _runningReq?.completeError(StateError('Đã thay bằng yêu cầu mới'));
     final req = _runningReq = Completer<List<RunningProgram>>();
     _send({'t': 'running'});
     return req.future.timeout(const Duration(seconds: 20),
-        onTimeout: () => throw StateError('Laptop không trả lời'));
+        onTimeout: () => throw StateError('Thiết bị không trả lời'));
   }
 
   /// Thêm một chương trình đang mở vào danh sách ứng dụng. Trả về app_id.
@@ -342,7 +354,7 @@ class DeckConnection extends ChangeNotifier {
     final req = _adoptReq = Completer<String>();
     _send({'t': 'adopt', 'token': token});
     return req.future.timeout(const Duration(seconds: 15),
-        onTimeout: () => throw StateError('Laptop không trả lời'));
+        onTimeout: () => throw StateError('Thiết bị không trả lời'));
   }
 
   /// lock | sleep | restart | shutdown. `force` đóng luôn app chưa lưu thay
@@ -378,11 +390,17 @@ class DeckConnection extends ChangeNotifier {
           msg['fingerprint'] as String? ?? '',
         ));
         hostName = msg['host_name'] as String? ?? '';
+        agentVersion = (msg['v'] as num?)?.toInt() ?? 0;
         _readWol(msg['wol']);
         break;
 
       case 'auth_ok':
         hostName = msg['host_name'] as String? ?? hostName;
+        agentVersion = (msg['v'] as num?)?.toInt() ?? 0;
+        if (agentVersion < minAgentVersion) {
+          debugPrint('HeDeck: agent v$agentVersion cũ hơn v$minAgentVersion '
+              '— cần chạy lại run_agent.bat');
+        }
         _readWol(msg['wol']);
         lastError = null;
         _backoff = 1;
@@ -554,7 +572,7 @@ class DeckConnection extends ChangeNotifier {
     _misses++;
     retryAt = DateTime.now().add(wait);
     notifyListeners();
-    // Sau vài lần hụt, nhiều khả năng router đã cấp IP khác cho laptop.
+    // Sau vài lần hụt, nhiều khả năng router đã cấp IP khác cho thiết bị.
     // Đi dò lại bằng mDNS thay vì kiên trì gọi vào địa chỉ đã chết.
     _retry = Timer(wait, _misses % 3 == 0 ? _rediscoverThenConnect : _connectOnce);
   }
@@ -633,11 +651,11 @@ class DeckConnection extends ChangeNotifier {
 
   static String _friendly(Object e) {
     final s = e.toString();
-    if (s.contains('khoá thiết bị')) {
+    if (s.contains('khoá điện thoại')) {
       // Giữ nguyên câu chữ từ DeviceIdentity, nó đã nói rõ nguyên nhân.
       return s.replaceFirst(RegExp(r'^\w+Error: '), '');
     }
-    if (s.contains('refused')) return 'Laptop từ chối kết nối — agent chưa chạy?';
+    if (s.contains('refused')) return 'Thiết bị từ chối kết nối — agent chưa chạy?';
     if (s.contains('mạng nội bộ')) return 'Agent chỉ nhận kết nối từ mạng nội bộ';
     if (s.contains('timed out') || s.contains('timeout')) {
       return 'Hết thời gian chờ — kiểm tra Wi-Fi và tường lửa';

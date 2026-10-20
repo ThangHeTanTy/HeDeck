@@ -88,7 +88,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
       return;
     }
 
-    // Laptop đổi IP thì tự dò lại và lưu địa chỉ mới, khỏi ghép cặp lại.
+    // Thiết bị đổi IP thì tự dò lại và lưu địa chỉ mới, khỏi ghép cặp lại.
     conn.onHostChanged = store.updateHost;
 
     await conn.start(
@@ -114,7 +114,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     final conn = context.read<DeckConnection>();
     final store = context.read<Store>();
     if (!conn.isOnline) {
-      _snack('Chưa kết nối tới laptop');
+      _snack('Chưa kết nối tới thiết bị');
       return;
     }
     HapticFeedback.mediumImpact();
@@ -569,12 +569,12 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
           children: [
             _layoutRow(store),
             const Divider(height: 1, color: DeckColors.line),
-            _sheetItem(Icons.refresh_rounded, 'Quét lại ứng dụng trên laptop', 'rescan'),
+            _sheetItem(Icons.refresh_rounded, 'Quét lại ứng dụng trên thiết bị', 'rescan'),
             _sheetItem(Icons.add_rounded, 'Thêm trang', 'addPage'),
             _sheetItem(Icons.drive_file_rename_outline_rounded, 'Đổi tên trang này', 'rename'),
             if (store.pages.length > 1)
               _sheetItem(Icons.delete_outline_rounded, 'Xoá trang này', 'delPage'),
-            _sheetItem(Icons.link_off_rounded, 'Quên laptop này', 'forget'),
+            _sheetItem(Icons.link_off_rounded, 'Quên thiết bị này', 'forget'),
             const Divider(height: 1, color: DeckColors.line),
             _aboutBlock(),
           ],
@@ -699,6 +699,24 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                   height: 1.2,
                 ),
               ),
+              if (context.read<DeckConnection>().isOnline) ...[
+                const SizedBox(height: 6),
+                Builder(builder: (_) {
+                  final conn = context.read<DeckConnection>();
+                  final old = conn.agentOutdated;
+                  return Text(
+                    old
+                        ? 'Agent v${conn.agentVersion} — cần v'
+                            '${DeckConnection.minAgentVersion}, hãy chạy lại agent'
+                        : 'Agent v${conn.agentVersion}',
+                    style: TextStyle(
+                      color: old ? DeckColors.warn : DeckColors.muted,
+                      fontSize: 11,
+                      height: 1.2,
+                    ),
+                  );
+                }),
+              ],
               if (store.fingerprint.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Row(
@@ -803,19 +821,24 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
 
   Widget _statusBar(DeckConnection conn, Store store) {
     final (color, label) = switch (conn.state) {
+      ConnState.online when conn.agentOutdated => (
+          DeckColors.warn,
+          'Agent trên thiết bị là bản cũ — tắt cửa sổ agent rồi chạy lại '
+              'run_agent.bat'
+        ),
       ConnState.online => (
           conn.catalogStuck ? DeckColors.warn : DeckColors.live,
           conn.catalogStuck
-              ? 'Laptop chưa quét xong — xem cửa sổ agent'
+              ? 'Thiết bị chưa quét xong — xem cửa sổ agent'
               : (conn.catalogLoading && conn.catalog.isEmpty
                   ? 'Đang lấy danh sách ứng dụng…'
                   : (conn.hostName.isEmpty ? store.hostName : conn.hostName))
         ),
-      ConnState.connecting => (DeckColors.warn, 'Đang tìm laptop…'),
+      ConnState.connecting => (DeckColors.warn, 'Đang tìm thiết bị…'),
       ConnState.failed => (
           DeckColors.warn,
           conn.retryInSeconds > 0
-              ? 'Chưa thấy laptop · thử lại sau ${conn.retryInSeconds}s'
+              ? 'Chưa thấy thiết bị · thử lại sau ${conn.retryInSeconds}s'
               : 'Đang thử lại…'
         ),
       ConnState.needsPairing => (DeckColors.danger, 'Cần ghép cặp lại'),

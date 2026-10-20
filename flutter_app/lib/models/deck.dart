@@ -211,14 +211,14 @@ class DeckPage {
   }
 }
 
-/// Ứng dụng có trên laptop, do agent gửi về.
+/// Ứng dụng có trên thiết bị, do agent gửi về.
 class RemoteApp {
   final String id;
   final String name;
   final String exe;
   final Uint8List? icon;
 
-  /// Kích thước gốc thật của icon trên laptop, tính bằng pixel.
+  /// Kích thước gốc thật của icon trên thiết bị, tính bằng pixel.
   final int iconNative;
 
   RemoteApp({
@@ -241,13 +241,13 @@ class RemoteApp {
   }
 }
 
-/// Một cửa sổ của app trên laptop. Agent chỉ gửi danh sách này khi app có
+/// Một cửa sổ của app trên thiết bị. Agent chỉ gửi danh sách này khi app có
 /// từ hai cửa sổ trở lên — lúc đó ô mới hiện số 1, 2, 3...
 class RemoteWindow {
   final int hwnd;
   final String title;
 
-  /// Đang là cửa sổ ở trước nhất trên laptop.
+  /// Đang là cửa sổ ở trước nhất trên thiết bị.
   final bool active;
 
   const RemoteWindow(this.hwnd, this.title, {this.active = false});
@@ -279,10 +279,10 @@ class AppStatus {
   });
 }
 
-/// Chương trình đang mở trên laptop, cho mục "Thêm từ cửa sổ đang mở".
+/// Chương trình đang mở trên thiết bị, cho mục "Thêm từ cửa sổ đang mở".
 class RunningProgram {
   /// Mã ngắn do agent cấp. Gửi lại mã này để thêm, không bao giờ gửi đường
-  /// dẫn — đường dẫn chỉ nằm trên laptop.
+  /// dẫn — đường dẫn chỉ nằm trên thiết bị.
   final String token;
   final String name;
   final String exe;
