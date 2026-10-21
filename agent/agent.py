@@ -1,4 +1,4 @@
-"""HeDeck Agent — chạy nền trên laptop Windows, nhận lệnh từ điện thoại.
+"""HeDeck Agent — chạy nền trên thiết bị Windows, nhận lệnh từ điện thoại.
 
 Chạy:  python agent.py
 Quét lại danh sách app:  python agent.py --rescan
@@ -31,6 +31,10 @@ STATE_FILE = catalog.CONFIG_DIR / "agent.json"
 PAIR_WINDOW = 300          # mã ghép cặp sống 5 phút
 STATUS_INTERVAL = 1.5      # giây
 ALLOW_MACROS = True        # đặt False nếu không muốn điện thoại gõ phím vào máy
+# Tăng mỗi khi giao thức với app thay đổi. App so số này để báo người dùng
+# chạy lại agent sau khi cập nhật code — pull code xong mà quên tắt cửa sổ
+# agent cũ thì nó vẫn chạy bản cũ, mọi tính năng mới im lặng không hoạt động.
+AGENT_VERSION = 4
 ALLOW_POWER = True         # đặt False nếu không muốn điện thoại tắt/ngủ máy
 
 log = lambda *a: print(time.strftime("[%H:%M:%S]"), *a, flush=True)
@@ -229,14 +233,14 @@ class Agent:
         """In lại bảng thông tin, dùng cả lúc khởi động lẫn khi làm mới mã."""
         st = self.guard.status()
         lines = [
-            f"HeDeck Agent · {self.host_name}",
+            f"HeDeck Agent v{AGENT_VERSION} · {self.host_name}",
             f"Địa chỉ  : ws://{ip}:{port}",
             f"Mã ghép  : {self.pair_code}  ({self.code_status()})",
             f"Ứng dụng : {len(self.apps) if self.catalog_ready else 'đang quét…'}"
             f"  (danh mục v{catalog.CATALOG_VERSION})",
             f"Bảo vệ   : chỉ mạng nội bộ · chữ ký Ed25519 · "
             f"{st['banned']} IP bị chặn",
-            f"Thiết bị : {len(self.state['devices'])} đã ghép cặp",
+            f"Điện thoại: {len(self.state['devices'])} đã ghép cặp",
             f"Bật từ xa: {power.describe(self.wol)}",
         ]
         width = max(len(line) for line in lines) + 4
@@ -248,7 +252,7 @@ class Agent:
         print("  └" + "─" * width + "┘")
         for warning in self.wol.get("warnings", []):
             print(f"  [!] {warning}")
-        print("  Enter: mã mới · U: gỡ chặn IP · D: xoá thiết bị đã ghép · "
+        print("  Enter: mã mới · U: gỡ chặn IP · D: xoá điện thoại đã ghép · "
               "Ctrl+C: thoát\n")
 
     async def watch_console(self, ip, port):
@@ -267,7 +271,7 @@ class Agent:
                 count = len(self.state["devices"])
                 self.state["devices"] = {}
                 save_state(self.state)
-                log(f"Đã xoá {count} thiết bị đã ghép cặp. "
+                log(f"Đã xoá {count} điện thoại đã ghép cặp. "
                     "Hãy ghép cặp lại từ điện thoại.")
             else:
                 self.new_pair_code(announce=False)
@@ -293,9 +297,9 @@ class Agent:
         # đã sinh khoá mới — chuyện thường gặp sau khi cài lại app. Nói thẳng
         # ra để app đưa người dùng đi ghép cặp lại, thay vì thử lại vô ích.
         if claimed_key and claimed_key != stored:
-            log(f"Khoá thiết bị đã đổi: đã lưu {security.fingerprint(stored)}, "
+            log(f"Khoá điện thoại đã đổi: đã lưu {security.fingerprint(stored)}, "
                 f"máy gửi {security.fingerprint(claimed_key)}")
-            return (False, "Khoá thiết bị đã thay đổi, cần ghép cặp lại",
+            return (False, "Khoá điện thoại đã thay đổi, cần ghép cặp lại",
                     "key_changed")
 
         message = f"{device_id}|{ts}|{nonce}".encode()
@@ -634,7 +638,7 @@ class Agent:
                         await ws.send(json.dumps({
                             "t": "error",
                             "msg": "Mã đã hết hạn. Nhấn Enter ở cửa sổ agent "
-                                   "trên laptop để lấy mã mới.",
+                                   "trên thiết bị để lấy mã mới.",
                         }))
                         continue
 
@@ -669,6 +673,7 @@ class Agent:
                         "host_name": self.host_name,
                         "fingerprint": security.fingerprint(pubkey),
                         "wol": power.public_view(self.wol),
+                        "v": AGENT_VERSION,
                     }))
                     self.new_pair_code()
                     continue
@@ -681,8 +686,8 @@ class Agent:
                     if not ok:
                         if code == "unknown_device":
                             log("Điện thoại nhớ ghép cặp cũ nhưng agent đã "
-                                "xoá danh sách thiết bị. Trên app: bánh răng "
-                                "→ Quên laptop này, rồi ghép cặp lại.")
+                                "xoá danh sách điện thoại. Trên app: bánh răng "
+                                "→ Quên thiết bị này, rồi ghép cặp lại.")
                         # Khoá đổi hoặc thiết bị lạ đều là tình huống bình
                         # thường sau khi cài lại app hay xoá danh sách, không
                         # phải dấu hiệu tấn công — đừng tính vào bộ đếm chặn.
@@ -702,7 +707,8 @@ class Agent:
                     log(f"Đã kết nối: {name} ({peer})")
                     await ws.send(json.dumps({
                         "t": "auth_ok", "host_name": self.host_name,
-                        "wol": power.public_view(self.wol)}))
+                        "wol": power.public_view(self.wol),
+                        "v": AGENT_VERSION}))
                     continue
 
                 if not authed:

@@ -22,7 +22,7 @@ $nl
     <!-- Noi chuyen voi agent qua LAN -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- Can cho mDNS: nhan goi multicast khi do tim laptop -->
+    <!-- Can cho mDNS: nhan goi multicast khi do tim thiet bi -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 "@

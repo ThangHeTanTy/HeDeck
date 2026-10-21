@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
-/// Thông tin bật máy mà agent gửi về khi laptop còn đang chạy.
+/// Thông tin bật máy mà agent gửi về khi thiết bị còn đang chạy.
 class WolInfo {
   /// MAC của các card mạng có dây, card đang cắm cáp đứng đầu.
   final List<String> macs;
@@ -10,7 +10,7 @@ class WolInfo {
   /// Địa chỉ broadcast của mạng LAN, ví dụ 192.168.1.255. Rỗng nếu chưa biết.
   final String broadcast;
 
-  /// Laptop đang cắm dây LAN. Không cắm dây thì máy tắt hẳn sẽ không nghe
+  /// Thiết bị đang cắm dây LAN. Không cắm dây thì máy tắt hẳn sẽ không nghe
   /// được gói tin bật máy.
   final bool wired;
 
@@ -69,7 +69,7 @@ Uint8List magicPacket(Uint8List mac) {
 
 /// Gửi gói tin bật máy. Trả về số gói đã gửi đi được.
 ///
-/// Gửi broadcast chứ không gửi thẳng IP của laptop: máy đã tắt thì không trả
+/// Gửi broadcast chứ không gửi thẳng IP của thiết bị: máy đã tắt thì không trả
 /// lời ARP, router không biết IP đó nằm ở đâu, gói tin gửi thẳng sẽ lạc. Gửi
 /// broadcast thì mọi card mạng trong LAN đều nhận, card nào thấy đúng MAC của
 /// mình thì đánh thức máy.

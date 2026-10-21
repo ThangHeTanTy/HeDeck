@@ -92,8 +92,9 @@ class _DeckTileViewState extends State<DeckTileView>
   TileFace get _face => widget.tile.face(widget.flipped);
 
   /// Hàng số 1, 2, 3... chỉ hiện khi app có từ hai cửa sổ trở lên.
+  /// Vẫn hiện cả lúc đang sửa bố cục (mờ đi, không bấm được), để không ai
+  /// tưởng tính năng đánh số bị hỏng chỉ vì đang ở chế độ sửa.
   bool get _showWindows =>
-      !widget.editing &&
       widget.tile.kind == TileKind.app &&
       widget.status.wins.length >= 2 &&
       widget.onPickWindow != null;
@@ -243,16 +244,24 @@ class _DeckTileViewState extends State<DeckTileView>
           right: 5,
           top: 5,
           height: _WindowChips.height,
-          child: _WindowChips(
-            windows: widget.status.wins,
-            onPick: (w) {
-              HapticFeedback.selectionClick();
-              widget.onPickWindow?.call(w);
-            },
-            onList: () {
-              HapticFeedback.mediumImpact();
-              widget.onWindowList?.call();
-            },
+          child: IgnorePointer(
+            // Đang sửa thì chạm ô nào cũng là mở màn hình sửa, kể cả chạm
+            // trúng hàng số.
+            ignoring: widget.editing,
+            child: Opacity(
+              opacity: widget.editing ? 0.45 : 1,
+              child: _WindowChips(
+                windows: widget.status.wins,
+                onPick: (w) {
+                  HapticFeedback.selectionClick();
+                  widget.onPickWindow?.call(w);
+                },
+                onList: () {
+                  HapticFeedback.mediumImpact();
+                  widget.onWindowList?.call();
+                },
+              ),
+            ),
           ),
         ),
       ],
@@ -481,7 +490,7 @@ class _WindowChips extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 3),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          // Cửa sổ đang ở trước trên laptop: tô đặc, nhìn là biết đang ở đâu.
+          // Cửa sổ đang ở trước trên thiết bị: tô đặc, nhìn là biết đang ở đâu.
           color: active ? DeckColors.live : DeckColors.bg,
           borderRadius: BorderRadius.circular(5),
           border: Border.all(color: DeckColors.live, width: 1),

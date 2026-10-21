@@ -161,6 +161,9 @@ def main():
     check("điện thoại nhận MAC lúc ghép cặp và lúc kết nối lại",
           source.count('"wol": power.public_view(self.wol)') >= 2,
           "Thiếu thì điện thoại không biết MAC để bật máy.")
+    check("báo phiên bản agent cho app lúc ghép cặp và kết nối",
+          source.count('"v": AGENT_VERSION') >= 2,
+          "Thiếu thì app không phát hiện được agent cũ chưa chạy lại.")
     check("lệnh nguồn trả lời trước rồi mới thực hiện",
           "self.power_later(" in source)
     check("tắt máy là tắt hẳn, không qua Fast Startup",

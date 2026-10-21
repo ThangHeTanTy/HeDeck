@@ -28,7 +28,7 @@ class Store extends ChangeNotifier {
   String hostName = '';
   List<DeckPage> pages = DeckPage.starter();
 
-  /// MAC card mạng có dây của laptop, để bật máy bằng Wake-on-LAN. Phải lưu
+  /// MAC card mạng có dây của thiết bị, để bật máy bằng Wake-on-LAN. Phải lưu
   /// lại vì lúc cần bật máy thì agent đã tắt theo, không ai trả lời nữa.
   List<String> wolMacs = [];
   String wolBroadcast = '';
@@ -105,7 +105,7 @@ class Store extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Lưu địa chỉ mới khi tự dò lại thấy laptop chuyển sang IP khác.
+  /// Lưu địa chỉ mới khi tự dò lại thấy thiết bị chuyển sang IP khác.
   Future<void> updateHost(String host, int port) async {
     if (host == this.host && port == this.port) return;
     this.host = host;

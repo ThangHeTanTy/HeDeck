@@ -26,7 +26,7 @@ class AppIcon extends StatefulWidget {
   /// Kích thước tối đa được phép chiếm.
   final double size;
 
-  /// Độ phân giải gốc trên laptop. Khác 0 thì icon sẽ không bao giờ được vẽ
+  /// Độ phân giải gốc trên thiết bị. Khác 0 thì icon sẽ không bao giờ được vẽ
   /// lớn hơn số pixel thật nó có — thà nhỏ hơn một chút còn hơn vỡ hình.
   final int nativePixels;
 

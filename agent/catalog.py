@@ -1,7 +1,7 @@
 """Danh mục ứng dụng của agent.
 
 Nguyên tắc bảo mật: điện thoại chỉ gửi `app_id`. Đường dẫn thật nằm ở đây,
-trên laptop. Không có lệnh nào cho phép điện thoại chạy một đường dẫn tuỳ ý.
+trên thiết bị. Không có lệnh nào cho phép điện thoại chạy một đường dẫn tuỳ ý.
 """
 
 import hashlib

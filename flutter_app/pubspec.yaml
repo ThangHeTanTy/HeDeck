@@ -1,5 +1,5 @@
 name: hedeck
-description: HeDeck — bảng điều khiển kiểu Steam Deck, mở và focus ứng dụng trên laptop Windows.
+description: HeDeck — bảng điều khiển kiểu Steam Deck, mở và focus ứng dụng trên thiết bị Windows.
 publish_to: 'none'
 version: 1.0.0+1
 

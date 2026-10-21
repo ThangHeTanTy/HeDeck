@@ -35,10 +35,10 @@ Future<void> main() async {
 
   // Tự kiểm tra ngay trên máy: vân tay khoá hiện tại phải trùng với vân tay
   // đã lưu lúc ghép cặp. Lệch nghĩa là khoá đã đổi (cài lại app, kho khoá
-  // hỏng), laptop chắc chắn không nhận ra nữa — dọn luôn thay vì để app thử
+  // hỏng), thiết bị chắc chắn không nhận ra nữa — dọn luôn thay vì để app thử
   // kết nối rồi nhận về lỗi chữ ký khó hiểu.
   final current = await identity.fingerprint();
-  debugPrint('HeDeck: vân tay khoá thiết bị = $current');
+  debugPrint('HeDeck: vân tay khoá điện thoại = $current');
 
   if (store.isPaired) {
     if (freshKey || (current.isNotEmpty && current != store.fingerprint)) {

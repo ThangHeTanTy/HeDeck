@@ -133,7 +133,7 @@ class _PairScreenState extends State<PairScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    'Kết nối tới laptop',
+                    'Kết nối tới thiết bị',
                     style: TextStyle(
                         color: DeckColors.text,
                         fontSize: 22,
@@ -222,8 +222,8 @@ class _PairScreenState extends State<PairScreen> {
                       Expanded(
                         child: Text(
                           _fingerprint.isEmpty
-                              ? 'Máy này chưa tạo được khoá thiết bị'
-                              : 'Khoá thiết bị $_fingerprint',
+                              ? 'Máy này chưa tạo được khoá điện thoại'
+                              : 'Khoá điện thoại $_fingerprint',
                           style: TextStyle(
                             color: _fingerprint.isEmpty
                                 ? DeckColors.danger
@@ -312,7 +312,7 @@ class _PairScreenState extends State<PairScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                   child: Row(
                     children: [
-                      const Icon(Icons.laptop_windows_rounded,
+                      const Icon(Icons.desktop_windows_rounded,
                           size: 16, color: DeckColors.live),
                       const SizedBox(width: 10),
                       Expanded(

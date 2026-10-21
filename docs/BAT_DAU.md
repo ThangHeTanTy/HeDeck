@@ -1,11 +1,11 @@
 # Bắt đầu trong 5 phút
 
-Hai phần chạy song song: **agent** trên laptop Windows, **app** trên điện thoại.
+Hai phần chạy song song: **agent** trên thiết bị Windows, **app** trên điện thoại.
 Cả hai phải cùng một mạng Wi-Fi.
 
 ---
 
-## Bước 1 — Laptop Windows
+## Bước 1 — Thiết bị Windows
 
 Cần Python 3.10+ ([tải tại python.org](https://www.python.org/downloads/), nhớ tick
 "Add Python to PATH" lúc cài).
@@ -90,7 +90,7 @@ Vài thao tác nên biết ngay:
 
 | Hiện tượng | Cách xử lý |
 |---|---|
-| App báo "Laptop từ chối kết nối" | Agent chưa chạy, hoặc Firewall chặn |
+| App báo "Thiết bị từ chối kết nối" | Agent chưa chạy, hoặc Firewall chặn |
 | Danh sách dò tìm trống | Router chặn multicast — gõ IP thủ công |
 | "Hết thời gian chờ" | Hai máy khác mạng (mạng khách, hoặc 2.4 GHz vs 5 GHz tách SSID) |
 | `flutter doctor` báo thiếu Android SDK | Cài Android Studio rồi chạy `flutter doctor --android-licenses` |

@@ -4,17 +4,17 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Danh tính của điện thoại đối với laptop.
+/// Danh tính của điện thoại đối với thiết bị.
 ///
 /// Điện thoại sinh một cặp khoá Ed25519. **Khoá công khai** gửi cho agent lúc
 /// ghép cặp; **khoá bí mật** nằm lại trong máy và không bao giờ rời khỏi đó.
-/// Agent chỉ giữ khoá công khai, nên kẻ đọc trộm file cấu hình trên laptop
+/// Agent chỉ giữ khoá công khai, nên kẻ đọc trộm file cấu hình trên thiết bị
 /// cũng không giả mạo được điện thoại.
 ///
 /// Khoá được lưu trong vùng dữ liệu riêng của app. Bản trước dùng
 /// `flutter_secure_storage`, nhưng thư viện đó dựa trên EncryptedSharedPrefs —
 /// đã bị Google ngừng phát triển và ghi/đọc hỏng lặng lẽ trên Android mới,
-/// khiến khoá bị sinh lại và laptop không còn nhận ra máy. Vùng dữ liệu riêng
+/// khiến khoá bị sinh lại và thiết bị không còn nhận ra máy. Vùng dữ liệu riêng
 /// của app không đọc được từ app khác trên máy chưa root, đủ an toàn ở đây và
 /// quan trọng hơn là **hoạt động ổn định**.
 class DeviceIdentity {
@@ -44,15 +44,15 @@ class DeviceIdentity {
     if (!isReady || publicKeyBase64.isEmpty) {
       throw StateError(
         lastError.isEmpty
-            ? 'Không tạo được khoá thiết bị'
-            : 'Không tạo được khoá thiết bị: $lastError',
+            ? 'Không tạo được khoá điện thoại'
+            : 'Không tạo được khoá điện thoại: $lastError',
       );
     }
   }
 
   /// Nạp cặp khoá đã có, hoặc sinh mới trong lần chạy đầu tiên.
   ///
-  /// Trả về `true` nếu phải sinh khoá mới — khi đó mọi laptop đã ghép cặp
+  /// Trả về `true` nếu phải sinh khoá mới — khi đó mọi thiết bị đã ghép cặp
   /// trước đó không còn nhận ra máy này nữa.
   Future<bool> load() async {
     lastError = '';
@@ -98,7 +98,7 @@ class DeviceIdentity {
   }
 
   /// Sinh cặp khoá mới. Gọi khi ghép cặp lần đầu hoặc khi muốn thu hồi
-  /// quyền của mọi laptop đã ghép trước đó.
+  /// quyền của mọi thiết bị đã ghép trước đó.
   ///
   /// Khoá luôn được đưa vào bộ nhớ trước, việc lưu xuống đĩa làm sau. Nhờ vậy
   /// máy nào không ghi được vẫn ghép cặp và dùng bình thường trong phiên đó,
@@ -133,7 +133,7 @@ class DeviceIdentity {
   /// Ký một thông điệp. Trả về chữ ký dạng base64.
   Future<String> sign(String message) async {
     final pair = _pair;
-    if (pair == null) throw StateError('Chưa có khoá thiết bị');
+    if (pair == null) throw StateError('Chưa có khoá điện thoại');
     final signature = await _ed25519.sign(utf8.encode(message), keyPair: pair);
     return base64Encode(signature.bytes);
   }

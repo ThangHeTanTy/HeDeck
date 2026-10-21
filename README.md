@@ -4,7 +4,7 @@
 
 # HeDeck
 
-**Biến điện thoại Android thành bàn điều khiển cho laptop Windows.**
+**Biến điện thoại Android thành bàn điều khiển cho thiết bị Windows.**
 
 Chạm một ô là ứng dụng trên máy tính mở lên và nhảy ra trước. Kèm điều khiển
 nhạc, âm lượng riêng từng ứng dụng, và các ô macro gõ tổ hợp phím.
@@ -31,14 +31,14 @@ nhạc, âm lượng riêng từng ứng dụng, và các ô macro gõ tổ hợ
 | **Bật máy từ xa** | Bật PC kể cả sau khi đã tắt hẳn (Wake-on-LAN). Khi máy đang chạy: khoá, ngủ, khởi động lại, tắt máy. |
 
 Ai dùng hợp: người livestream cần đổi cảnh và tắt mic nhanh, người làm việc
-nhiều cửa sổ, hoặc bất kỳ ai cắm laptop vào TV và ngồi xa bàn phím.
+nhiều cửa sổ, hoặc bất kỳ ai cắm thiết bị vào TV và ngồi xa bàn phím.
 
 ---
 
 ## Cách hoạt động
 
 ```
-   Điện thoại Android            Cùng mạng Wi-Fi              Laptop Windows
+   Điện thoại Android            Cùng mạng Wi-Fi              Thiết bị Windows
   ┌──────────────────┐                                    ┌──────────────────┐
   │   HeDeck (app)   │ ──── WebSocket ws://<ip>:8787 ────▶│  HeDeck Agent    │
   │  lưới ô, macro   │                                    │  mở app, focus   │
@@ -46,20 +46,20 @@ nhiều cửa sổ, hoặc bất kỳ ai cắm laptop vào TV và ngồi xa bàn
   └──────────────────┘                                    └──────────────────┘
 ```
 
-Cần **hai phần**: app trên điện thoại và agent chạy nền trên laptop. Điện thoại
+Cần **hai phần**: app trên điện thoại và agent chạy nền trên thiết bị. Điện thoại
 không tự mở được ứng dụng trên máy tính, nên agent là bắt buộc.
 
 ---
 
 ## Yêu cầu
 
-**Laptop**
+**Thiết bị**
 - Windows 10 hoặc 11
 - [Python 3.10+](https://www.python.org/downloads/) — nhớ tick *Add python.exe to PATH* lúc cài
 
 **Điện thoại**
 - Android 7.0 trở lên
-- Cùng mạng Wi-Fi với laptop
+- Cùng mạng Wi-Fi với thiết bị
 
 **Chỉ cần nếu bạn tự build từ mã nguồn**
 - [Flutter SDK](https://docs.flutter.dev/get-started/install/windows) — giải nén vào `C:\flutter`, tránh thư mục có dấu cách
@@ -69,7 +69,7 @@ không tự mở được ứng dụng trên máy tính, nên agent là bắt bu
 
 ## Cài đặt
 
-### Bước 1 — Chạy agent trên laptop
+### Bước 1 — Chạy agent trên thiết bị
 
 ```
 agent\run_agent.bat
@@ -88,7 +88,7 @@ Cửa sổ hiện ra:
   │  Ứng dụng : 75  (danh mục v9)               │
   │  Bảo vệ   : chỉ mạng nội bộ · Ed25519       │
   └─────────────────────────────────────────────┘
-  Enter: mã mới · U: gỡ chặn IP · D: xoá thiết bị · Ctrl+C: thoát
+  Enter: mã mới · U: gỡ chặn IP · D: xoá điện thoại · Ctrl+C: thoát
 ```
 
 Ghi lại **địa chỉ IP** và **mã 6 số**. Giữ cửa sổ này mở trong lúc dùng.
@@ -116,7 +116,7 @@ File nằm ở `flutter_app\build\app\outputs\flutter-apk\app-release.apk`.
 Mở app, nhập địa chỉ IP và mã 6 số ở Bước 1, bấm **Ghép cặp**. Xong.
 
 Mã dùng một lần và hết hạn sau 5 phút. Sau khi ghép, điện thoại tự kết nối ở
-những lần mở app sau — kể cả khi router đổi IP của laptop.
+những lần mở app sau — kể cả khi router đổi IP của thiết bị.
 
 ---
 
@@ -152,7 +152,7 @@ những lần mở app sau — kể cả khi router đổi IP của laptop.
 
 Chạm dấu cộng → chọn loại ô:
 
-- **Ứng dụng** — chọn từ danh sách app trên laptop
+- **Ứng dụng** — chọn từ danh sách app trên thiết bị
 - **Macro** — nhập tổ hợp phím, nhiều bước thì ngăn bằng dấu phẩy: `win+d, alt+tab`
 - **Media** — phát, tạm dừng, bài kế, âm lượng chung
 - **Âm lượng** — chỉnh tiếng của đúng một app, mỗi lần bấm đổi 5%
@@ -195,12 +195,12 @@ Ba tầng độc lập nhau:
 2. **Phát hiện IP lạ.** Sai mã 5 lần thì khoá tạm 15 phút; tái phạm 3 lần thì
    chặn vĩnh viễn. Cảnh báo hiện thẳng trên cửa sổ agent kèm địa chỉ IP.
 3. **Chữ ký một chiều.** Điện thoại sinh cặp khoá Ed25519; khoá bí mật không
-   bao giờ rời khỏi máy. Laptop chỉ giữ khoá công khai, nên đọc trộm file cấu
-   hình trên laptop cũng không giả mạo được thiết bị.
+   bao giờ rời khỏi máy. Thiết bị chỉ giữ khoá công khai, nên đọc trộm file cấu
+   hình trên thiết bị cũng không giả mạo được điện thoại.
 
 Ngoài ra, điện thoại **chỉ gửi mã định danh ứng dụng**, không bao giờ gửi đường
 dẫn hay lệnh shell. Kể cả khi vượt được cả ba tầng, kẻ tấn công chỉ mở được đúng
-những app đã có sẵn trong danh mục trên laptop.
+những app đã có sẵn trong danh mục trên thiết bị.
 
 **Giới hạn cần biết:** kênh truyền là `ws://` chưa mã hoá. Người cùng mạng có
 thể thấy bạn mở app nào, dù không thể tự mở app. Ở mạng nhà thì chấp nhận được,
@@ -211,6 +211,21 @@ thể thấy bạn mở app nào, dù không thể tự mở app. Ở mạng nh�
 ## Xử lý sự cố
 
 <details>
+<summary><b>Cập nhật code xong mà không thấy tính năng mới</b></summary>
+
+Pull code chỉ thay file trên ổ đĩa, **chương trình đang chạy vẫn là bản cũ**:
+
+1. **Agent:** đóng cửa sổ agent (Ctrl+C), chạy lại `agent\run_agent.bat`. Dòng
+   đầu bảng thông tin phải ghi đúng phiên bản mới, ví dụ `HeDeck Agent v4`.
+   Nếu đang dùng `HeDeckAgent.exe` thì phải chạy `build_exe.bat` lại.
+2. **App:** build và cài lại (`CHAY_APP.bat`, hoặc Run trong Android Studio).
+   Hot reload không đủ khi code dịch vụ thay đổi.
+
+App tự phát hiện agent cũ: thanh trên cùng báo vàng *Agent trên thiết bị là
+bản cũ*, và menu tuỳ chọn ghi phiên bản agent đang chạy.
+</details>
+
+<details>
 <summary><b>App không kết nối được</b></summary>
 
 Kiểm tra theo thứ tự:
@@ -219,7 +234,7 @@ Kiểm tra theo thứ tự:
 2. Hai máy có **cùng một mạng Wi-Fi** không — cẩn thận mạng khách, và router
    phát hai SSID riêng cho 2.4 GHz với 5 GHz
 3. Windows Firewall đã cho phép Python ở mạng riêng chưa
-4. IP của laptop có đổi không — bấm nút **↻** trên thanh trên của app
+4. IP của thiết bị có đổi không — bấm nút **↻** trên thanh trên của app
 
 App tự thử lại mãi, tối đa 20 giây một lần, và tự dò lại địa chỉ mới bằng mDNS
 sau vài lần hụt.
@@ -273,7 +288,7 @@ hơn là chọn icon vector từ thư viện trong màn hình sửa ô.
 <details>
 <summary><b>Ghép cặp báo "Thiếu khoá công khai"</b></summary>
 
-Màn hình ghép cặp có dòng *Khoá thiết bị XXXX:XXXX:XXXX* ngay trên nút bấm.
+Màn hình ghép cặp có dòng *Khoá điện thoại XXXX:XXXX:XXXX* ngay trên nút bấm.
 Hiện vân tay là khoá đã có; hiện chữ đỏ nghĩa là khâu tạo khoá hỏng, và thông
 báo lúc bấm Ghép cặp sẽ nói rõ lý do.
 </details>
@@ -328,7 +343,7 @@ này với `MaskFilter.blur` trong logo, và đã thay bằng cách xếp lớp.
 <details>
 <summary><b>Test trên máy ảo Android</b></summary>
 
-Máy ảo không thấy được mạng LAN của laptop. Mở cửa sổ PowerShell thứ hai:
+Máy ảo không thấy được mạng LAN của thiết bị. Mở cửa sổ PowerShell thứ hai:
 
 ```powershell
 adb reverse tcp:8787 tcp:8787
@@ -349,7 +364,7 @@ hedeck/
 ├── BUILD_APK.bat          xuất APK bản phát hành
 ├── SUA_LOI_*.bat          các script sửa lỗi môi trường
 ├── DON_DEP.bat            xoá file thừa sót lại từ bản cũ
-├── agent/                 phần chạy trên laptop Windows
+├── agent/                 phần chạy trên thiết bị Windows
 │   ├── run_agent.bat
 │   ├── agent.py           server WebSocket, ghép cặp, xác thực
 │   ├── win_control.py     mở app, focus cửa sổ, gõ phím

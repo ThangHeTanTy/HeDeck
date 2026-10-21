@@ -5,7 +5,7 @@
   Lưu ý: network-security-config chỉ khớp theo tên miền, không khớp theo dải IP,
   nên không thể chỉ mở riêng 192.168.x.x. Ở đây mở cleartext toàn cục.
   Rủi ro được kiềm chế ở tầng giao thức: mọi lệnh đều phải qua HMAC, và agent
-  chỉ chạy được app đã có trong danh mục trên laptop.
+  chỉ chạy được app đã có trong danh mục trên thiet bi.
 
   Hướng nâng cấp: agent tự sinh chứng chỉ, app ghim chứng chỉ lúc ghép cặp,
   rồi chuyển sang wss:// và đặt lại cleartextTrafficPermitted="false".

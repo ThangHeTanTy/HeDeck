@@ -341,7 +341,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
                 onChanged: (v) => setState(() => _search = v),
                 style: const TextStyle(color: DeckColors.text),
                 decoration: const InputDecoration(
-                  hintText: 'Tìm ứng dụng trên laptop',
+                  hintText: 'Tìm ứng dụng trên thiết bị',
                   prefixIcon: Icon(Icons.search_rounded,
                       size: 18, color: DeckColors.muted),
                 ),
@@ -371,7 +371,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
         if (!conn.isOnline)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
-            child: Text('Chưa kết nối tới laptop nên không lấy được danh sách.',
+            child: Text('Chưa kết nối tới thiết bị nên không lấy được danh sách.',
                 style: TextStyle(color: DeckColors.muted, fontSize: 13)),
           )
         else if (conn.catalogLoading && conn.catalog.isEmpty)
@@ -386,7 +386,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
                       strokeWidth: 2, color: DeckColors.muted),
                 ),
                 SizedBox(width: 10),
-                Text('Đang lấy danh sách từ laptop…',
+                Text('Đang lấy danh sách từ thiết bị…',
                     style: TextStyle(color: DeckColors.muted, fontSize: 13)),
               ],
             ),
@@ -395,7 +395,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
             child: Text(
-              'Laptop chưa gửi được danh sách ứng dụng. Bấm nút làm mới bên '
+              'Thiết bị chưa gửi được danh sách ứng dụng. Bấm nút làm mới bên '
               'phải, hoặc xem cửa sổ agent có báo lỗi không.',
               style:
                   TextStyle(color: DeckColors.muted, fontSize: 13, height: 1.4),
@@ -616,7 +616,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              app?.name ?? 'App không còn trên laptop',
+              app?.name ?? 'App không còn trên thiết bị',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -673,7 +673,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
     );
   }
 
-  /// Chọn một chương trình đang mở trên laptop. Chưa có trong danh sách thì
+  /// Chọn một chương trình đang mở trên thiết bị. Chưa có trong danh sách thì
   /// nhờ agent thêm vào trước. Trả về app_id.
   Future<String?> _pickRunning() {
     return showModalBottomSheet<String>(
@@ -836,7 +836,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
   }
 }
 
-/// Danh sách chương trình đang có cửa sổ trên laptop, giống thanh taskbar.
+/// Danh sách chương trình đang có cửa sổ trên thiết bị, giống thanh taskbar.
 class _RunningSheet extends StatefulWidget {
   const _RunningSheet();
 
@@ -1018,7 +1018,7 @@ class _CatalogSheetState extends State<_CatalogSheet> {
               onChanged: (v) => setState(() => _q = v),
               style: const TextStyle(color: DeckColors.text),
               decoration: const InputDecoration(
-                hintText: 'Tìm ứng dụng trên laptop',
+                hintText: 'Tìm ứng dụng trên thiết bị',
                 prefixIcon: Icon(Icons.search_rounded,
                     size: 18, color: DeckColors.muted),
               ),
