@@ -21,6 +21,8 @@ nhạc, âm lượng riêng từng ứng dụng, và các ô macro gõ tổ hợ
 |---|---|
 | **Mở và chuyển ứng dụng** | Chạm ô là app mở lên rồi nhảy ra trước. Đang chạy thì chạm để thu nhỏ, giữ 3 giây để tắt hẳn. |
 | **Chọn từng cửa sổ** | Mở 3 cửa sổ Chrome thì ô hiện số 1, 2, 3 phía trên icon — chạm số nào ra cửa sổ đó, như taskbar Windows. |
+| **Tự đổi trang** | Như Stream Deck: vào Liên Minh thì deck tự sang trang Game, về desktop thì về trang Làm việc. |
+| **Touchpad và bàn phím** | Điều khiển chuột, cuộn, kéo thả và gõ chữ tiếng Việt từ xa. |
 | **Ô chế độ** | Một chạm mở và đóng nhiều app: "Chơi game" mở Discord + Liên Minh, tắt Chrome. |
 | **Macro phím tắt** | Một ô gõ `ctrl+shift+p`, hoặc cả chuỗi nhiều bước. |
 | **Âm lượng riêng từng app** | Hạ nhạc nền mà không hạ giọng nói — thứ mà nút âm lượng trên bàn phím không làm được. |
@@ -171,6 +173,37 @@ muốn bấm bật bấm tắt.
 
 Vào bánh răng để đổi giữa **5×2** (10 ô, ô lớn) và **5×3** (15 ô, ô nhỏ hơn).
 Đổi qua lại không mất dữ liệu — mỗi trang luôn giữ đủ 15 chỗ.
+
+---
+
+## Tự đổi trang theo app đang dùng
+
+Bánh răng → **Tự mở trang này khi…** → chọn app (hoặc *màn hình desktop*). Ví
+dụ trang **Game** gắn với Liên Minh và VALORANT, trang **Làm việc** gắn với
+desktop. Trang đã gắn có dấu ⚡ cạnh tên ở thanh dưới.
+
+Deck chỉ đổi trang lúc bạn **chuyển sang app khác** trên thiết bị — tự vuốt
+sang trang khác thì nó để yên, không giành lại. Đang sửa bố cục hoặc đang mở
+màn hình khác thì cũng không đổi. Tắt hẳn bằng công tắc *Tự đổi trang theo app
+đang dùng* trong cùng menu.
+
+## Touchpad và bàn phím ảo
+
+Nút chuột 🖱 trên thanh trên cùng.
+
+| Cử chỉ | Được gì |
+|---|---|
+| Một ngón kéo | Di chuột, vuốt nhanh thì con trỏ đi xa |
+| Một ngón chạm | Chuột trái |
+| Hai ngón chạm / ba ngón chạm | Chuột phải / chuột giữa |
+| Hai ngón kéo | Cuộn dọc và ngang |
+| Giữ yên một ngón rồi kéo | Kéo thả (viền tím khi đang giữ chuột) |
+
+Nút ⌨ mở bàn phím: chữ gõ hiện thẳng trên thiết bị, kể cả tiếng Việt Telex/VNI
+(gõ trên điện thoại, máy tính nhận chữ đã có dấu — không cần bật Unikey). Hàng
+phím nhanh: Esc, Tab, mũi tên, Ctrl+C/V/Z, Alt+Tab, Win+D… Tốc độ con trỏ
+chỉnh ở nút đồng hồ. Đặt `ALLOW_REMOTE_INPUT = False` trong `agent.py` để
+chặn tính năng này.
 
 ---
 
@@ -373,6 +406,7 @@ hedeck/
 │   ├── icon_source.py     lấy icon độ phân giải gốc
 │   ├── app_volume.py      âm lượng riêng từng app
 │   ├── power.py           tắt/ngủ/khoá máy, thông tin Wake-on-LAN
+│   ├── remote_input.py    touchpad, bàn phím ảo
 │   ├── CAI_BAT_MAY_TU_XA.bat   cấu hình Windows cho Wake-on-LAN
 │   ├── TU_CHAY_CUNG_WINDOWS.bat agent tự chạy khi đăng nhập
 │   ├── security.py        chặn IP lạ, chữ ký Ed25519
@@ -405,7 +439,7 @@ Nó đọc mã nguồn bằng AST và bắt những lỗi mắt người dễ b�
 khai báo rồi nhưng chưa được khởi động, một phương thức không ai gọi, một lệnh
 thiếu nhánh xử lý.
 
-**Hướng phát triển còn bỏ ngỏ:** kết nối Bluetooth, touchpad ảo, nâng lên
+**Hướng phát triển còn bỏ ngỏ:** kết nối Bluetooth, nâng lên
 `wss://` có mã hoá, ô nhiều bước có độ trễ, ô nguồn đặt thẳng trên lưới,
 bật máy từ ngoài mạng nhà qua một thiết bị trung chuyển.
 

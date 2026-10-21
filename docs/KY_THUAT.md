@@ -302,6 +302,24 @@ chỉ nằm trên thiết bị. App được ghi vào `them_ung_dung.json`.
 Ô chế độ: `scene` với `steps: [{"app_id", "close"}]`, tối đa 20 bước. Chạy ở
 tác vụ nền, lần lượt: `close` thì đóng app, còn lại mở nếu chưa chạy.
 
+Tự đổi trang: `status` mang thêm `fg: {"apps": [app_id…], "desk": bool}` —
+mọi app trong danh mục khớp cửa sổ đang ở trước (Chrome có thể khớp nhiều ô
+profile), và có đang ở desktop (lớp `Progman`/`WorkerW`) không. hwnd 0 lúc
+Alt+Tab không tính là desktop. App chỉ đổi trang khi giá trị này **thay đổi**,
+nên người dùng tự vuốt trang thì không bị giành lại. Trang lưu `autoApps` và
+`autoDesktop`; chỉ một trang làm trang desktop.
+
+Touchpad, bàn phím ảo: `mouse_move` (`dx`, `dy`, tối đa ±400), `mouse_button`
+(`button`: left/right/middle, `action`: click/double/down/up), `mouse_scroll`
+(`dy`, `dx` theo nấc, tối đa ±20), `type_text` (`text`, tối đa 500 ký tự, gửi
+dạng Unicode nên không phụ thuộc bộ gõ trên máy tính), `key` (`combo` như
+macro). Đi qua `SendInput`, gọi thẳng trong vòng sự kiện chứ không qua
+executor — qua nhiều luồng thì nhấp chuột có thể chạy trước lần di chuyển
+gửi trước nó. Không trả lời, trừ khi lỗi. Điện thoại gom chuyển động gửi mỗi
+16 ms. Bàn phím ảo chờ bộ gõ ghép xong chữ (vùng composing rỗng) rồi gửi phần
+chênh lệch; một ký tự rỗng `\u200b` canh đầu ô nhập để bắt được phím xoá khi
+ô trống.
+
 Nguồn: `power` (`action` là `lock` | `sleep` | `restart` | `shutdown`, `force`
 để đóng luôn app chưa lưu). Agent trả `{"t":"power"}` trước rồi 0,8 giây sau
 mới thực hiện, vì tắt máy xong thì không còn kết nối để trả lời. Tắt máy dùng
@@ -624,6 +642,7 @@ agent/
   catalog.py        quét Start Menu, Desktop, danh mục app
   launchers.py      tìm game từ Riot, Steam, Epic
   power.py          tắt/ngủ/khoá máy, đọc MAC cho Wake-on-LAN
+  remote_input.py   touchpad, bàn phím ảo (SendInput)
 flutter_app/
   lib/main.dart
   lib/theme.dart
@@ -642,7 +661,6 @@ phải viết lại giao diện:
 1. **Bluetooth SPP** — thay phần mở socket, giữ nguyên JSON và HMAC.
 2. **USB qua `adb reverse tcp:8787 tcp:8787`** — chỉ cần đổi host thành
    `127.0.0.1`, không sửa dòng code nào khác.
-3. **Touchpad ảo** — thêm lệnh `mouse` với delta toạ độ, dùng `SendInput`.
-4. **wss:// + ghim chứng chỉ** — đóng nốt lỗ hổng nghe lén.
-5. **Đóng gói agent thành `.exe` + icon khay hệ thống + tự chạy cùng Windows**
+3. **wss:// + ghim chứng chỉ** — đóng nốt lỗ hổng nghe lén.
+4. **Đóng gói agent thành `.exe` + icon khay hệ thống + tự chạy cùng Windows**
    (`pyinstaller --noconsole --onefile agent.py` kèm `pystray`).

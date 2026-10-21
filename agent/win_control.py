@@ -346,6 +346,18 @@ def window_title(hwnd: int) -> str:
         return ""
 
 
+def is_desktop(hwnd: int) -> bool:
+    """Cửa sổ ở trước là màn hình desktop (đã thu nhỏ hết, hoặc Win+D)."""
+    # hwnd 0 xảy ra thoáng qua lúc Alt+Tab: không biết gì thì đừng coi là
+    # desktop, kẻo deck nhảy về trang desktop rồi lại nhảy đi.
+    if not hwnd:
+        return False
+    try:
+        return win32gui.GetClassName(hwnd).lower() in ("progman", "workerw")
+    except Exception:
+        return False
+
+
 def foreground() -> int:
     try:
         return win32gui.GetForegroundWindow() or 0

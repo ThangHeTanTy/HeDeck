@@ -50,13 +50,18 @@ class DeckConnection extends ChangeNotifier {
 
   /// Bản app này cần agent tối thiểu bản này: đánh số cửa sổ, thêm từ cửa
   /// sổ đang mở, ô chế độ, quét game từ launcher.
-  static const minAgentVersion = 4;
+  static const minAgentVersion = 5;
 
   /// Đã kết nối nhưng agent trên thiết bị vẫn chạy code cũ — thường do pull
   /// code xong mà chưa tắt cửa sổ agent đi chạy lại.
   bool get agentOutdated => isOnline && agentVersion < minAgentVersion;
 
   Map<String, AppStatus> statuses = {};
+
+  /// App đang ở trước trên thiết bị (mọi ô app khớp với nó), và có đang ở
+  /// màn hình desktop không. Dùng để tự đổi trang.
+  List<String> foregroundApps = const [];
+  bool foregroundDesktop = false;
 
   /// Agent đang quét Start Menu. Danh mục sẽ tự đến khi xong.
   bool catalogLoading = false;
@@ -335,6 +340,24 @@ class DeckConnection extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ------------------------------------------------- touchpad, bàn phím ảo
+
+  void mouseMove(int dx, int dy) =>
+      _send({'t': 'mouse_move', 'dx': dx, 'dy': dy});
+
+  /// button: left | right | middle. action: click | double | down | up.
+  void mouseButton(String button, [String action = 'click']) =>
+      _send({'t': 'mouse_button', 'button': button, 'action': action});
+
+  /// Số nấc cuộn. dy dương là cuộn lên.
+  void mouseScroll({int dy = 0, int dx = 0}) =>
+      _send({'t': 'mouse_scroll', 'dy': dy, 'dx': dx});
+
+  void typeText(String text) => _send({'t': 'type_text', 'text': text});
+
+  /// Một phím hoặc tổ hợp: 'enter', 'backspace', 'ctrl+c'...
+  void key(String combo) => _send({'t': 'key', 'combo': combo});
+
   /// Ô chế độ: mở/đóng nhiều app theo thứ tự.
   void scene(List<SceneStep> steps) =>
       _send({'t': 'scene', 'steps': steps.map((s) => s.toJson()).toList()});
@@ -459,6 +482,11 @@ class DeckConnection extends ChangeNotifier {
                   .toList(),
             )
         };
+        final fg = msg['fg'];
+        if (fg is Map) {
+          foregroundApps = (fg['apps'] as List? ?? const []).cast<String>();
+          foregroundDesktop = fg['desk'] as bool? ?? false;
+        }
         // Cửa sổ đã hiện ra thì thôi chờ: viền tím nhường chỗ cho viền xanh.
         for (final id in _pending.keys.toList()) {
           if (statuses[id]?.running == true) _clearPending(id);
