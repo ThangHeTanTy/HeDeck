@@ -23,6 +23,7 @@ nhạc, âm lượng riêng từng ứng dụng, và các ô macro gõ tổ hợ
 | **Chọn từng cửa sổ** | Mở 3 cửa sổ Chrome thì ô hiện số 1, 2, 3 phía trên icon — chạm số nào ra cửa sổ đó, như taskbar Windows. |
 | **Tự đổi trang** | Như Stream Deck: vào Liên Minh thì deck tự sang trang Game, về desktop thì về trang Làm việc. |
 | **Touchpad và bàn phím** | Điều khiển chuột, cuộn, kéo thả và gõ chữ tiếng Việt từ xa. |
+| **Đo hiệu năng** | FPS, 1% low, nhiệt độ và tải CPU/GPU, VRAM, RAM, mạng — như màn hình test máy ở cửa hàng. |
 | **Ô chế độ** | Một chạm mở và đóng nhiều app: "Chơi game" mở Discord + Liên Minh, tắt Chrome. |
 | **Macro phím tắt** | Một ô gõ `ctrl+shift+p`, hoặc cả chuỗi nhiều bước. |
 | **Âm lượng riêng từng app** | Hạ nhạc nền mà không hạ giọng nói — thứ mà nút âm lượng trên bàn phím không làm được. |
@@ -204,6 +205,27 @@ Nút ⌨ mở bàn phím: chữ gõ hiện thẳng trên thiết bị, kể cả
 phím nhanh: Esc, Tab, mũi tên, Ctrl+C/V/Z, Alt+Tab, Win+D… Tốc độ con trỏ
 chỉnh ở nút đồng hồ. Đặt `ALLOW_REMOTE_INPUT = False` trong `agent.py` để
 chặn tính năng này.
+
+---
+
+## Đo hiệu năng khi chơi game
+
+Nút ❤ (biểu tượng nhịp tim) trên thanh trên cùng. Xoay ngang để xem ba cột
+FPS · CPU · GPU cùng lúc. Cập nhật mỗi giây, có đường xu hướng 60 giây. Agent
+chỉ đo khi tab này đang mở, rời tab là thôi đo.
+
+| Thông số | Cần gì |
+|---|---|
+| Tải CPU từng luồng, RAM, mạng | Không cần gì thêm |
+| GPU NVIDIA: nhiệt độ, tải, VRAM, xung, công suất, quạt | Không cần gì thêm (đọc qua driver NVIDIA) |
+| **FPS, 1% low, frametime** | **RivaTuner Statistics Server** — cài kèm [MSI Afterburner](https://www.msi.com/Landing/afterburner/graphics-cards). Mở RTSS trước khi vào game |
+| **Nhiệt độ, xung, công suất CPU** | **[LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)** chạy quyền Administrator, bật *Options → Remote Web Server → Run* |
+
+Windows không có cách chung nào để đọc FPS hay nhiệt độ CPU, nên hai thứ cuối
+phải nhờ phần mềm chuyên dụng — cũng chính là bộ mà các cửa hàng dùng khi test
+máy. Thiếu phần nào thì ô đó hiện gạch ngang kèm lời nhắc, phần còn lại vẫn
+chạy. *1% low* là FPS trung bình của 1% khung hình chậm nhất: FPS cao mà 1% low
+thấp nghĩa là game bị giật.
 
 ---
 
@@ -407,6 +429,7 @@ hedeck/
 │   ├── app_volume.py      âm lượng riêng từng app
 │   ├── power.py           tắt/ngủ/khoá máy, thông tin Wake-on-LAN
 │   ├── remote_input.py    touchpad, bàn phím ảo
+│   ├── perf.py            đo FPS, nhiệt độ, tải CPU/GPU
 │   ├── CAI_BAT_MAY_TU_XA.bat   cấu hình Windows cho Wake-on-LAN
 │   ├── TU_CHAY_CUNG_WINDOWS.bat agent tự chạy khi đăng nhập
 │   ├── security.py        chặn IP lạ, chữ ký Ed25519

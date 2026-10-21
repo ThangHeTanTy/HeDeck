@@ -7,6 +7,7 @@ import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/deck.dart';
+import '../models/perf.dart';
 import 'device_identity.dart';
 import 'discovery.dart';
 import 'wake_on_lan.dart';
@@ -50,7 +51,7 @@ class DeckConnection extends ChangeNotifier {
 
   /// Bản app này cần agent tối thiểu bản này: đánh số cửa sổ, thêm từ cửa
   /// sổ đang mở, ô chế độ, quét game từ launcher.
-  static const minAgentVersion = 5;
+  static const minAgentVersion = 6;
 
   /// Đã kết nối nhưng agent trên thiết bị vẫn chạy code cũ — thường do pull
   /// code xong mà chưa tắt cửa sổ agent đi chạy lại.
@@ -62,6 +63,13 @@ class DeckConnection extends ChangeNotifier {
   /// màn hình desktop không. Dùng để tự đổi trang.
   List<String> foregroundApps = const [];
   bool foregroundDesktop = false;
+
+  /// Lần đo hiệu năng mới nhất, khi tab Hiệu năng đang mở.
+  PerfSample? perf;
+  bool _perfWanted = false;
+
+  /// Gọi mỗi lần có số đo mới, để màn hình Hiệu năng cộng vào biểu đồ.
+  void Function(PerfSample sample)? onPerf;
 
   /// Agent đang quét Start Menu. Danh mục sẽ tự đến khi xong.
   bool catalogLoading = false;
@@ -355,6 +363,14 @@ class DeckConnection extends ChangeNotifier {
 
   void typeText(String text) => _send({'t': 'type_text', 'text': text});
 
+  /// Bật/tắt đo hiệu năng. Agent chỉ đo khi có người xem, nên rời tab là
+  /// phải tắt. Nhớ lại để kết nối lại giữa chừng thì tự xin tiếp.
+  void perfWatch(bool on) {
+    _perfWanted = on;
+    if (!on) perf = null;
+    _send({'t': 'perf_watch', 'on': on});
+  }
+
   /// Một phím hoặc tổ hợp: 'enter', 'backspace', 'ctrl+c'...
   void key(String combo) => _send({'t': 'key', 'combo': combo});
 
@@ -431,6 +447,7 @@ class DeckConnection extends ChangeNotifier {
         retryAt = null;
         _setState(ConnState.online);
         requestCatalog();
+        if (_perfWanted) _send({'t': 'perf_watch', 'on': true});
         break;
 
       case 'catalog_pending':
@@ -491,6 +508,12 @@ class DeckConnection extends ChangeNotifier {
         for (final id in _pending.keys.toList()) {
           if (statuses[id]?.running == true) _clearPending(id);
         }
+        notifyListeners();
+        break;
+
+      case 'perf':
+        perf = PerfSample.fromJson(msg);
+        onPerf?.call(perf!);
         notifyListeners();
         break;
 

@@ -365,6 +365,12 @@ def foreground() -> int:
         return 0
 
 
+def foreground_pid() -> int:
+    """Tiến trình của cửa sổ đang ở trước — để biết đo FPS của game nào."""
+    hwnd = foreground()
+    return _pid_of(hwnd) if hwnd else 0
+
+
 def focus_or_minimize(hwnd: int) -> str:
     """Giống bấm vào ô xem trước trên taskbar: cửa sổ đang ở trước thì thu
     nhỏ, còn lại thì đưa lên trước."""
