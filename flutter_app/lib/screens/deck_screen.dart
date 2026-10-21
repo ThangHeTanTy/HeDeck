@@ -16,6 +16,7 @@ import '../widgets/clown_logo.dart';
 import '../widgets/deck_tile_view.dart';
 import '../widgets/media_bar.dart';
 import 'tile_edit_screen.dart';
+import 'touchpad_screen.dart';
 
 class DeckScreen extends StatefulWidget {
   const DeckScreen({super.key});
@@ -28,6 +29,11 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
   final _pager = PageController();
   Timer? _tick;
 
+  /// App đang ở trước lần trước, để chỉ đổi trang khi nó THAY ĐỔI. Nhờ vậy
+  /// người dùng tự vuốt sang trang khác thì deck để yên, không giành lại.
+  String _lastForeground = '';
+  late final DeckConnection _connRef;
+
   /// Các lần thử kết nối lại sau khi gửi tín hiệu bật máy.
   final List<Timer> _wakeTimers = [];
   int _page = 0;
@@ -38,6 +44,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _connect());
+    _connRef = context.read<DeckConnection>()..addListener(_followForeground);
     // Nhịp mỗi giây chỉ để vẽ lại đồng hồ đếm ngược lúc đang thử lại.
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && !context.read<DeckConnection>().isOnline) setState(() {});
@@ -47,6 +54,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _connRef.removeListener(_followForeground);
     _tick?.cancel();
     for (final t in _wakeTimers) {
       t.cancel();
@@ -61,6 +69,33 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       context.read<DeckConnection>().reconnectNow();
     }
+  }
+
+  /// Tự đổi trang theo app đang dùng, như profile của Stream Deck: vào Liên
+  /// Minh thì nhảy sang trang Game, về desktop thì về trang Làm việc.
+  void _followForeground() {
+    final conn = _connRef;
+    if (!mounted || !conn.isOnline) return;
+    final key = conn.foregroundDesktop
+        ? 'desktop'
+        : (conn.foregroundApps.isEmpty
+            ? ''
+            : (List.of(conn.foregroundApps)..sort()).join(','));
+    // App lạ không gắn trang nào: đứng yên, nhưng vẫn ghi nhận để lần sau
+    // quay lại app cũ thì đổi trang được.
+    if (key == _lastForeground) return;
+    _lastForeground = key;
+
+    final store = context.read<Store>();
+    if (!store.autoSwitch || _editing || key.isEmpty) return;
+    final target =
+        store.pageForForeground(conn.foregroundApps, conn.foregroundDesktop);
+    if (target < 0 || target == _page || target >= store.pages.length) return;
+    // Đang mở màn hình khác (sửa ô, touchpad) thì không chuyển, kẻo người
+    // dùng quay về thấy trang lạ mà không hiểu vì sao.
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+    _pager.animateToPage(target,
+        duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
   }
 
   /// Gom các app có ô âm lượng trên mọi trang, báo cho agent theo dõi.
@@ -218,9 +253,8 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                               height: 26,
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: w.active
-                                    ? DeckColors.live
-                                    : DeckColors.bg,
+                                color:
+                                    w.active ? DeckColors.live : DeckColors.bg,
                                 borderRadius: BorderRadius.circular(7),
                                 border: Border.all(color: DeckColors.live),
                               ),
@@ -426,8 +460,8 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     }
     HapticFeedback.mediumImpact();
     try {
-      final sent = await sendWakeOnLan(store.wolMacs,
-          broadcast: store.wolBroadcast);
+      final sent =
+          await sendWakeOnLan(store.wolMacs, broadcast: store.wolBroadcast);
       if (sent == 0) {
         _snack('Không gửi được — điện thoại có đang nối Wi-Fi nhà không?');
         return;
@@ -493,8 +527,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
             TextButton(
                 onPressed: () => Navigator.pop(ctx), child: const Text('Huỷ')),
             FilledButton(
-              style: FilledButton.styleFrom(
-                  backgroundColor: DeckColors.danger),
+              style: FilledButton.styleFrom(backgroundColor: DeckColors.danger),
               onPressed: () => Navigator.pop(ctx, force),
               child: Text(restart ? 'Khởi động lại' : 'Tắt máy'),
             ),
@@ -560,30 +593,47 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     final choice = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: DeckColors.surface,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _layoutRow(store),
-            const Divider(height: 1, color: DeckColors.line),
-            _sheetItem(Icons.refresh_rounded, 'Quét lại ứng dụng trên thiết bị', 'rescan'),
-            _sheetItem(Icons.add_rounded, 'Thêm trang', 'addPage'),
-            _sheetItem(Icons.drive_file_rename_outline_rounded, 'Đổi tên trang này', 'rename'),
-            if (store.pages.length > 1)
-              _sheetItem(Icons.delete_outline_rounded, 'Xoá trang này', 'delPage'),
-            _sheetItem(Icons.link_off_rounded, 'Quên thiết bị này', 'forget'),
-            const Divider(height: 1, color: DeckColors.line),
-            _aboutBlock(),
-          ],
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.9),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _layoutRow(store),
+                const Divider(height: 1, color: DeckColors.line),
+                _autoSwitchRow(store),
+                _sheetItem(Icons.bolt_rounded, 'Tự mở trang này khi…', 'auto'),
+                const Divider(height: 1, color: DeckColors.line),
+                _sheetItem(Icons.refresh_rounded,
+                    'Quét lại ứng dụng trên thiết bị', 'rescan'),
+                _sheetItem(Icons.add_rounded, 'Thêm trang', 'addPage'),
+                _sheetItem(Icons.drive_file_rename_outline_rounded,
+                    'Đổi tên trang này', 'rename'),
+                if (store.pages.length > 1)
+                  _sheetItem(
+                      Icons.delete_outline_rounded, 'Xoá trang này', 'delPage'),
+                _sheetItem(
+                    Icons.link_off_rounded, 'Quên thiết bị này', 'forget'),
+                const Divider(height: 1, color: DeckColors.line),
+                _aboutBlock(),
+              ],
+            ),
+          ),
         ),
       ),
     );
     if (choice == null || !mounted) return;
 
     switch (choice) {
+      case 'auto':
+        await _autoPageSheet(_page);
+        break;
       case 'rescan':
         conn.rescan();
         _snack('Đang quét lại Start Menu…');
@@ -608,6 +658,160 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
         await store.forgetHost();
         break;
     }
+  }
+
+  Widget _autoSwitchRow(Store store) {
+    return StatefulBuilder(
+      builder: (context, setSheetState) => SwitchListTile(
+        secondary: const Icon(Icons.auto_mode_rounded,
+            size: 20, color: DeckColors.muted),
+        title: const Text('Tự đổi trang theo app đang dùng',
+            style: TextStyle(color: DeckColors.text, fontSize: 14)),
+        subtitle: const Text('Như Stream Deck: vào game là sang trang Game',
+            style: TextStyle(color: DeckColors.muted, fontSize: 11)),
+        value: store.autoSwitch,
+        onChanged: (v) async {
+          await store.setAutoSwitch(v);
+          setSheetState(() {});
+        },
+      ),
+    );
+  }
+
+  /// Chọn app (và/hoặc màn hình desktop) làm trang tự mở.
+  Future<void> _autoPageSheet(int pageIndex) async {
+    final store = context.read<Store>();
+    final page = store.pages[pageIndex];
+    final apps = List<String>.of(page.autoApps);
+    var desktop = page.autoDesktop;
+
+    final save = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: DeckColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheet) {
+          final conn = sheetContext.watch<DeckConnection>();
+
+          Future<void> add(bool running) async {
+            final id = await showModalBottomSheet<String>(
+              context: sheetContext,
+              backgroundColor: DeckColors.surface,
+              isScrollControlled: true,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              builder: (_) => running
+                  ? const RunningPickerSheet()
+                  : const CatalogPickerSheet(),
+            );
+            if (id != null && !apps.contains(id)) setSheet(() => apps.add(id));
+          }
+
+          return SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(sheetContext).size.height * 0.85),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('Tự mở trang "${page.name}" khi…',
+                        style: const TextStyle(
+                            color: DeckColors.text,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Deck chỉ đổi trang lúc bạn chuyển sang app khác trên '
+                      'thiết bị. Tự vuốt sang trang khác thì nó để yên.',
+                      style: TextStyle(
+                          color: DeckColors.muted, fontSize: 11, height: 1.4),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('…đang ở màn hình desktop',
+                          style:
+                              TextStyle(color: DeckColors.text, fontSize: 14)),
+                      subtitle: const Text(
+                          'Thu nhỏ hết cửa sổ hoặc Win+D. Chỉ một trang được '
+                          'chọn mục này.',
+                          style:
+                              TextStyle(color: DeckColors.muted, fontSize: 11)),
+                      value: desktop,
+                      onChanged: (v) => setSheet(() => desktop = v),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text('…đang dùng một trong các app:',
+                        style:
+                            TextStyle(color: DeckColors.muted, fontSize: 12)),
+                    const SizedBox(height: 8),
+                    if (apps.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 8),
+                        child: Text('Chưa chọn app nào',
+                            style: TextStyle(
+                                color: DeckColors.muted, fontSize: 13)),
+                      ),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final id in apps)
+                          InputChip(
+                            label: Text(
+                                conn.catalogById[id]?.name ??
+                                    'App không còn trên thiết bị',
+                                style: const TextStyle(fontSize: 12)),
+                            backgroundColor: DeckColors.tile,
+                            onDeleted: () => setSheet(() => apps.remove(id)),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed:
+                                conn.catalog.isEmpty ? null : () => add(false),
+                            icon: const Icon(Icons.add_rounded, size: 18),
+                            label: const Text('Thêm app'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: conn.isOnline ? () => add(true) : null,
+                            icon: const Icon(Icons.web_asset_rounded, size: 18),
+                            label: const Text('Đang mở'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(sheetContext, true),
+                      child: const Text('Lưu'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    if (save != true || !mounted) return;
+    await store.setPageAuto(pageIndex, apps, desktop);
+    _snack(apps.isEmpty && !desktop
+        ? 'Trang này không tự mở nữa'
+        : 'Đã lưu — deck sẽ tự mở trang này');
   }
 
   /// Chọn bố cục ngay trong bảng menu, không cần đóng ra mở lại.
@@ -901,6 +1105,13 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
             onTap: conn.reconnectNow,
           ),
         _barButton(
+          icon: Icons.mouse_rounded,
+          tooltip: 'Touchpad và bàn phím',
+          color: DeckColors.muted,
+          onTap: () => Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const TouchpadScreen())),
+        ),
+        _barButton(
           icon: Icons.power_settings_new_rounded,
           tooltip: conn.isOnline ? 'Nguồn máy tính' : 'Bật máy tính',
           // Máy tắt mà bật được thì nút sáng xanh, mời bấm.
@@ -1061,6 +1272,12 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                 ),
               ),
               const SizedBox(width: 8),
+              if (page.hasAuto) ...[
+                // Trang này tự mở theo app: nhìn là biết.
+                const Icon(Icons.bolt_rounded,
+                    size: 14, color: DeckColors.accent),
+                const SizedBox(width: 2),
+              ],
               Flexible(
                 child: Text(
                   '${page.name} · $used/${store.capacity}',

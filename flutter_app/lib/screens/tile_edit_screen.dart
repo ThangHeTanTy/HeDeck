@@ -669,7 +669,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => const _CatalogSheet(),
+      builder: (_) => const CatalogPickerSheet(),
     );
   }
 
@@ -683,7 +683,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => const _RunningSheet(),
+      builder: (_) => const RunningPickerSheet(),
     );
   }
 
@@ -837,14 +837,14 @@ class _TileEditScreenState extends State<TileEditScreen> {
 }
 
 /// Danh sách chương trình đang có cửa sổ trên thiết bị, giống thanh taskbar.
-class _RunningSheet extends StatefulWidget {
-  const _RunningSheet();
+class RunningPickerSheet extends StatefulWidget {
+  const RunningPickerSheet({super.key});
 
   @override
-  State<_RunningSheet> createState() => _RunningSheetState();
+  State<RunningPickerSheet> createState() => _RunningSheetState();
 }
 
-class _RunningSheetState extends State<_RunningSheet> {
+class _RunningSheetState extends State<RunningPickerSheet> {
   late Future<List<RunningProgram>> _list;
   String? _adopting;
   String? _error;
@@ -988,14 +988,14 @@ class _RunningSheetState extends State<_RunningSheet> {
 }
 
 /// Chọn nhanh một app trong danh sách đã quét, có ô tìm.
-class _CatalogSheet extends StatefulWidget {
-  const _CatalogSheet();
+class CatalogPickerSheet extends StatefulWidget {
+  const CatalogPickerSheet({super.key});
 
   @override
-  State<_CatalogSheet> createState() => _CatalogSheetState();
+  State<CatalogPickerSheet> createState() => _CatalogSheetState();
 }
 
-class _CatalogSheetState extends State<_CatalogSheet> {
+class _CatalogSheetState extends State<CatalogPickerSheet> {
   String _q = '';
 
   @override

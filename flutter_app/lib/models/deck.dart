@@ -173,28 +173,59 @@ class DeckPage {
   final String name;
   final List<DeckTile> tiles;
 
-  DeckPage({required this.name, List<DeckTile>? tiles})
-      : tiles = List<DeckTile>.generate(
+  /// Tự nhảy sang trang này khi một trong các app này đang ở trước trên
+  /// thiết bị, giống profile của Stream Deck.
+  final List<String> autoApps;
+
+  /// Tự nhảy sang trang này khi về màn hình desktop.
+  final bool autoDesktop;
+
+  DeckPage({
+    required this.name,
+    List<DeckTile>? tiles,
+    this.autoApps = const [],
+    this.autoDesktop = false,
+  }) : tiles = List<DeckTile>.generate(
           maxSlots,
           (i) => (tiles != null && i < tiles.length) ? tiles[i] : DeckTile.empty,
         );
 
-  DeckPage rename(String newName) => DeckPage(name: newName, tiles: tiles);
+  bool get hasAuto => autoApps.isNotEmpty || autoDesktop;
+
+  DeckPage _copy({String? name, List<DeckTile>? tiles,
+          List<String>? autoApps, bool? autoDesktop}) =>
+      DeckPage(
+        name: name ?? this.name,
+        tiles: tiles ?? this.tiles,
+        autoApps: autoApps ?? this.autoApps,
+        autoDesktop: autoDesktop ?? this.autoDesktop,
+      );
+
+  DeckPage rename(String newName) => _copy(name: newName);
+
+  DeckPage withAuto(List<String> apps, bool desktop) =>
+      _copy(autoApps: apps, autoDesktop: desktop);
 
   DeckPage withTile(int index, DeckTile tile) {
     final next = List<DeckTile>.from(tiles);
     next[index] = tile;
-    return DeckPage(name: name, tiles: next);
+    return _copy(tiles: next);
   }
 
-  Map<String, dynamic> toJson() =>
-      {'name': name, 'tiles': tiles.map((t) => t.toJson()).toList()};
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'tiles': tiles.map((t) => t.toJson()).toList(),
+        if (autoApps.isNotEmpty) 'autoApps': autoApps,
+        if (autoDesktop) 'autoDesktop': true,
+      };
 
   factory DeckPage.fromJson(Map<String, dynamic> j) => DeckPage(
         name: j['name'] as String? ?? 'Trang',
         tiles: (j['tiles'] as List? ?? [])
             .map((e) => DeckTile.fromJson(e as Map<String, dynamic>))
             .toList(),
+        autoApps: (j['autoApps'] as List? ?? const []).cast<String>(),
+        autoDesktop: j['autoDesktop'] as bool? ?? false,
       );
 
   static List<DeckPage> starter() => [

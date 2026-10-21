@@ -17,6 +17,8 @@ class Store extends ChangeNotifier {
   static const _kRows = 'deck.rows';
   static const _kFlipped = 'deck.flipped';
   static const _kWolMacs = 'deck.wolMacs';
+  static const _kAutoSwitch = 'deck.autoSwitch';
+  static const _kMouseSpeed = 'deck.mouseSpeed';
   static const _kWolBroadcast = 'deck.wolBroadcast';
 
   late SharedPreferences _prefs;
@@ -34,6 +36,12 @@ class Store extends ChangeNotifier {
   String wolBroadcast = '';
 
   bool get canWake => wolMacs.isNotEmpty;
+
+  /// Tự đổi trang theo app đang dùng trên thiết bị.
+  bool autoSwitch = true;
+
+  /// Tốc độ con trỏ của touchpad, 0.5..3.
+  double mouseSpeed = 1.4;
 
   /// Số hàng của lưới: 2 (bố cục 4x2, 8 ô) hoặc 3 (4x3, 12 ô).
   int rows = 2;
@@ -59,6 +67,8 @@ class Store extends ChangeNotifier {
     flippedTiles
       ..clear()
       ..addAll(_prefs.getStringList(_kFlipped) ?? const []);
+    autoSwitch = _prefs.getBool(_kAutoSwitch) ?? true;
+    mouseSpeed = _prefs.getDouble(_kMouseSpeed) ?? 1.4;
     wolMacs = _prefs.getStringList(_kWolMacs) ?? [];
     wolBroadcast = _prefs.getString(_kWolBroadcast) ?? '';
     deviceId = _prefs.getString(_kDeviceId) ?? _newDeviceId();
@@ -186,6 +196,41 @@ class Store extends ChangeNotifier {
       await _prefs.setStringList(_kFlipped, flippedTiles.toList());
       notifyListeners();
     }
+  }
+
+  Future<void> setAutoSwitch(bool value) async {
+    autoSwitch = value;
+    await _prefs.setBool(_kAutoSwitch, value);
+    notifyListeners();
+  }
+
+  Future<void> setMouseSpeed(double value) async {
+    mouseSpeed = value;
+    await _prefs.setDouble(_kMouseSpeed, value);
+    notifyListeners();
+  }
+
+  /// Gắn trang với app/desktop. Chỉ một trang được làm trang desktop: chọn
+  /// trang mới thì trang cũ tự bỏ, khỏi phải đoán trang nào thắng.
+  Future<void> setPageAuto(int index, List<String> apps, bool desktop) async {
+    for (var i = 0; i < pages.length; i++) {
+      if (i == index) {
+        pages[i] = pages[i].withAuto(apps, desktop);
+      } else if (desktop && pages[i].autoDesktop) {
+        pages[i] = pages[i].withAuto(pages[i].autoApps, false);
+      }
+    }
+    await _persistPages();
+  }
+
+  /// Trang cần nhảy tới khi app ở trước thay đổi, -1 nếu không trang nào.
+  int pageForForeground(List<String> appIds, bool desktop) {
+    if (desktop) return pages.indexWhere((p) => p.autoDesktop);
+    for (final id in appIds) {
+      final i = pages.indexWhere((p) => p.autoApps.contains(id));
+      if (i >= 0) return i;
+    }
+    return -1;
   }
 
   Future<void> setRows(int value) async {

@@ -115,6 +115,13 @@ def main():
                 "media", "macro", "app_volume", "watch_volume", "power",
                 "running", "adopt", "scene"):
         check(f'có xử lý lệnh "{cmd}"', f'kind == "{cmd}"' in source)
+    check("có xử lý touchpad và bàn phím ảo",
+          '"mouse_move", "mouse_button", "mouse_scroll"' in source
+          and '"type_text", "key"' in source)
+    check("touchpad gọi thẳng, không qua luồng khác (giữ đúng thứ tự)",
+          "return self.remote_input(kind, msg)" in source)
+    check("trạng thái gửi kèm app đang ở trước (tự đổi trang)",
+          '"fg": front' in source)
     check('có xử lý lệnh "focus_window" và "close_window"',
           'kind in ("focus_window", "close_window")' in source)
     check("chỉ đụng vào cửa sổ thuộc đúng app",

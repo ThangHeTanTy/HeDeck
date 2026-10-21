@@ -22,6 +22,7 @@ import websockets
 import app_volume
 import catalog
 import power
+import remote_input
 import security
 import win_control
 
@@ -34,7 +35,9 @@ ALLOW_MACROS = True        # đặt False nếu không muốn điện thoại g�
 # Tăng mỗi khi giao thức với app thay đổi. App so số này để báo người dùng
 # chạy lại agent sau khi cập nhật code — pull code xong mà quên tắt cửa sổ
 # agent cũ thì nó vẫn chạy bản cũ, mọi tính năng mới im lặng không hoạt động.
-AGENT_VERSION = 4
+AGENT_VERSION = 5
+# đặt False nếu không muốn điện thoại điều khiển chuột và gõ phím từ xa
+ALLOW_REMOTE_INPUT = True
 ALLOW_POWER = True         # đặt False nếu không muốn điện thoại tắt/ngủ máy
 
 log = lambda *a: print(time.strftime("[%H:%M:%S]"), *a, flush=True)
@@ -312,8 +315,15 @@ class Agent:
     # -- vòng phát trạng thái --------------------------------------------
 
     def snapshot(self):
+        """(trạng thái từng app, app đang ở trước).
+
+        App đang ở trước dùng để điện thoại tự đổi trang như Stream Deck. Gửi
+        mọi app khớp chứ không chỉ một: Chrome có thể khớp cả ô "Google
+        Chrome" lẫn ô "Chrome - Công việc", trang nào gắn với cái nào cũng
+        phải nhảy được.
+        """
         if not self.catalog_ready:
-            return {}
+            return {}, {"apps": [], "desk": False}
         out = {}
         want_volume = self._volume_watch
         # Một lượt duyệt cửa sổ cho tất cả app, thay vì một lượt mỗi app.
@@ -329,11 +339,15 @@ class Agent:
                 self._next_seq += 1
                 self._win_seq[hwnd] = self._next_seq
 
+        front = {"apps": [], "desk": win_control.is_desktop(fg)}
+
         for app in self.apps:
             procs, dirs = catalog.match_of(app)
             mine = win_control.windows_in(table, procs, dirs)
             if not mine:
                 continue
+            if fg in mine:
+                front["apps"].append(app["id"])
             entry = {"running": True, "windows": len(mine)}
             # Từ hai cửa sổ trở lên mới cần danh sách để đánh số 1, 2, 3...
             if len(mine) >= 2:
@@ -350,17 +364,17 @@ class Agent:
                 if state:
                     entry["volume"], entry["muted"] = state
             out[app["id"]] = entry
-        return out
+        return out, front
 
     async def send_status(self):
         if not self.clients:
             return
         try:
-            apps = await self.run_blocking(self.snapshot)
+            apps, front = await self.run_blocking(self.snapshot)
         except Exception as exc:
             log("Lỗi lấy trạng thái:", exc)
             return
-        msg = json.dumps({"t": "status", "apps": apps})
+        msg = json.dumps({"t": "status", "apps": apps, "fg": front})
         dead = []
         for ws in list(self.clients):
             try:
@@ -585,6 +599,10 @@ class Agent:
             self._spawn(self.power_later(action, force))
             return {"t": "power", "action": action}
 
+        if kind in ("mouse_move", "mouse_button", "mouse_scroll",
+                    "type_text", "key"):
+            return self.remote_input(kind, msg)
+
         if kind == "macro":
             if not ALLOW_MACROS:
                 return {"t": "error", "msg": "Macro đang bị tắt trên agent"}
@@ -601,6 +619,28 @@ class Agent:
             return {"t": "ok", "keys": combos}
 
         return {"t": "error", "msg": f"Lệnh không hỗ trợ: {kind}"}
+
+    def remote_input(self, kind, msg):
+        """Touchpad và bàn phím ảo. Gọi thẳng, không qua luồng khác, để các
+        lệnh chạy đúng thứ tự gửi. Di chuột không trả lời gì — 60 lần mỗi
+        giây mà lần nào cũng trả lời thì chỉ tốn mạng."""
+        if not ALLOW_REMOTE_INPUT:
+            return {"t": "error", "msg": "Điều khiển từ xa đang bị tắt trên agent"}
+        try:
+            if kind == "mouse_move":
+                remote_input.move(msg.get("dx", 0), msg.get("dy", 0))
+            elif kind == "mouse_button":
+                remote_input.button(msg.get("button", "left"),
+                                    msg.get("action", "click"))
+            elif kind == "mouse_scroll":
+                remote_input.scroll(msg.get("dy", 0), msg.get("dx", 0))
+            elif kind == "type_text":
+                remote_input.type_text(msg.get("text", ""))
+            elif kind == "key":
+                win_control.press_hotkey(str(msg.get("combo", "")))
+        except (ValueError, TypeError) as exc:
+            return {"t": "error", "msg": str(exc)}
+        return None
 
     async def power_later(self, action, force):
         await asyncio.sleep(0.8)
