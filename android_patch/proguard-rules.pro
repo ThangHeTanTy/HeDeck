@@ -1,6 +1,7 @@
 # Giu lai nhung gi R8 co the cat nham.
 #
-# Ngay ca khi khong dung --shrink, mot so cau hinh Gradle van bat R8. Cac lop
+# BUILD_APK.bat da tat R8 (shrink=false). File nay chi con la luoi an toan khi
+# ai do build release bang lenh khac: Flutter mac dinh LUON bat R8 o release. Cac lop
 # duoi day duoc goi qua phan xa hoac qua cau noi Pigeon nen R8 khong nhin thay
 # duong goi, rat de bi cat mat. Hau qua: ban release loi ma ban debug van chay.
 
