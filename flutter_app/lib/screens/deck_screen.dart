@@ -16,6 +16,7 @@ import '../widgets/clown_logo.dart';
 import '../widgets/deck_tile_view.dart';
 import '../widgets/media_bar.dart';
 import 'tile_edit_screen.dart';
+import 'perf_screen.dart';
 import 'touchpad_screen.dart';
 
 class DeckScreen extends StatefulWidget {
@@ -1104,6 +1105,13 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
             color: DeckColors.warn,
             onTap: conn.reconnectNow,
           ),
+        _barButton(
+          icon: Icons.monitor_heart_rounded,
+          tooltip: 'Hiệu năng: FPS, nhiệt độ',
+          color: DeckColors.muted,
+          onTap: () => Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const PerfScreen())),
+        ),
         _barButton(
           icon: Icons.mouse_rounded,
           tooltip: 'Touchpad và bàn phím',

@@ -80,7 +80,7 @@ def main():
     main_fn = function_body(agent, "main")
     started = called_names(main_fn) if main_fn else set()
 
-    for task in ("status_loop", "watch_console", "load_catalog"):
+    for task in ("status_loop", "watch_console", "load_catalog", "perf_loop"):
         check(
             f"main() có gọi {task}()",
             task in started,
@@ -113,13 +113,20 @@ def main():
     source = (HERE / "agent.py").read_text(encoding="utf-8")
     for cmd in ("ping", "catalog", "rescan", "launch", "close",
                 "media", "macro", "app_volume", "watch_volume", "power",
-                "running", "adopt", "scene"):
+                "running", "adopt", "scene", "perf_watch"):
         check(f'có xử lý lệnh "{cmd}"', f'kind == "{cmd}"' in source)
     check("có xử lý touchpad và bàn phím ảo",
           '"mouse_move", "mouse_button", "mouse_scroll"' in source
           and '"type_text", "key"' in source)
     check("touchpad gọi thẳng, không qua luồng khác (giữ đúng thứ tự)",
           "return self.remote_input(kind, msg)" in source)
+    perf_src = (HERE / "perf.py").read_text(encoding="utf-8")
+    check("đọc RTSS chỉ mở vùng nhớ có sẵn, không tạo mới",
+          "OpenFileMappingW" in perf_src and "CreateFileMapping" not in perf_src
+          and "tagname" not in perf_src,
+          "Tạo vùng nhớ cùng tên khi RTSS chưa chạy sẽ làm hỏng RTSS.")
+    check("offset mảng frametime của RTSS đúng như header (924)",
+          "_FT_BUF = 924" in perf_src)
     check("trạng thái gửi kèm app đang ở trước (tự đổi trang)",
           '"fg": front' in source)
     check('có xử lý lệnh "focus_window" và "close_window"',

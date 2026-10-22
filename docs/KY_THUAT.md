@@ -320,6 +320,19 @@ gửi trước nó. Không trả lời, trừ khi lỗi. Điện thoại gom chu
 chênh lệch; một ký tự rỗng `\u200b` canh đầu ô nhập để bắt được phím xoá khi
 ô trống.
 
+Hiệu năng: điện thoại gửi `perf_watch` (`on`) khi mở/rời tab; agent chỉ đo
+khi có người xem, mỗi giây gửi `{"t":"perf", cpu, gpu, ram, net, fps,
+sources}`. Nguồn: psutil (tải CPU, RAM, mạng); NVML qua `nvidia-ml-py`, thiếu
+thì `nvidia-smi` (GPU NVIDIA); `http://127.0.0.1:8085/data.json` của
+LibreHardwareMonitor (nhiệt độ/xung/công suất CPU, và GPU không phải NVIDIA);
+bộ nhớ chia sẻ `RTSSSharedMemoryV2` của RivaTuner (FPS). Đọc RTSS bằng
+`OpenFileMappingW` chỉ đọc — không dùng `mmap(tagname=…)` vì nó **tạo** vùng
+nhớ khi RTSS chưa chạy, làm RTSS mở nhầm sau này. Chọn mục của tiến trình
+đang ở trước, không có thì mục cập nhật gần nhất, bỏ mục im lặng quá 3 giây.
+FPS = `1000 × dwFrames / (dwTime1 − dwTime0)`; 1% low lấy từ mảng
+`dwStatFrameTimeBuf[1024]`. Offset của mảng này (924) lấy bằng `offsetof()`
+khi biên dịch chính `RTSSSharedMemory.h` — đếm tay ra 936, lệch ba trường.
+
 Nguồn: `power` (`action` là `lock` | `sleep` | `restart` | `shutdown`, `force`
 để đóng luôn app chưa lưu). Agent trả `{"t":"power"}` trước rồi 0,8 giây sau
 mới thực hiện, vì tắt máy xong thì không còn kết nối để trả lời. Tắt máy dùng
@@ -643,6 +656,7 @@ agent/
   launchers.py      tìm game từ Riot, Steam, Epic
   power.py          tắt/ngủ/khoá máy, đọc MAC cho Wake-on-LAN
   remote_input.py   touchpad, bàn phím ảo (SendInput)
+  perf.py           đo FPS (RTSS), nhiệt độ (LibreHardwareMonitor), GPU (NVML)
 flutter_app/
   lib/main.dart
   lib/theme.dart

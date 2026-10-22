@@ -61,6 +61,11 @@ rem pycaw chi dung cho o "Am luong tung app", thieu thi van chay binh thuong
 "%VPY%" -c "import pycaw" >nul 2>nul
 if errorlevel 1 echo [!] Thieu pycaw: o "Am luong tung app" se khong dung duoc.
 
+rem nvidia-ml-py doc GPU NVIDIA nhanh hon goi nvidia-smi moi giay. Thieu thi
+rem cai bo sung (may da cai tu ban cu se khong tu cai lai requirements).
+"%VPY%" -c "import pynvml" >nul 2>nul
+if errorlevel 1 "%VPY%" -m pip install nvidia-ml-py --quiet >nul 2>nul
+
 echo.
 "%VPY%" agent.py %*
 pause

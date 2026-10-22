@@ -21,6 +21,7 @@ import websockets
 
 import app_volume
 import catalog
+import perf
 import power
 import remote_input
 import security
@@ -35,7 +36,7 @@ ALLOW_MACROS = True        # đặt False nếu không muốn điện thoại g�
 # Tăng mỗi khi giao thức với app thay đổi. App so số này để báo người dùng
 # chạy lại agent sau khi cập nhật code — pull code xong mà quên tắt cửa sổ
 # agent cũ thì nó vẫn chạy bản cũ, mọi tính năng mới im lặng không hoạt động.
-AGENT_VERSION = 5
+AGENT_VERSION = 6
 # đặt False nếu không muốn điện thoại điều khiển chuột và gõ phím từ xa
 ALLOW_REMOTE_INPUT = True
 ALLOW_POWER = True         # đặt False nếu không muốn điện thoại tắt/ngủ máy
@@ -99,6 +100,10 @@ class Agent:
         # gửi lại mã, không bao giờ gửi đường dẫn.
         self._running = {}
         self._icon_cache = {}
+        # Điện thoại đang mở tab Hiệu năng. Không ai xem thì không đo, để
+        # agent không tốn chút CPU nào của game.
+        self._perf_watchers = set()
+        self._perf = None
         self.loop = None
 
     # -- tiện ích ---------------------------------------------------------
@@ -389,6 +394,29 @@ class Agent:
             await asyncio.sleep(STATUS_INTERVAL)
             await self.send_status()
 
+    async def perf_loop(self):
+        """Mỗi giây đo một lần, chỉ gửi cho điện thoại đang xem tab Hiệu năng."""
+        while True:
+            await asyncio.sleep(1.0)
+            watchers = [ws for ws in self._perf_watchers if ws in self.clients]
+            self._perf_watchers = set(watchers)
+            if not watchers:
+                continue
+            try:
+                if self._perf is None:
+                    self._perf = await self.run_blocking(perf.PerfMonitor)
+                pid = await self.run_blocking(win_control.foreground_pid)
+                sample = await self.run_blocking(self._perf.sample, pid)
+            except Exception as exc:
+                log("Lỗi đo hiệu năng:", exc)
+                continue
+            msg = json.dumps(sample)
+            for ws in watchers:
+                try:
+                    await ws.send(msg)
+                except Exception:
+                    self._perf_watchers.discard(ws)
+
     async def status_soon(self, delay=0.6):
         """Đóng hay chọn cửa sổ xong thì báo lại ngay, khỏi chờ nhịp 1,5 giây
         — số trên ô phải khớp với cửa sổ thật càng sớm càng tốt."""
@@ -553,6 +581,13 @@ class Agent:
             self._spawn(self.status_soon())
             return {"t": "window", "app_id": app["id"], "hwnd": hwnd,
                     "result": result}
+
+        if kind == "perf_watch":
+            if msg.get("on"):
+                self._perf_watchers.add(ws)
+            else:
+                self._perf_watchers.discard(ws)
+            return None
 
         if kind == "running":
             out, tokens = await self.run_blocking(self._describe_running)
@@ -802,6 +837,7 @@ async def main():
     agent.print_banner(ip, args.port)
 
     agent._spawn(agent.status_loop())
+    agent._spawn(agent.perf_loop())
     agent._spawn(agent.watch_console(ip, args.port))
     # Dựng danh mục ở nền. Cổng đã mở trước nên điện thoại kết nối được ngay,
     # không phải chờ quét xong.
