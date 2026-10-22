@@ -266,6 +266,26 @@ thể thấy bạn mở app nào, dù không thể tự mở app. Ở mạng nh�
 ## Xử lý sự cố
 
 <details>
+<summary><b>Cài APK lên điện thoại thật: mở ra trắng xoá, không thấy logo</b></summary>
+
+Bản cũ chờ đọc cấu hình và nạp khoá xong mới vẽ khung hình đầu tiên — một bước
+treo là đứng trắng mãi. Từ bản này logo hiện ngay; bước nào hỏng hoặc treo quá
+10–20 giây thì màn hình ghi rõ **tên bước và lỗi**, kèm nút *Thử lại*.
+
+Build lại bằng `BUILD_APK.bat` (đã tắt R8 — trình rút gọn mã của bản release
+từng cắt nhầm phần plugin dùng để lưu dữ liệu). Nếu vẫn lỗi, cắm cáp và chạy
+bản release để xem log ngay trên máy tính:
+
+```
+CHAY_APP.bat --release
+```
+
+Tìm các dòng `HeDeck: khởi động — …`: dòng cuối cùng cho biết app dừng ở đâu.
+Không có dòng nào và màn hình vẫn trắng nghĩa là lỗi vẽ đồ hoạ — thử
+`flutter run --release --no-enable-impeller` để kiểm tra.
+</details>
+
+<details>
 <summary><b>Cập nhật code xong mà không thấy tính năng mới</b></summary>
 
 Pull code chỉ thay file trên ổ đĩa, **chương trình đang chạy vẫn là bản cũ**:

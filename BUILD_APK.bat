@@ -34,11 +34,14 @@ rem --obfuscate doi ten lop, ham, bien trong ma Dart thanh ky tu vo nghia.
 rem --split-debug-info tach bang doi chieu ra ngoai, KHONG kem trong APK.
 rem Giu thu muc debug_symbols de con doc duoc bao loi tu ban da phat hanh.
 rem
-rem KHONG dung --shrink: R8 cat bo lop Java/Kotlin ma no cho la khong dung toi.
-rem Cac plugin dung Pigeon (shared_preferences chang han) sinh lop duoc goi qua
-rem phan xa, R8 khong thay nen cat mat -> ban release loi ma ban debug van chay.
-rem Tiet kiem duoc vai tram KB khong dang de doi lay rui ro do.
+rem TAT R8 (shrink=false). Ban release cua Flutter LUON bat R8 va rut gon tai
+rem nguyen, ke ca khi khong ghi --shrink - co --no-shrink cung da bi bo, khong
+rem con tac dung. R8 cat bo lop Java/Kotlin ma no cho la khong dung toi; cac
+rem plugin dung Pigeon (shared_preferences chang han) duoc goi qua phan xa nen
+rem R8 khong thay -> ban release treo hoac loi ma ban debug tren may ao van
+rem chay. Tiet kiem vai tram KB khong dang de doi lay rui ro do.
 call flutter build apk --release ^
+    --android-project-arg=shrink=false ^
     --obfuscate ^
     --split-debug-info=..\debug_symbols
 if errorlevel 1 (echo [X] Build that bai & pause & exit /b 1)
