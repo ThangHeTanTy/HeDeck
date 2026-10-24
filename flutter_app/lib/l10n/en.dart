@@ -3,6 +3,12 @@
 // Câu nào thiếu thì t() tự hiện nguyên tiếng Việt, không bao giờ hiện trống.
 
 const en = <String, String>{
+  'Giao diện':
+      'Appearance',
+  'Tối · mặt trăng':
+      'Dark · moon',
+  'Sáng · mặt trời':
+      'Light · sun',
   'Trang {0}':
       'Page {0}',
   'HeDeck gặp lỗi khi dựng giao diện':

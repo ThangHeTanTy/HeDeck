@@ -377,7 +377,7 @@ class _DeckTileViewState extends State<DeckTileView>
           ),
 
         if (widget.editing && !tile.isEmpty)
-          const Positioned(
+          Positioned(
             top: 5,
             right: 5,
             child: Icon(Icons.edit_rounded, size: 14, color: DeckColors.muted),

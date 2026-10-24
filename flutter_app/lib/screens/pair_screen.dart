@@ -146,7 +146,7 @@ class _PairScreenState extends State<PairScreen> {
                   const SizedBox(height: 8),
                   Text(
                     t('Kết nối tới thiết bị'),
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: DeckColors.text,
                         fontSize: 22,
                         fontWeight: FontWeight.w500),
@@ -154,12 +154,12 @@ class _PairScreenState extends State<PairScreen> {
                   const SizedBox(height: 6),
                   Text(
                     t('Chạy agent trên máy Windows, rồi nhập địa chỉ và mã 6 số hiện trên cửa sổ đó.'),
-                    style: const TextStyle(color: DeckColors.muted, fontSize: 13, height: 1.5),
+                    style: TextStyle(color: DeckColors.muted, fontSize: 13, height: 1.5),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     t('Dùng máy ảo Android? Chạy adb reverse tcp:8787 tcp:8787 rồi nhập 127.0.0.1.'),
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: DeckColors.muted, fontSize: 12, height: 1.5),
                   ),
                   const SizedBox(height: 20),
@@ -172,7 +172,7 @@ class _PairScreenState extends State<PairScreen> {
                         child: TextField(
                           controller: _host,
                           keyboardType: TextInputType.url,
-                          style: const TextStyle(color: DeckColors.text),
+                          style: TextStyle(color: DeckColors.text),
                           decoration: InputDecoration(
                             labelText: t('Địa chỉ IP'),
                             hintText: '192.168.1.12',
@@ -184,7 +184,7 @@ class _PairScreenState extends State<PairScreen> {
                         child: TextField(
                           controller: _port,
                           keyboardType: TextInputType.number,
-                          style: const TextStyle(color: DeckColors.text),
+                          style: TextStyle(color: DeckColors.text),
                           decoration: InputDecoration(labelText: t('Cổng')),
                         ),
                       ),
@@ -195,7 +195,7 @@ class _PairScreenState extends State<PairScreen> {
                     controller: _code,
                     keyboardType: TextInputType.number,
                     maxLength: 6,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: DeckColors.text, fontSize: 20, letterSpacing: 8),
                     decoration: InputDecoration(
                       labelText: t('Mã ghép cặp'),
@@ -206,12 +206,12 @@ class _PairScreenState extends State<PairScreen> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        const Icon(Icons.error_outline_rounded,
+                        Icon(Icons.error_outline_rounded,
                             size: 16, color: DeckColors.danger),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(_error!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   color: DeckColors.danger, fontSize: 13)),
                         ),
                       ],
@@ -279,12 +279,12 @@ class _PairScreenState extends State<PairScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.wifi_tethering_rounded,
+              Icon(Icons.wifi_tethering_rounded,
                   size: 16, color: DeckColors.muted),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(t('Máy tìm thấy trong mạng'),
-                    style: const TextStyle(color: DeckColors.muted, fontSize: 12)),
+                    style: TextStyle(color: DeckColors.muted, fontSize: 12)),
               ),
               InkWell(
                 onTap: _scanning ? null : _scan,
@@ -292,7 +292,7 @@ class _PairScreenState extends State<PairScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: _scanning
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 13,
                           width: 13,
                           child: CircularProgressIndicator(
@@ -300,7 +300,7 @@ class _PairScreenState extends State<PairScreen> {
                         )
                       : Text(t('Quét lại'),
                           style:
-                              const TextStyle(color: DeckColors.accent, fontSize: 12)),
+                              TextStyle(color: DeckColors.accent, fontSize: 12)),
                 ),
               ),
             ],
@@ -309,7 +309,7 @@ class _PairScreenState extends State<PairScreen> {
           if (_found.isEmpty)
             Text(
               t('Chưa thấy máy nào. Nhập IP thủ công ở dưới cũng được.'),
-              style: const TextStyle(color: DeckColors.muted, fontSize: 12),
+              style: TextStyle(color: DeckColors.muted, fontSize: 12),
             )
           else
             ..._found.map(
@@ -323,16 +323,16 @@ class _PairScreenState extends State<PairScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                   child: Row(
                     children: [
-                      const Icon(Icons.desktop_windows_rounded,
+                      Icon(Icons.desktop_windows_rounded,
                           size: 16, color: DeckColors.live),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(h.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: DeckColors.text, fontSize: 13)),
                       ),
                       Text('${h.ip}:${h.port}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: DeckColors.muted, fontSize: 12)),
                     ],
                   ),

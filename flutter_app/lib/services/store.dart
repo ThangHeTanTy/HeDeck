@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:math';
-import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/l10n.dart';
 import '../models/deck.dart';
+import '../theme.dart';
 
 /// Cấu hình lưu trên máy: thông tin ghép cặp và bố cục các trang.
 class Store extends ChangeNotifier {
@@ -21,6 +21,7 @@ class Store extends ChangeNotifier {
   static const _kWolMacs = 'deck.wolMacs';
   static const _kAutoSwitch = 'deck.autoSwitch';
   static const _kLang = 'deck.lang';
+  static const _kDark = 'deck.dark';
   static const _kMouseSpeed = 'deck.mouseSpeed';
   static const _kWolBroadcast = 'deck.wolBroadcast';
 
@@ -42,6 +43,9 @@ class Store extends ChangeNotifier {
 
   /// Ngôn ngữ giao diện.
   AppLang lang = AppLang.vi;
+
+  /// Chủ đề tối (mặc định, màu gốc của app) hay sáng.
+  bool dark = true;
 
   /// Tự đổi trang theo app đang dùng trên thiết bị.
   bool autoSwitch = true;
@@ -82,6 +86,8 @@ class Store extends ChangeNotifier {
             ? AppLang.vi
             : AppLang.en);
     L10n.current = lang;
+    dark = _prefs.getBool(_kDark) ?? true;
+    DeckColors.use(dark ? DeckPalette.dark : DeckPalette.light);
     autoSwitch = _prefs.getBool(_kAutoSwitch) ?? true;
     mouseSpeed = _prefs.getDouble(_kMouseSpeed) ?? 1.4;
     wolMacs = _prefs.getStringList(_kWolMacs) ?? [];
@@ -222,6 +228,16 @@ class Store extends ChangeNotifier {
     lang = value;
     L10n.current = value;
     await _prefs.setString(_kLang, value.name);
+    notifyListeners();
+  }
+
+  /// Đổi chủ đề sáng/tối. Giao diện tự dựng lại theo `dark` (xem
+  /// DeckApp và SplashScreen).
+  Future<void> setDark(bool value) async {
+    if (value == dark) return;
+    dark = value;
+    DeckColors.use(value ? DeckPalette.dark : DeckPalette.light);
+    await _prefs.setBool(_kDark, value);
     notifyListeners();
   }
 

@@ -9,12 +9,12 @@ import '../theme.dart';
 /// đổi giá trị — báo hiệu đã đổi ngôn ngữ.
 class SpinningGlobe extends StatefulWidget {
   final double size;
-  final Color color;
+  final Color? color;
   final Object? spin;
   const SpinningGlobe({
     super.key,
     this.size = 22,
-    this.color = DeckColors.accent,
+    this.color,
     this.spin,
   });
 
@@ -56,7 +56,7 @@ class _SpinningGlobeState extends State<SpinningGlobe>
           child: Transform.scale(
             scale: scale,
             child: Icon(Icons.language_rounded,
-                size: widget.size, color: widget.color),
+                size: widget.size, color: widget.color ?? DeckColors.accent),
           ),
         );
       },
@@ -123,7 +123,7 @@ class LangPicker extends StatelessWidget {
             children: [
               SpinningGlobe(size: 16, spin: current),
               const SizedBox(width: 6),
-              const Text('Ngôn ngữ · Language',
+              Text('Ngôn ngữ · Language',
                   style: TextStyle(color: DeckColors.muted, fontSize: 12)),
             ],
           ),
@@ -165,7 +165,7 @@ class LangToggle extends StatelessWidget {
               Text(current.flag, style: const TextStyle(fontSize: 16)),
               const SizedBox(width: 4),
               Text(current.name.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: DeckColors.text,
                       fontSize: 12,
                       fontWeight: FontWeight.w600)),

@@ -10,9 +10,13 @@ import '../theme.dart';
 
 /// Màu trạng thái, cố định, không dùng cho việc khác. Luôn đi kèm icon và
 /// chữ ("Mát / Ấm / Nóng") — không bao giờ để màu tự nói một mình.
-const _good = Color(0xFF0CA30C);
-const _warning = Color(0xFFFAB219);
-const _critical = Color(0xFFD03B3B);
+// Bản sáng lấy màu trạng thái của chủ đề sáng: vàng #FAB219 chỉ đạt 1,8:1
+// trên nền trắng, icon cảnh báo gần như biến mất.
+Color get _good => DeckColors.isDark ? const Color(0xFF0CA30C) : DeckColors.live;
+Color get _warning =>
+    DeckColors.isDark ? const Color(0xFFFAB219) : DeckColors.warn;
+Color get _critical =>
+    DeckColors.isDark ? const Color(0xFFD03B3B) : DeckColors.danger;
 
 /// Tab Hiệu năng: FPS, nhiệt độ, mức tải CPU/GPU, RAM, mạng — kiểu màn hình
 /// các cửa hàng dùng khi test cấu hình. Cập nhật mỗi giây, giữ 60 giây gần
@@ -153,7 +157,7 @@ class _PerfScreenState extends State<PerfScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style:
-                      const TextStyle(color: DeckColors.muted, fontSize: 12)),
+                      TextStyle(color: DeckColors.muted, fontSize: 12)),
             ),
       children: [
         Row(
@@ -163,14 +167,14 @@ class _PerfScreenState extends State<PerfScreen> {
             // Con số chính duy nhất của màn hình.
             Text(
               s.fps == null ? '—' : s.fps!.round().toString(),
-              style: const TextStyle(
+              style: TextStyle(
                   color: DeckColors.text,
                   fontSize: 60,
                   fontWeight: FontWeight.w700,
                   height: 1),
             ),
             const SizedBox(width: 8),
-            const Text('FPS',
+            Text('FPS',
                 style: TextStyle(color: DeckColors.muted, fontSize: 14)),
           ],
         ),
@@ -230,7 +234,7 @@ class _PerfScreenState extends State<PerfScreen> {
           Text(s.gpuName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: DeckColors.muted, fontSize: 11)),
+              style: TextStyle(color: DeckColors.muted, fontSize: 11)),
         _bigTemp(s.gpuTemp),
         const SizedBox(height: 8),
         Wrap(spacing: 14, runSpacing: 4, children: [
@@ -295,7 +299,7 @@ class _PerfScreenState extends State<PerfScreen> {
 
   Widget _bigTemp(double? t) => Text(
         t == null ? '—' : '${t.round()}°C',
-        style: const TextStyle(
+        style: TextStyle(
             color: DeckColors.text, fontSize: 32, fontWeight: FontWeight.w600),
       );
 
@@ -331,7 +335,7 @@ class _PerfScreenState extends State<PerfScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(text,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: DeckColors.muted, fontSize: 12, height: 1.45)),
               ),
             ],
@@ -371,7 +375,7 @@ class _Center extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (busy) ...[
-                const SizedBox(
+                SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
@@ -382,7 +386,7 @@ class _Center extends StatelessWidget {
               Text(text,
                   textAlign: TextAlign.center,
                   style:
-                      const TextStyle(color: DeckColors.muted, fontSize: 13)),
+                      TextStyle(color: DeckColors.muted, fontSize: 13)),
             ],
           ),
         ),
@@ -411,7 +415,7 @@ class _Card extends StatelessWidget {
           Row(
             children: [
               Text(title,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: DeckColors.text,
                       fontSize: 13,
                       fontWeight: FontWeight.w600)),
@@ -448,11 +452,11 @@ class _Metric extends StatelessWidget {
               ],
               Text(label,
                   style:
-                      const TextStyle(color: DeckColors.muted, fontSize: 11)),
+                      TextStyle(color: DeckColors.muted, fontSize: 11)),
             ],
           ),
           Text(value,
-              style: const TextStyle(
+              style: TextStyle(
                   color: DeckColors.text,
                   fontSize: 15,
                   fontWeight: FontWeight.w500)),
@@ -488,7 +492,7 @@ class _TempBadge extends StatelessWidget {
           Icon(icon, size: 13, color: color),
           const SizedBox(width: 4),
           Text(label,
-              style: const TextStyle(color: DeckColors.text, fontSize: 11)),
+              style: TextStyle(color: DeckColors.text, fontSize: 11)),
         ],
       ),
     );
@@ -524,10 +528,10 @@ class _Meter extends StatelessWidget {
         Row(
           children: [
             Text(label,
-                style: const TextStyle(color: DeckColors.muted, fontSize: 11)),
+                style: TextStyle(color: DeckColors.muted, fontSize: 11)),
             const Spacer(),
             Text(text ?? (value == null ? '—' : '${(ratio * 100).round()}%'),
-                style: const TextStyle(color: DeckColors.text, fontSize: 11)),
+                style: TextStyle(color: DeckColors.text, fontSize: 11)),
           ],
         ),
         const SizedBox(height: 4),
@@ -570,12 +574,12 @@ class _Spark extends StatelessWidget {
         Row(
           children: [
             Text(label,
-                style: const TextStyle(color: DeckColors.muted, fontSize: 10)),
+                style: TextStyle(color: DeckColors.muted, fontSize: 10)),
             const Spacer(),
             if (lo != null)
               Text(t('thấp {0} · cao {1}', [lo.round(), hi!.round()]),
                   style:
-                      const TextStyle(color: DeckColors.muted, fontSize: 10)),
+                      TextStyle(color: DeckColors.muted, fontSize: 10)),
           ],
         ),
         const SizedBox(height: 4),
@@ -653,7 +657,7 @@ class _Cores extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(t('Tải {0} luồng', [cores.length]),
-            style: const TextStyle(color: DeckColors.muted, fontSize: 10)),
+            style: TextStyle(color: DeckColors.muted, fontSize: 10)),
         const SizedBox(height: 4),
         SizedBox(
           height: 28,
@@ -666,10 +670,10 @@ class _Cores extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 1),
                     child: Container(
                       height: 2 + 26 * (c.clamp(0, 100) / 100),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: DeckColors.accent,
                         borderRadius:
-                            BorderRadius.vertical(top: Radius.circular(2)),
+                            const BorderRadius.vertical(top: Radius.circular(2)),
                       ),
                     ),
                   ),
