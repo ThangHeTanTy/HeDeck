@@ -29,6 +29,11 @@ call flutter clean >nul
 call flutter pub get
 if errorlevel 1 (echo [X] pub get that bai & pause & exit /b 1)
 
+rem Chep lai quy tac R8 moi lan build: file trong android\app chi duoc chep luc
+rem chay setup_app.bat, sua android_patch\proguard-rules.pro sau do se khong
+rem toi duoc ban build neu khong chep lai o day.
+if exist android\app copy /Y "..\android_patch\proguard-rules.pro" android\app\ >nul
+
 echo [2/3] Build APK release ^(obfuscate^)...
 rem --obfuscate doi ten lop, ham, bien trong ma Dart thanh ky tu vo nghia.
 rem --split-debug-info tach bang doi chieu ra ngoai, KHONG kem trong APK.
