@@ -11,6 +11,11 @@ dependencies:
     sdk: flutter
   web_socket_channel: ^3.0.1
   shared_preferences: ^2.3.2
+  # Ghim phần Android ở nhánh 2.4.x. Từ 2.5.0 (10/2026) plugin tra lớp Kotlin
+  # theo tên qua JNI; 2.5.0 và 2.5.1 quên quy tắc R8 nên bản release chết ngay
+  # lúc mở app với NoSuchMethodError ...SharedPreferencesApiRegistrar.getAll.
+  # 2.4.x dùng kênh tin nhắn Pigeon, đã chạy ổn. Nới ra khi nhánh 2.5 ổn định.
+  shared_preferences_android: ">=2.4.27 <2.5.0"
   cryptography: ^2.7.0
   provider: ^6.1.2
   multicast_dns: ^0.3.2+7

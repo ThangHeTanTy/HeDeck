@@ -18,5 +18,16 @@
     @io.flutter.plugin.common.** *;
 }
 
+# Kieu Kotlin ma shared_preferences_android 2.5+ (va package:jni) tra theo
+# ten qua JNI. R8 doi ten kotlin.coroutines.Continuation thi chu ky ham
+# getAll(..., Continuation) khong con khop -> NoSuchMethodError luc mo app.
+# Chep tu consumer-rules.pro cua shared_preferences_android 2.5.3.
+-keep class kotlin.Unit { *; }
+-keep class kotlin.Result { *; }
+-keep class kotlin.Result$Failure { *; }
+-keep class kotlin.coroutines.Continuation { *; }
+-keep class kotlin.coroutines.intrinsics.CoroutineSingletons { *; }
+-keep class kotlin.coroutines.intrinsics.IntrinsicsKt { *; }
+
 # Giu ten ngoai le de doc duoc bao loi tu ban da phat hanh
 -keepattributes SourceFile,LineNumberTable,Signature,*Annotation*
