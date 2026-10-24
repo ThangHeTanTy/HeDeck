@@ -335,7 +335,7 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
                   height: 48,
                   child: Center(
                     child: Text(label,
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: DeckColors.text, fontSize: 13)),
                   ),
                 ),
@@ -382,7 +382,7 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
           focusNode: _focus,
           autocorrect: false,
           enableSuggestions: false,
-          style: const TextStyle(color: DeckColors.text),
+          style: TextStyle(color: DeckColors.text),
           textInputAction: TextInputAction.send,
           onSubmitted: (_) {
             _conn.key('enter');
@@ -392,7 +392,7 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
           decoration: InputDecoration(
             hintText: t('Gõ ở đây, chữ hiện thẳng trên thiết bị'),
             prefixIcon:
-                const Icon(Icons.keyboard_rounded, size: 18, color: DeckColors.muted),
+                Icon(Icons.keyboard_rounded, size: 18, color: DeckColors.muted),
           ),
         ),
         const SizedBox(height: 8),
@@ -407,7 +407,7 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
               return ActionChip(
                 label: Text(label, style: const TextStyle(fontSize: 12)),
                 backgroundColor: DeckColors.tile,
-                side: const BorderSide(color: DeckColors.line, width: 0.8),
+                side: BorderSide(color: DeckColors.line, width: 0.8),
                 onPressed: () {
                   HapticFeedback.selectionClick();
                   _conn.key(combo);
@@ -429,7 +429,7 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
         builder: (ctx, setDialog) => AlertDialog(
           backgroundColor: DeckColors.surface,
           title: Text(t('Tốc độ con trỏ'),
-              style: const TextStyle(color: DeckColors.text, fontSize: 17)),
+              style: TextStyle(color: DeckColors.text, fontSize: 17)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -442,7 +442,7 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
                 onChanged: (v) => setDialog(() => value = v),
               ),
               Text(t('Màn hình thiết bị càng lớn thì nên để càng nhanh.'),
-                  style: const TextStyle(color: DeckColors.muted, fontSize: 11)),
+                  style: TextStyle(color: DeckColors.muted, fontSize: 11)),
             ],
           ),
           actions: [

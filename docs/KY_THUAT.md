@@ -267,6 +267,17 @@ ngữ thì `SplashScreen` dựng lại màn hình chính bằng khoá mới
 (`KeyedSubtree(key: ValueKey(lang))`); kết nối tới agent nằm phía trên nên
 không bị ngắt.
 
+## Chủ đề sáng / tối
+
+`theme.dart` có hai `DeckPalette` (`dark` là màu gốc, `light` là bộ mới).
+`DeckColors.xxx` là getter đọc bảng màu đang dùng, nên **không đặt được
+trong biểu thức `const`**. Store gọi `DeckColors.use()` lúc khởi động và khi
+đổi; `DeckApp` dựng lại `ThemeData` qua `Selector<Store, bool>`, và
+`SplashScreen` dựng lại màn hình chính bằng khoá `'$lang-$dark'`. Màu ô của
+bản sáng đo theo WCAG: icon từ 3,4:1, chữ từ 4,9:1 trên ô trắng. Nút trượt
+(`widgets/theme_switch.dart`) chạy hết hoạt ảnh rồi mới báo, vì đổi chủ đề
+dựng lại cả giao diện.
+
 ## Giao thức
 
 JSON trên một WebSocket duy nhất.

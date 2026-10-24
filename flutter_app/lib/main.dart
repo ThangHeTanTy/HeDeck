@@ -216,7 +216,7 @@ class _BootScreen extends StatelessWidget {
               children: [
                 const ClownLogo(size: 96, shadow: false),
                 const SizedBox(height: 14),
-                const Text('HeDeck',
+                Text('HeDeck',
                     style: TextStyle(
                         color: DeckColors.bg,
                         fontSize: 26,
@@ -279,11 +279,15 @@ class DeckApp extends StatelessWidget {
           },
         ),
       ],
-      child: MaterialApp(
-        title: 'HeDeck',
-        debugShowCheckedModeBanner: false,
-        theme: buildDeckTheme(),
-        home: const SplashScreen(),
+      // Đổi chủ đề thì dựng lại ThemeData (nút, ô nhập, nền trang...).
+      child: Selector<Store, bool>(
+        selector: (_, s) => s.dark,
+        builder: (_, __, ___) => MaterialApp(
+          title: 'HeDeck',
+          debugShowCheckedModeBanner: false,
+          theme: buildDeckTheme(),
+          home: const SplashScreen(),
+        ),
       ),
     );
   }

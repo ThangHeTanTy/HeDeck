@@ -42,6 +42,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // lại cả màn hình chính bằng một khoá mới. Lớp phủ mở đầu nằm ngoài khoá
     // này nên không chạy lại hoạt ảnh.
     final lang = context.select<Store, AppLang>((s) => s.lang);
+    final dark = context.select<Store, bool>((s) => s.dark);
 
     return Material(
       color: DeckColors.bg,
@@ -53,7 +54,8 @@ class _SplashScreenState extends State<SplashScreen> {
         children: [
           // Màn hình chính dựng ngay từ đầu, nằm dưới lớp phủ
           KeyedSubtree(
-            key: ValueKey(lang),
+            // Màu cũng đọc lúc dựng widget, nên đổi chủ đề cũng cần khoá mới.
+            key: ValueKey('$lang-$dark'),
             child: paired ? const DeckScreen() : const PairScreen(),
           ),
 
@@ -152,11 +154,11 @@ class _SplashOverlayState extends State<_SplashOverlay>
                     opacity: _logoIn.value.clamp(0.0, 1.0),
                     child: Transform.scale(
                       scale: 0.72 + 0.28 * _logoIn.value,
-                      child: const Column(
+                      child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          ClownLogo(size: 132, shadow: false),
-                          SizedBox(height: 18),
+                          const ClownLogo(size: 132, shadow: false),
+                          const SizedBox(height: 18),
                           Text(
                             'HeDeck',
                             style: TextStyle(

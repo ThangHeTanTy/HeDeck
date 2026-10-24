@@ -23,6 +23,7 @@ nhạc, âm lượng riêng từng ứng dụng, và các ô macro gõ tổ hợ
 | **Chọn từng cửa sổ** | Mở 3 cửa sổ Chrome thì ô hiện số 1, 2, 3 phía trên icon — chạm số nào ra cửa sổ đó, như taskbar Windows. |
 | **Tự đổi trang** | Như Stream Deck: vào Liên Minh thì deck tự sang trang Game, về desktop thì về trang Làm việc. |
 | **Touchpad và bàn phím** | Điều khiển chuột, cuộn, kéo thả và gõ chữ tiếng Việt từ xa. |
+| **Sáng / tối** | Nút trượt mặt trời / mặt trăng trong bánh răng. Chủ đề sáng có bộ màu ô riêng, đủ tương phản trên nền trắng. |
 | **Tiếng Việt / English** | Đổi ngôn ngữ trong bánh răng (hoặc nút 🌐 ở màn hình ghép cặp). Lần đầu tự theo ngôn ngữ của điện thoại. |
 | **Đo hiệu năng** | FPS, 1% low, nhiệt độ và tải CPU/GPU, VRAM, RAM, mạng — như màn hình test máy ở cửa hàng. |
 | **Ô chế độ** | Một chạm mở và đóng nhiều app: "Chơi game" mở Discord + Liên Minh, tắt Chrome. |
@@ -177,6 +178,13 @@ Vào bánh răng để đổi giữa **5×2** (10 ô, ô lớn) và **5×3** (15
 Đổi qua lại không mất dữ liệu — mỗi trang luôn giữ đủ 15 chỗ. Cả hai bố cục
 đều lấp kín màn hình: ô giãn thành hình chữ nhật theo chỗ trống, không bị ép
 vuông rồi dồn vào giữa.
+
+### Giao diện sáng / tối
+
+Bánh răng → **Giao diện**: kéo hoặc bấm nút trượt. Bật là chủ đề tối (mặt
+trăng), tắt là chủ đề sáng (mặt trời). Mặc định là tối, như trước. Chủ đề
+sáng dùng tám màu ô đậm hơn cùng tông — màu của bản tối chỉ đạt khoảng 2,1:1
+trên nền trắng, icon sẽ nhạt nhoà.
 
 ### Ngôn ngữ
 
