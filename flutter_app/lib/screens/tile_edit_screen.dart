@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/l10n.dart';
 import '../models/deck.dart';
 import '../services/deck_connection.dart';
 import '../theme.dart';
@@ -36,15 +37,16 @@ class _TileEditScreenState extends State<TileEditScreen> {
 
   String _search = '';
 
-  static const _macroPresets = <String, (String, String)>{
-    'Chuyển cửa sổ': ('alt+tab', 'swap'),
-    'Hiện desktop': ('win+d', 'desktop'),
-    'Khoá máy': ('win+l', 'lock'),
-    'Chụp màn hình': ('win+shift+s', 'image'),
-    'Bảng lệnh VS Code': ('ctrl+shift+p', 'code'),
-    'Đóng cửa sổ': ('alt+f4', 'close'),
-    'Lưu': ('ctrl+s', 'save'),
-    'Hoàn tác': ('ctrl+z', 'undo'),
+  // Getter chứ không phải hằng: tên phải theo ngôn ngữ đang chọn.
+  static Map<String, (String, String)> get _macroPresets => {
+    t('Chuyển cửa sổ'): ('alt+tab', 'swap'),
+    t('Hiện desktop'): ('win+d', 'desktop'),
+    t('Khoá máy'): ('win+l', 'lock'),
+    t('Chụp màn hình'): ('win+shift+s', 'image'),
+    t('Bảng lệnh VS Code'): ('ctrl+shift+p', 'code'),
+    t('Đóng cửa sổ'): ('alt+f4', 'close'),
+    t('Lưu'): ('ctrl+s', 'save'),
+    t('Hoàn tác'): ('ctrl+z', 'undo'),
   };
 
   @override
@@ -96,19 +98,19 @@ class _TileEditScreenState extends State<TileEditScreen> {
   void _save() {
     if ((_kind == TileKind.app || _kind == TileKind.appVolume) &&
         _appId == null) {
-      _toast('Chọn một ứng dụng trước đã');
+      _toast(t('Chọn một ứng dụng trước đã'));
       return;
     }
     if (_kind == TileKind.macro && _keysOf(0).isEmpty) {
-      _toast('Nhập ít nhất một tổ hợp phím cho mặt chính');
+      _toast(t('Nhập ít nhất một tổ hợp phím cho mặt chính'));
       return;
     }
     if (_kind == TileKind.scene && _steps.isEmpty) {
-      _toast('Thêm ít nhất một ứng dụng cho chế độ này');
+      _toast(t('Thêm ít nhất một ứng dụng cho chế độ này'));
       return;
     }
     if (_isToggle && _kind == TileKind.macro && _keysOf(1).isEmpty) {
-      _toast('Ô hai trạng thái cần tổ hợp phím cho cả mặt phụ');
+      _toast(t('Ô hai trạng thái cần tổ hợp phím cho cả mặt phụ'));
       return;
     }
 
@@ -143,15 +145,15 @@ class _TileEditScreenState extends State<TileEditScreen> {
       backgroundColor: DeckColors.bg,
       appBar: AppBar(
         backgroundColor: DeckColors.bg,
-        title: const Text('Sửa ô', style: TextStyle(fontSize: 17)),
+        title: Text(t('Sửa ô'), style: const TextStyle(fontSize: 17)),
         actions: [
           if (!widget.tile.isEmpty)
             IconButton(
-              tooltip: 'Xoá ô',
+              tooltip: t('Xoá ô'),
               icon: const Icon(Icons.delete_outline_rounded),
               onPressed: () => Navigator.pop(context, DeckTile.empty),
             ),
-          TextButton(onPressed: _save, child: const Text('Lưu')),
+          TextButton(onPressed: _save, child: Text(t('Lưu'))),
           const SizedBox(width: 6),
         ],
       ),
@@ -182,9 +184,9 @@ class _TileEditScreenState extends State<TileEditScreen> {
               style: const TextStyle(color: DeckColors.text),
               decoration: InputDecoration(
                 labelText: _isToggle && _canToggle
-                    ? 'Tên hiển thị · ${_editingFace == 0 ? "mặt chính" : "mặt phụ"}'
-                    : 'Tên hiển thị',
-                hintText: 'Để trống thì chỉ hiện icon',
+                    ? t('Tên hiển thị · {0}', [_editingFace == 0 ? t('mặt chính') : t('mặt phụ')])
+                    : t('Tên hiển thị'),
+                hintText: t('Để trống thì chỉ hiện icon'),
               ),
             ),
             const SizedBox(height: 18),
@@ -239,11 +241,11 @@ class _TileEditScreenState extends State<TileEditScreen> {
 
     return Row(
       children: [
-        chip(TileKind.app, 'Ứng dụng', Icons.desktop_windows_rounded),
+        chip(TileKind.app, t('Ứng dụng'), Icons.desktop_windows_rounded),
         chip(TileKind.macro, 'Macro', Icons.keyboard_rounded),
         chip(TileKind.media, 'Media', Icons.music_note_rounded),
-        chip(TileKind.appVolume, 'Âm lượng', Icons.volume_up_rounded),
-        chip(TileKind.scene, 'Chế độ', Icons.auto_awesome_rounded),
+        chip(TileKind.appVolume, t('Âm lượng'), Icons.volume_up_rounded),
+        chip(TileKind.scene, t('Chế độ'), Icons.auto_awesome_rounded),
       ],
     );
   }
@@ -260,15 +262,15 @@ class _TileEditScreenState extends State<TileEditScreen> {
       ),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Ô hai trạng thái',
-                    style: TextStyle(color: DeckColors.text, fontSize: 14)),
-                SizedBox(height: 2),
-                Text('Bấm để bật, bấm lại để tắt. Mỗi mặt có icon và màu riêng.',
-                    style: TextStyle(color: DeckColors.muted, fontSize: 11)),
+                Text(t('Ô hai trạng thái'),
+                    style: const TextStyle(color: DeckColors.text, fontSize: 14)),
+                const SizedBox(height: 2),
+                Text(t('Bấm để bật, bấm lại để tắt. Mỗi mặt có icon và màu riêng.'),
+                    style: const TextStyle(color: DeckColors.muted, fontSize: 11)),
               ],
             ),
           ),
@@ -319,7 +321,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
       );
     }
 
-    return Row(children: [tab(0, 'Mặt chính'), tab(1, 'Mặt phụ')]);
+    return Row(children: [tab(0, t('Mặt chính')), tab(1, t('Mặt phụ'))]);
   }
 
   // ----------------------------------------------------------- chọn ứng dụng
@@ -340,15 +342,15 @@ class _TileEditScreenState extends State<TileEditScreen> {
               child: TextField(
                 onChanged: (v) => setState(() => _search = v),
                 style: const TextStyle(color: DeckColors.text),
-                decoration: const InputDecoration(
-                  hintText: 'Tìm ứng dụng trên thiết bị',
-                  prefixIcon: Icon(Icons.search_rounded,
+                decoration: InputDecoration(
+                  hintText: t('Tìm ứng dụng trên thiết bị'),
+                  prefixIcon: const Icon(Icons.search_rounded,
                       size: 18, color: DeckColors.muted),
                 ),
               ),
             ),
             IconButton(
-              tooltip: 'Quét lại Start Menu',
+              tooltip: t('Quét lại Start Menu'),
               icon: const Icon(Icons.refresh_rounded, color: DeckColors.muted),
               onPressed: conn.isOnline ? conn.rescan : null,
             ),
@@ -364,48 +366,47 @@ class _TileEditScreenState extends State<TileEditScreen> {
                   }
                 : null,
             icon: const Icon(Icons.web_asset_rounded, size: 18),
-            label: const Text('Chọn từ cửa sổ đang mở trên PC'),
+            label: Text(t('Chọn từ cửa sổ đang mở trên PC')),
           ),
         ),
         const SizedBox(height: 10),
         if (!conn.isOnline)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Text('Chưa kết nối tới thiết bị nên không lấy được danh sách.',
-                style: TextStyle(color: DeckColors.muted, fontSize: 13)),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Text(t('Chưa kết nối tới thiết bị nên không lấy được danh sách.'),
+                style: const TextStyle(color: DeckColors.muted, fontSize: 13)),
           )
         else if (conn.catalogLoading && conn.catalog.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
             child: Row(
               children: [
-                SizedBox(
+                const SizedBox(
                   height: 14,
                   width: 14,
                   child: CircularProgressIndicator(
                       strokeWidth: 2, color: DeckColors.muted),
                 ),
-                SizedBox(width: 10),
-                Text('Đang lấy danh sách từ thiết bị…',
-                    style: TextStyle(color: DeckColors.muted, fontSize: 13)),
+                const SizedBox(width: 10),
+                Text(t('Đang lấy danh sách từ thiết bị…'),
+                    style: const TextStyle(color: DeckColors.muted, fontSize: 13)),
               ],
             ),
           )
         else if (conn.catalog.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
-              'Thiết bị chưa gửi được danh sách ứng dụng. Bấm nút làm mới bên '
-              'phải, hoặc xem cửa sổ agent có báo lỗi không.',
+              t('Thiết bị chưa gửi được danh sách ứng dụng. Bấm nút làm mới bên phải, hoặc xem cửa sổ agent có báo lỗi không.'),
               style:
-                  TextStyle(color: DeckColors.muted, fontSize: 13, height: 1.4),
+                  const TextStyle(color: DeckColors.muted, fontSize: 13, height: 1.4),
             ),
           )
         else if (apps.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Text('Không có ứng dụng nào khớp.',
-                style: TextStyle(color: DeckColors.muted, fontSize: 13)),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Text(t('Không có ứng dụng nào khớp.'),
+                style: const TextStyle(color: DeckColors.muted, fontSize: 13)),
           )
         else
           Container(
@@ -457,8 +458,8 @@ class _TileEditScreenState extends State<TileEditScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Ô này làm gì với âm lượng của app đó',
-            style: TextStyle(color: DeckColors.muted, fontSize: 12)),
+        Text(t('Ô này làm gì với âm lượng của app đó'),
+            style: const TextStyle(color: DeckColors.muted, fontSize: 12)),
         const SizedBox(height: 8),
         Row(
           children: appVolumeLabels.entries.map((e) {
@@ -479,9 +480,9 @@ class _TileEditScreenState extends State<TileEditScreen> {
                   ),
                   child: Text(
                     switch (e.key) {
-                      'up' => 'Tăng 5%',
-                      'down' => 'Giảm 5%',
-                      _ => 'Tắt tiếng',
+                      'up' => t('Tăng 5%'),
+                      'down' => t('Giảm 5%'),
+                      _ => t('Tắt tiếng'),
                     },
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -509,10 +510,10 @@ class _TileEditScreenState extends State<TileEditScreen> {
           style: const TextStyle(color: DeckColors.text),
           decoration: InputDecoration(
             labelText: _isToggle
-                ? 'Tổ hợp phím · ${_editingFace == 0 ? "mặt chính" : "mặt phụ"}'
-                : 'Tổ hợp phím',
+                ? t('Tổ hợp phím · {0}', [_editingFace == 0 ? t('mặt chính') : t('mặt phụ')])
+                : t('Tổ hợp phím'),
             hintText: 'ctrl+shift+p',
-            helperText: 'Nhiều bước thì ngăn bằng dấu phẩy',
+            helperText: t('Nhiều bước thì ngăn bằng dấu phẩy'),
             helperStyle:
                 const TextStyle(color: DeckColors.muted, fontSize: 11),
           ),
@@ -560,10 +561,9 @@ class _TileEditScreenState extends State<TileEditScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Bấm ô là chạy lần lượt từ trên xuống. "Mở" bỏ qua app đã chạy sẵn, '
-          '"Đóng" tắt hẳn app.',
-          style: TextStyle(color: DeckColors.muted, fontSize: 12, height: 1.4),
+        Text(
+          t('Bấm ô là chạy lần lượt từ trên xuống. "Mở" bỏ qua app đã chạy sẵn, "Đóng" tắt hẳn app.'),
+          style: const TextStyle(color: DeckColors.muted, fontSize: 12, height: 1.4),
         ),
         const SizedBox(height: 10),
         for (var i = 0; i < _steps.length; i++) _stepRow(conn, i),
@@ -574,7 +574,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
               child: OutlinedButton.icon(
                 onPressed: () => _addStep(fromRunning: false),
                 icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Thêm ứng dụng'),
+                label: Text(t('Thêm ứng dụng')),
               ),
             ),
             const SizedBox(width: 8),
@@ -584,7 +584,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
                     ? () => _addStep(fromRunning: true)
                     : null,
                 icon: const Icon(Icons.web_asset_rounded, size: 18),
-                label: const Text('Từ cửa sổ đang mở'),
+                label: Text(t('Từ cửa sổ đang mở')),
               ),
             ),
           ],
@@ -616,7 +616,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              app?.name ?? 'App không còn trên thiết bị',
+              app?.name ?? t('App không còn trên thiết bị'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -635,7 +635,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
                     .withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Text(step.close ? 'Đóng' : 'Mở',
+              child: Text(step.close ? t('Đóng') : t('Mở'),
                   style: TextStyle(
                       color: step.close ? DeckColors.danger : DeckColors.live,
                       fontSize: 12,
@@ -643,7 +643,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
             ),
           ),
           IconButton(
-            tooltip: 'Bỏ bước này',
+            tooltip: t('Bỏ bước này'),
             visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.remove_circle_outline_rounded,
                 size: 18, color: DeckColors.muted),
@@ -737,8 +737,8 @@ class _TileEditScreenState extends State<TileEditScreen> {
             if (chosen.isNotEmpty)
               GestureDetector(
                 onTap: () => setState(() => _icon[_editingFace] = ''),
-                child: const Text('Dùng icon mặc định',
-                    style: TextStyle(color: DeckColors.accent, fontSize: 12)),
+                child: Text(t('Dùng icon mặc định'),
+                    style: const TextStyle(color: DeckColors.accent, fontSize: 12)),
               ),
           ],
         ),
@@ -765,7 +765,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
                 Expanded(
                   child: Text(
                     chosen.isEmpty
-                        ? 'Chọn từ ${IconLibrary.count} icon'
+                        ? t('Chọn từ {0} icon', [IconLibrary.count])
                         : chosen,
                     style: TextStyle(
                       color: chosen.isEmpty ? DeckColors.muted : DeckColors.text,
@@ -804,8 +804,8 @@ class _TileEditScreenState extends State<TileEditScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Màu nhấn',
-            style: TextStyle(color: DeckColors.muted, fontSize: 12)),
+        Text(t('Màu nhấn'),
+            style: const TextStyle(color: DeckColors.muted, fontSize: 12)),
         const SizedBox(height: 10),
         Wrap(
           spacing: 10,
@@ -886,21 +886,20 @@ class _RunningSheetState extends State<RunningPickerSheet> {
       builder: (context, controller) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
-            child: Text('Đang mở trên PC',
-                style: TextStyle(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text(t('Đang mở trên PC'),
+                style: const TextStyle(
                     color: DeckColors.text,
                     fontSize: 15,
                     fontWeight: FontWeight.w600)),
           ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
-              'Mở app trên PC trước rồi chọn ở đây. App chưa có trong danh '
-              'sách sẽ được thêm và giữ lại cả khi quét lại.',
+              t('Mở app trên PC trước rồi chọn ở đây. App chưa có trong danh sách sẽ được thêm và giữ lại cả khi quét lại.'),
               style:
-                  TextStyle(color: DeckColors.muted, fontSize: 11, height: 1.4),
+                  const TextStyle(color: DeckColors.muted, fontSize: 11, height: 1.4),
             ),
           ),
           if (_error != null)
@@ -916,7 +915,7 @@ class _RunningSheetState extends State<RunningPickerSheet> {
               builder: (context, snap) {
                 if (snap.hasError) {
                   return Center(
-                    child: Text('Không lấy được danh sách: ${snap.error}',
+                    child: Text(t('Không lấy được danh sách: {0}', [snap.error]),
                         style: const TextStyle(
                             color: DeckColors.muted, fontSize: 13)),
                   );
@@ -929,10 +928,10 @@ class _RunningSheetState extends State<RunningPickerSheet> {
                 }
                 final items = snap.data!;
                 if (items.isEmpty) {
-                  return const Center(
-                    child: Text('Không thấy cửa sổ nào đang mở',
+                  return Center(
+                    child: Text(t('Không thấy cửa sổ nào đang mở'),
                         style:
-                            TextStyle(color: DeckColors.muted, fontSize: 13)),
+                            const TextStyle(color: DeckColors.muted, fontSize: 13)),
                   );
                 }
                 return ListView.builder(
@@ -955,7 +954,7 @@ class _RunningSheetState extends State<RunningPickerSheet> {
                               color: DeckColors.text, fontSize: 14)),
                       subtitle: Text(
                         p.windows > 1
-                            ? '${p.windows} cửa sổ · ${p.exe}'
+                            ? t('{0} cửa sổ · {1}', [p.windows, p.exe])
                             : (p.title.isEmpty ? p.exe : p.title),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -969,8 +968,8 @@ class _RunningSheetState extends State<RunningPickerSheet> {
                               child: CircularProgressIndicator(
                                   strokeWidth: 2, color: DeckColors.muted))
                           : (p.appId != null
-                              ? const Text('Đã có',
-                                  style: TextStyle(
+                              ? Text(t('Đã có'),
+                                  style: const TextStyle(
                                       color: DeckColors.live, fontSize: 11))
                               : const Icon(Icons.add_rounded,
                                   size: 20, color: DeckColors.accent)),
@@ -1017,19 +1016,19 @@ class _CatalogSheetState extends State<CatalogPickerSheet> {
             child: TextField(
               onChanged: (v) => setState(() => _q = v),
               style: const TextStyle(color: DeckColors.text),
-              decoration: const InputDecoration(
-                hintText: 'Tìm ứng dụng trên thiết bị',
-                prefixIcon: Icon(Icons.search_rounded,
+              decoration: InputDecoration(
+                hintText: t('Tìm ứng dụng trên thiết bị'),
+                prefixIcon: const Icon(Icons.search_rounded,
                     size: 18, color: DeckColors.muted),
               ),
             ),
           ),
           Expanded(
             child: apps.isEmpty
-                ? const Center(
-                    child: Text('Không có ứng dụng nào',
+                ? Center(
+                    child: Text(t('Không có ứng dụng nào'),
                         style:
-                            TextStyle(color: DeckColors.muted, fontSize: 13)))
+                            const TextStyle(color: DeckColors.muted, fontSize: 13)))
                 : ListView.builder(
                     controller: controller,
                     itemCount: apps.length,
@@ -1088,9 +1087,9 @@ class _IconSheetState extends State<_IconSheet> {
               autofocus: false,
               onChanged: (v) => setState(() => _query = v),
               style: const TextStyle(color: DeckColors.text),
-              decoration: const InputDecoration(
-                hintText: 'Tìm icon: micro, ghi hình, khoá…',
-                prefixIcon: Icon(Icons.search_rounded,
+              decoration: InputDecoration(
+                hintText: t('Tìm icon: micro, ghi hình, khoá…'),
+                prefixIcon: const Icon(Icons.search_rounded,
                     size: 18, color: DeckColors.muted),
               ),
             ),
@@ -1105,7 +1104,7 @@ class _IconSheetState extends State<_IconSheet> {
                       for (final group in IconLibrary.groups.entries) ...[
                         Padding(
                           padding: const EdgeInsets.fromLTRB(2, 12, 0, 8),
-                          child: Text(group.key,
+                          child: Text(t(group.key),
                               style: const TextStyle(
                                   color: DeckColors.muted, fontSize: 12)),
                         ),
@@ -1121,9 +1120,9 @@ class _IconSheetState extends State<_IconSheet> {
 
   Widget _grid(List<(String, String)> items, ScrollController controller) {
     if (items.isEmpty) {
-      return const Center(
-        child: Text('Không tìm thấy icon nào',
-            style: TextStyle(color: DeckColors.muted, fontSize: 13)),
+      return Center(
+        child: Text(t('Không tìm thấy icon nào'),
+            style: const TextStyle(color: DeckColors.muted, fontSize: 13)),
       );
     }
     return ListView(
@@ -1142,7 +1141,7 @@ class _IconSheetState extends State<_IconSheet> {
         return GestureDetector(
           onTap: () => Navigator.pop(context, e.$1),
           child: Tooltip(
-            message: e.$2,
+            message: t(e.$2),
             child: Container(
               width: 54,
               height: 54,

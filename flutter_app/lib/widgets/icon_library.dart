@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/en.dart';
+
 /// Thư viện icon vector cho các ô.
 ///
 /// Icon lấy từ file `.exe` bị vỡ khi phóng lớn, vì Windows chỉ có tới 256px
@@ -280,7 +282,8 @@ class IconLibrary {
     return _icons[name];
   }
 
-  /// Tìm theo từ khoá tiếng Việt hoặc mã.
+  /// Tìm theo từ khoá tiếng Việt, tiếng Anh hoặc mã. Khớp cả hai ngôn ngữ
+  /// bất kể đang chọn ngôn ngữ nào: người dùng gõ "mic" hay "micro" đều ra.
   static List<(String, String)> search(String query) {
     final q = query.trim().toLowerCase();
     final all = <(String, String)>[];
@@ -290,7 +293,9 @@ class IconLibrary {
     if (q.isEmpty) return all;
     return all
         .where((e) =>
-            e.$1.toLowerCase().contains(q) || e.$2.toLowerCase().contains(q))
+            e.$1.toLowerCase().contains(q) ||
+            e.$2.toLowerCase().contains(q) ||
+            (en[e.$2] ?? '').toLowerCase().contains(q))
         .toList();
   }
 }

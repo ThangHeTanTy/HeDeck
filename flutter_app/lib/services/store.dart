@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:math';
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/l10n.dart';
 import '../models/deck.dart';
 
 /// Cấu hình lưu trên máy: thông tin ghép cặp và bố cục các trang.
@@ -18,6 +20,7 @@ class Store extends ChangeNotifier {
   static const _kFlipped = 'deck.flipped';
   static const _kWolMacs = 'deck.wolMacs';
   static const _kAutoSwitch = 'deck.autoSwitch';
+  static const _kLang = 'deck.lang';
   static const _kMouseSpeed = 'deck.mouseSpeed';
   static const _kWolBroadcast = 'deck.wolBroadcast';
 
@@ -36,6 +39,9 @@ class Store extends ChangeNotifier {
   String wolBroadcast = '';
 
   bool get canWake => wolMacs.isNotEmpty;
+
+  /// Ngôn ngữ giao diện.
+  AppLang lang = AppLang.vi;
 
   /// Tự đổi trang theo app đang dùng trên thiết bị.
   bool autoSwitch = true;
@@ -67,6 +73,15 @@ class Store extends ChangeNotifier {
     flippedTiles
       ..clear()
       ..addAll(_prefs.getStringList(_kFlipped) ?? const []);
+    // Chưa chọn lần nào thì theo ngôn ngữ của điện thoại: máy tiếng Việt
+    // dùng tiếng Việt, còn lại tiếng Anh.
+    final savedLang = _prefs.getString(_kLang);
+    lang = savedLang != null
+        ? AppLang.fromCode(savedLang)
+        : (PlatformDispatcher.instance.locale.languageCode == 'vi'
+            ? AppLang.vi
+            : AppLang.en);
+    L10n.current = lang;
     autoSwitch = _prefs.getBool(_kAutoSwitch) ?? true;
     mouseSpeed = _prefs.getDouble(_kMouseSpeed) ?? 1.4;
     wolMacs = _prefs.getStringList(_kWolMacs) ?? [];
@@ -75,6 +90,9 @@ class Store extends ChangeNotifier {
     await _prefs.setString(_kDeviceId, deviceId);
 
     final raw = _prefs.getString(_kPages);
+    // Trang mẫu dựng lúc khởi tạo, khi chưa biết ngôn ngữ. Lần chạy đầu thì
+    // dựng lại cho đúng tên theo ngôn ngữ vừa đọc.
+    if (raw == null) pages = DeckPage.starter();
     if (raw != null) {
       try {
         pages = (jsonDecode(raw) as List)
@@ -198,6 +216,15 @@ class Store extends ChangeNotifier {
     }
   }
 
+  /// Đổi ngôn ngữ. Giao diện tự dựng lại theo `lang` (xem SplashScreen).
+  Future<void> setLang(AppLang value) async {
+    if (value == lang) return;
+    lang = value;
+    L10n.current = value;
+    await _prefs.setString(_kLang, value.name);
+    notifyListeners();
+  }
+
   Future<void> setAutoSwitch(bool value) async {
     autoSwitch = value;
     await _prefs.setBool(_kAutoSwitch, value);
@@ -253,7 +280,7 @@ class Store extends ChangeNotifier {
   }
 
   Future<void> addPage() async {
-    pages.add(DeckPage(name: 'Trang ${pages.length + 1}'));
+    pages.add(DeckPage(name: t('Trang {0}', [pages.length + 1])));
     await _persistPages();
   }
 

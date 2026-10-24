@@ -23,6 +23,7 @@ nhạc, âm lượng riêng từng ứng dụng, và các ô macro gõ tổ hợ
 | **Chọn từng cửa sổ** | Mở 3 cửa sổ Chrome thì ô hiện số 1, 2, 3 phía trên icon — chạm số nào ra cửa sổ đó, như taskbar Windows. |
 | **Tự đổi trang** | Như Stream Deck: vào Liên Minh thì deck tự sang trang Game, về desktop thì về trang Làm việc. |
 | **Touchpad và bàn phím** | Điều khiển chuột, cuộn, kéo thả và gõ chữ tiếng Việt từ xa. |
+| **Tiếng Việt / English** | Đổi ngôn ngữ trong bánh răng (hoặc nút 🌐 ở màn hình ghép cặp). Lần đầu tự theo ngôn ngữ của điện thoại. |
 | **Đo hiệu năng** | FPS, 1% low, nhiệt độ và tải CPU/GPU, VRAM, RAM, mạng — như màn hình test máy ở cửa hàng. |
 | **Ô chế độ** | Một chạm mở và đóng nhiều app: "Chơi game" mở Discord + Liên Minh, tắt Chrome. |
 | **Macro phím tắt** | Một ô gõ `ctrl+shift+p`, hoặc cả chuỗi nhiều bước. |
@@ -173,7 +174,16 @@ muốn bấm bật bấm tắt.
 <img src="docs/images/deck-5x3.png" width="560" alt="Bố cục 5x3">
 
 Vào bánh răng để đổi giữa **5×2** (10 ô, ô lớn) và **5×3** (15 ô, ô nhỏ hơn).
-Đổi qua lại không mất dữ liệu — mỗi trang luôn giữ đủ 15 chỗ.
+Đổi qua lại không mất dữ liệu — mỗi trang luôn giữ đủ 15 chỗ. Cả hai bố cục
+đều lấp kín màn hình: ô giãn thành hình chữ nhật theo chỗ trống, không bị ép
+vuông rồi dồn vào giữa.
+
+### Ngôn ngữ
+
+Bánh răng → *Ngôn ngữ · Language* → chọn 🇻🇳 Tiếng Việt hoặc 🇬🇧 English. Chưa
+ghép cặp thì bấm nút 🌐 ở góc trên màn hình ghép cặp. Lần cài đầu app tự theo
+ngôn ngữ của điện thoại. Thông báo lỗi do agent trên máy tính gửi về vẫn là
+tiếng Việt.
 
 ---
 

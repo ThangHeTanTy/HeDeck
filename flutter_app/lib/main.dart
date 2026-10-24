@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import 'l10n/l10n.dart';
 import 'screens/splash_screen.dart';
 import 'services/deck_connection.dart';
 import 'services/device_identity.dart';
@@ -29,8 +30,8 @@ Future<void> main() async {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('HeDeck gặp lỗi khi dựng giao diện',
-                    style: TextStyle(
+                Text(t('HeDeck gặp lỗi khi dựng giao diện'),
+                    style: const TextStyle(
                         color: Color(0xFFFFB4B4),
                         fontSize: 16,
                         fontWeight: FontWeight.w600)),
@@ -98,7 +99,7 @@ class _BootAppState extends State<BootApp> {
     final started = DateTime.now();
     final result = await fn().timeout(limit,
         onTimeout: () => throw TimeoutException(
-            '"$step" không xong sau ${limit.inSeconds} giây'));
+            t('"{0}" không xong sau {1} giây', [step, limit.inSeconds])));
     debugPrint('HeDeck: khởi động — $step xong '
         '(${DateTime.now().difference(started).inMilliseconds} ms)');
     return result;
@@ -131,7 +132,7 @@ class _BootAppState extends State<BootApp> {
 
     try {
       final store = Store();
-      await _run('Đọc cấu hình đã lưu', store.load);
+      await _run(t('Đọc cấu hình đã lưu'), store.load);
       debugPrint('HeDeck: đã ghép cặp=${store.isPaired} '
           'host="${store.host}" trang=${store.pages.length} '
           'bố cục=${Store.cols}x${store.rows}');
@@ -139,20 +140,20 @@ class _BootAppState extends State<BootApp> {
       // Cặp khoá Ed25519 của máy này. Sinh trong lần chạy đầu, sau đó nằm
       // yên trong vùng dữ liệu riêng của app.
       final identity = DeviceIdentity();
-      final freshKey = await _run('Nạp khoá điện thoại', identity.load,
+      final freshKey = await _run(t('Nạp khoá điện thoại'), identity.load,
           limit: const Duration(seconds: 20));
 
       // Vân tay khoá hiện tại phải trùng với vân tay đã lưu lúc ghép cặp.
       // Lệch nghĩa là khoá đã đổi (cài lại app, dữ liệu hỏng), thiết bị chắc
       // chắn không nhận ra nữa — dọn luôn thay vì để app thử kết nối rồi nhận
       // về lỗi chữ ký khó hiểu.
-      final current = await _run('Tính vân tay khoá', identity.fingerprint);
+      final current = await _run(t('Tính vân tay khoá'), identity.fingerprint);
       debugPrint('HeDeck: vân tay khoá điện thoại = $current');
       if (store.isPaired &&
           (freshKey || (current.isNotEmpty && current != store.fingerprint))) {
         debugPrint('HeDeck: khoá đã đổi (lưu ${store.fingerprint}), '
             'cần ghép cặp lại');
-        await _run('Xoá ghép cặp cũ', store.forgetHost);
+        await _run(t('Xoá ghép cặp cũ'), store.forgetHost);
       }
 
       _slowTimer?.cancel();
@@ -222,7 +223,7 @@ class _BootScreen extends StatelessWidget {
                         fontWeight: FontWeight.w700)),
                 const SizedBox(height: 18),
                 if (error != null) ...[
-                  Text('Không khởi động được ở bước: $step',
+                  Text(t('Không khởi động được ở bước: {0}', [step]),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                           color: Color(0xFFB3261E),
@@ -240,11 +241,11 @@ class _BootScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   FilledButton(
-                      onPressed: onRetry, child: const Text('Thử lại')),
+                      onPressed: onRetry, child: Text(t('Thử lại'))),
                   const SizedBox(height: 8),
-                  const Text(
-                      'Lặp lại nhiều lần thì chụp màn hình này gửi Hề IT.',
-                      style: TextStyle(color: Color(0xFF777777), fontSize: 11)),
+                  Text(
+                      t('Lặp lại nhiều lần thì chụp màn hình này gửi Hề IT.'),
+                      style: const TextStyle(color: Color(0xFF777777), fontSize: 11)),
                 ] else if (slow)
                   Text('$step…',
                       style: const TextStyle(

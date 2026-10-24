@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../l10n/l10n.dart';
+
 /// Một ô có thể là: trống, mở ứng dụng, gõ macro, điều khiển media, chỉnh
 /// âm lượng riêng của một ứng dụng, hoặc một "chế độ" mở/đóng nhiều app.
 enum TileKind { empty, app, macro, media, appVolume, scene }
@@ -229,8 +231,8 @@ class DeckPage {
       );
 
   static List<DeckPage> starter() => [
-        DeckPage(name: 'Làm việc'),
-        DeckPage(name: 'Giải trí'),
+        DeckPage(name: t('Làm việc')),
+        DeckPage(name: t('Giải trí')),
       ];
 
   /// Chỗ trống đầu tiên trong phạm vi bố cục đang dùng, -1 nếu đã đầy.
@@ -352,19 +354,19 @@ class RunningProgram {
 }
 
 /// Nhãn tiếng Việt cho các hành động media.
-const mediaLabels = <String, String>{
-  'playpause': 'Phát / Tạm dừng',
-  'next': 'Bài kế',
-  'prev': 'Bài trước',
-  'stop': 'Dừng',
-  'volup': 'Tăng âm lượng',
-  'voldown': 'Giảm âm lượng',
-  'mute': 'Tắt tiếng',
+Map<String, String> get mediaLabels => {
+  'playpause': t('Phát / Tạm dừng'),
+  'next': t('Bài kế'),
+  'prev': t('Bài trước'),
+  'stop': t('Dừng'),
+  'volup': t('Tăng âm lượng'),
+  'voldown': t('Giảm âm lượng'),
+  'mute': t('Tắt tiếng'),
 };
 
 /// Nhãn cho hành động âm lượng riêng từng app.
-const appVolumeLabels = <String, String>{
-  'up': 'Tăng âm lượng app',
-  'down': 'Giảm âm lượng app',
-  'mute': 'Tắt tiếng app',
+Map<String, String> get appVolumeLabels => {
+  'up': t('Tăng âm lượng app'),
+  'down': t('Giảm âm lượng app'),
+  'mute': t('Tắt tiếng app'),
 };

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/l10n.dart';
 import '../models/perf.dart';
 import '../services/deck_connection.dart';
 import '../theme.dart';
@@ -69,16 +70,15 @@ class _PerfScreenState extends State<PerfScreen> {
       backgroundColor: DeckColors.bg,
       appBar: AppBar(
         backgroundColor: DeckColors.bg,
-        title: const Text('Hiệu năng', style: TextStyle(fontSize: 17)),
+        title: Text(t('Hiệu năng'), style: const TextStyle(fontSize: 17)),
       ),
       body: SafeArea(
         child: !conn.isOnline
-            ? const _Center('Chưa kết nối tới thiết bị')
+            ? _Center(t('Chưa kết nối tới thiết bị'))
             : conn.agentOutdated
-                ? const _Center('Agent trên thiết bị là bản cũ — tắt cửa sổ '
-                    'agent rồi chạy lại run_agent.bat')
+                ? _Center(t('Agent trên thiết bị là bản cũ — tắt cửa sổ agent rồi chạy lại run_agent.bat'))
                 : s == null
-                    ? const _Center('Đang đo…', busy: true)
+                    ? _Center(t('Đang đo…'), busy: true)
                     : LayoutBuilder(
                         builder: (context, box) =>
                             box.maxWidth >= 720 ? _wide(s) : _narrow(s),
@@ -184,7 +184,7 @@ class _PerfScreenState extends State<PerfScreen> {
                   : '${s.frameTime!.toStringAsFixed(1)} ms'),
         ]),
         const SizedBox(height: 10),
-        _Spark(values: history, min: 0, max: top * 1.15, label: 'FPS 60 giây'),
+        _Spark(values: history, min: 0, max: top * 1.15, label: t('FPS 60 giây')),
       ],
     );
   }
@@ -197,22 +197,22 @@ class _PerfScreenState extends State<PerfScreen> {
         _bigTemp(s.cpuTemp),
         const SizedBox(height: 8),
         Wrap(spacing: 14, runSpacing: 4, children: [
-          _Metric('Tải', _pct(s.cpuLoad)),
+          _Metric(t('Tải'), _pct(s.cpuLoad)),
           _Metric(
               'Xung',
               s.cpuClock == null
                   ? '—'
                   : '${(s.cpuClock! / 1000).toStringAsFixed(2)} GHz'),
-          _Metric('Công suất', _unit(s.cpuPower, 'W')),
+          _Metric(t('Công suất'), _unit(s.cpuPower, 'W')),
         ]),
         const SizedBox(height: 10),
-        _Meter(value: s.cpuLoad, max: 100, label: 'Tải CPU'),
+        _Meter(value: s.cpuLoad, max: 100, label: t('Tải CPU')),
         const SizedBox(height: 10),
         _Spark(
             values: _h('cpuTemp'),
             min: 30,
             max: 100,
-            label: 'Nhiệt độ 60 giây'),
+            label: t('Nhiệt độ 60 giây')),
         if (s.cpuCores.isNotEmpty) ...[
           const SizedBox(height: 10),
           _Cores(s.cpuCores),
@@ -234,13 +234,13 @@ class _PerfScreenState extends State<PerfScreen> {
         _bigTemp(s.gpuTemp),
         const SizedBox(height: 8),
         Wrap(spacing: 14, runSpacing: 4, children: [
-          _Metric('Tải', _pct(s.gpuLoad)),
+          _Metric(t('Tải'), _pct(s.gpuLoad)),
           _Metric('Xung', _unit(s.gpuClock, 'MHz')),
-          _Metric('Công suất', _unit(s.gpuPower, 'W')),
-          _Metric('Quạt', _pct(s.gpuFan)),
+          _Metric(t('Công suất'), _unit(s.gpuPower, 'W')),
+          _Metric(t('Quạt'), _pct(s.gpuFan)),
         ]),
         const SizedBox(height: 10),
-        _Meter(value: s.gpuLoad, max: 100, label: 'Tải GPU'),
+        _Meter(value: s.gpuLoad, max: 100, label: t('Tải GPU')),
         const SizedBox(height: 8),
         _Meter(
           value: s.vramUsed,
@@ -257,7 +257,7 @@ class _PerfScreenState extends State<PerfScreen> {
             values: _h('gpuTemp'),
             min: 30,
             max: 100,
-            label: 'Nhiệt độ 60 giây'),
+            label: t('Nhiệt độ 60 giây')),
       ],
     );
   }
@@ -269,7 +269,7 @@ class _PerfScreenState extends State<PerfScreen> {
         _Meter(
           value: s.ramPercent,
           max: 100,
-          label: 'Đang dùng',
+          label: t('Đang dùng'),
           warnWhenFull: true,
           text: s.ramUsed == null || s.ramTotal == null
               ? '—'
@@ -282,12 +282,12 @@ class _PerfScreenState extends State<PerfScreen> {
 
   Widget _netCard(PerfSample s) {
     return _Card(
-      title: 'Mạng',
+      title: t('Mạng'),
       children: [
         Wrap(spacing: 18, runSpacing: 4, children: [
-          _Metric('Tải xuống', _speed(s.netDown),
+          _Metric(t('Tải xuống'), _speed(s.netDown),
               icon: Icons.south_rounded),
-          _Metric('Tải lên', _speed(s.netUp), icon: Icons.north_rounded),
+          _Metric(t('Tải lên'), _speed(s.netUp), icon: Icons.north_rounded),
         ]),
       ],
     );
@@ -305,21 +305,17 @@ class _PerfScreenState extends State<PerfScreen> {
       if (!s.hasRtss)
         (
           Icons.speed_rounded,
-          'FPS cần RivaTuner Statistics Server (RTSS) — cài kèm MSI '
-              'Afterburner. Mở RTSS trước khi vào game, FPS hiện sau vài giây.'
+          t('FPS cần RivaTuner Statistics Server (RTSS) — cài kèm MSI Afterburner. Mở RTSS trước khi vào game, FPS hiện sau vài giây.')
         ),
       if (!s.hasLhm)
         (
           Icons.thermostat_rounded,
-          'Nhiệt độ, xung và công suất CPU cần LibreHardwareMonitor: chạy '
-              'bằng quyền Administrator, vào Options → Remote Web Server → '
-              'Run (cổng 8085).'
+          t('Nhiệt độ, xung và công suất CPU cần LibreHardwareMonitor: chạy bằng quyền Administrator, vào Options → Remote Web Server → Run (cổng 8085).')
         ),
       if (!s.hasGpu)
         (
           Icons.memory_rounded,
-          'Không đọc được GPU. Card NVIDIA cần driver mới; card khác cần '
-              'LibreHardwareMonitor như trên.'
+          t('Không đọc được GPU. Card NVIDIA cần driver mới; card khác cần LibreHardwareMonitor như trên.')
         ),
     ];
     if (tips.isEmpty) return const [];
@@ -473,13 +469,13 @@ class _TempBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = temp;
-    if (t == null) return const SizedBox.shrink();
-    final (color, icon, label) = t >= critAt
-        ? (_critical, Icons.local_fire_department_rounded, 'Nóng')
-        : t >= warnAt
-            ? (_warning, Icons.warning_amber_rounded, 'Ấm')
-            : (_good, Icons.check_circle_rounded, 'Mát');
+    final v = temp;
+    if (v == null) return const SizedBox.shrink();
+    final (color, icon, label) = v >= critAt
+        ? (_critical, Icons.local_fire_department_rounded, t('Nóng'))
+        : v >= warnAt
+            ? (_warning, Icons.warning_amber_rounded, t('Ấm'))
+            : (_good, Icons.check_circle_rounded, t('Mát'));
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -577,7 +573,7 @@ class _Spark extends StatelessWidget {
                 style: const TextStyle(color: DeckColors.muted, fontSize: 10)),
             const Spacer(),
             if (lo != null)
-              Text('thấp ${lo.round()} · cao ${hi!.round()}',
+              Text(t('thấp {0} · cao {1}', [lo.round(), hi!.round()]),
                   style:
                       const TextStyle(color: DeckColors.muted, fontSize: 10)),
           ],
@@ -656,7 +652,7 @@ class _Cores extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Tải ${cores.length} luồng',
+        Text(t('Tải {0} luồng', [cores.length]),
             style: const TextStyle(color: DeckColors.muted, fontSize: 10)),
         const SizedBox(height: 4),
         SizedBox(

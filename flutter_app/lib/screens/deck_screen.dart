@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import 'package:provider/provider.dart';
 
+import '../l10n/l10n.dart';
 import '../models/deck.dart';
 import '../services/deck_connection.dart';
 import '../services/store.dart';
@@ -14,6 +15,7 @@ import '../services/wake_on_lan.dart';
 import '../theme.dart';
 import '../widgets/clown_logo.dart';
 import '../widgets/deck_tile_view.dart';
+import '../widgets/lang_picker.dart';
 import '../widgets/media_bar.dart';
 import 'tile_edit_screen.dart';
 import 'perf_screen.dart';
@@ -150,7 +152,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     final conn = context.read<DeckConnection>();
     final store = context.read<Store>();
     if (!conn.isOnline) {
-      _snack('Chưa kết nối tới thiết bị');
+      _snack(t('Chưa kết nối tới thiết bị'));
       return;
     }
     HapticFeedback.mediumImpact();
@@ -178,7 +180,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
         if (tile.steps.isEmpty) return;
         conn.scene(tile.steps);
         final label = tile.front.label;
-        _snack(label.isEmpty ? 'Đang chạy chế độ…' : 'Đang chạy "$label"…');
+        _snack(label.isEmpty ? t('Đang chạy chế độ…') : t('Đang chạy "{0}"…', [label]));
         break;
       case TileKind.empty:
         return;
@@ -191,8 +193,8 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     final conn = context.read<DeckConnection>();
     if (!conn.isOnline || tile.appId == null) return;
     conn.close(tile.appId!);
-    final name = conn.catalogById[tile.appId]?.name ?? 'Ứng dụng';
-    _snack('Đã tắt $name');
+    final name = conn.catalogById[tile.appId]?.name ?? t('Ứng dụng');
+    _snack(t('Đã tắt {0}', [name]));
   }
 
   /// Danh sách đầy đủ các cửa sổ của một app, như khi rê chuột lên biểu
@@ -214,7 +216,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
               maxHeight: MediaQuery.of(sheetContext).size.height * 0.8),
           child: Consumer<DeckConnection>(
             builder: (_, conn, __) {
-              final name = conn.catalogById[appId]?.name ?? 'Ứng dụng';
+              final name = conn.catalogById[appId]?.name ?? t('Ứng dụng');
               final status = conn.statusOf(appId);
               final wins = status.wins;
               return Column(
@@ -224,7 +226,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                     child: Text(
-                      '$name · ${status.windows} cửa sổ',
+                      t('{0} · {1} cửa sổ', [name, status.windows]),
                       style: const TextStyle(
                           color: DeckColors.muted, fontSize: 12),
                     ),
@@ -234,8 +236,8 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
                       child: Text(
                         status.running
-                            ? 'Chỉ còn một cửa sổ — chạm vào ô để mở nó.'
-                            : 'Ứng dụng đã đóng hết.',
+                            ? t('Chỉ còn một cửa sổ — chạm vào ô để mở nó.')
+                            : t('Ứng dụng đã đóng hết.'),
                         style: const TextStyle(
                             color: DeckColors.text, fontSize: 13),
                       ),
@@ -268,19 +270,19 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                                       fontWeight: FontWeight.w700)),
                             ),
                             title: Text(
-                              w.title.isEmpty ? '(không có tiêu đề)' : w.title,
+                              w.title.isEmpty ? t('(không có tiêu đề)') : w.title,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                   color: DeckColors.text, fontSize: 13),
                             ),
                             subtitle: w.active
-                                ? const Text('Đang ở trước',
-                                    style: TextStyle(
+                                ? Text(t('Đang ở trước'),
+                                    style: const TextStyle(
                                         color: DeckColors.live, fontSize: 11))
                                 : null,
                             trailing: IconButton(
-                              tooltip: 'Đóng cửa sổ này',
+                              tooltip: t('Đóng cửa sổ này'),
                               icon: const Icon(Icons.close_rounded,
                                   size: 20, color: DeckColors.danger),
                               onPressed: () {
@@ -370,7 +372,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
                 child: Text(
-                  'Nguồn · ${store.hostName.isEmpty ? 'máy tính' : store.hostName}',
+                  t('Nguồn · {0}', [store.hostName.isEmpty ? t('máy tính') : store.hostName]),
                   style: const TextStyle(color: DeckColors.muted, fontSize: 12),
                 ),
               ),
@@ -381,25 +383,24 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                       size: 22,
                       color:
                           store.canWake ? DeckColors.live : DeckColors.muted),
-                  title: const Text('Bật máy',
-                      style: TextStyle(color: DeckColors.text, fontSize: 14)),
+                  title: Text(t('Bật máy'),
+                      style: const TextStyle(color: DeckColors.text, fontSize: 14)),
                   subtitle: Text(
                     store.canWake
-                        ? 'Wake-on-LAN tới ${store.wolMacs.first}'
-                        : 'Chưa biết địa chỉ MAC. Kết nối một lần lúc máy '
-                            'đang bật, hoặc nhập tay bên dưới.',
+                        ? t('Wake-on-LAN tới {0}', [store.wolMacs.first])
+                        : t('Chưa biết địa chỉ MAC. Kết nối một lần lúc máy đang bật, hoặc nhập tay bên dưới.'),
                     style:
                         const TextStyle(color: DeckColors.muted, fontSize: 11),
                   ),
                   onTap: () => Navigator.pop(context, 'wake'),
                 ),
               ] else ...[
-                _sheetItem(Icons.lock_rounded, 'Khoá máy', 'lock'),
-                _sheetItem(Icons.bedtime_rounded, 'Ngủ', 'sleep'),
+                _sheetItem(Icons.lock_rounded, t('Khoá máy'), 'lock'),
+                _sheetItem(Icons.bedtime_rounded, t('Ngủ'), 'sleep'),
                 _sheetItem(
-                    Icons.restart_alt_rounded, 'Khởi động lại', 'restart'),
+                    Icons.restart_alt_rounded, t('Khởi động lại'), 'restart'),
                 _sheetItem(
-                    Icons.power_settings_new_rounded, 'Tắt máy', 'shutdown'),
+                    Icons.power_settings_new_rounded, t('Tắt máy'), 'shutdown'),
               ],
               for (final w in warnings)
                 Padding(
@@ -422,7 +423,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                 ),
               const Divider(height: 17, color: DeckColors.line),
               _sheetItem(Icons.settings_ethernet_rounded,
-                  'Địa chỉ MAC để bật máy', 'mac'),
+                  t('Địa chỉ MAC để bật máy'), 'mac'),
             ],
           ),
         ),
@@ -440,14 +441,14 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
       case 'lock':
       case 'sleep':
         conn.power(choice);
-        _snack(choice == 'lock' ? 'Đã khoá máy' : 'Máy đang đi ngủ…');
+        _snack(choice == 'lock' ? t('Đã khoá máy') : t('Máy đang đi ngủ…'));
         break;
       case 'restart':
       case 'shutdown':
         final force = await _confirmPower(choice);
         if (force == null || !mounted) return;
         conn.power(choice, force: force);
-        _snack(choice == 'restart' ? 'Đang khởi động lại…' : 'Đang tắt máy…');
+        _snack(choice == 'restart' ? t('Đang khởi động lại…') : t('Đang tắt máy…'));
         break;
     }
   }
@@ -456,7 +457,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     final store = context.read<Store>();
     final conn = context.read<DeckConnection>();
     if (!store.canWake) {
-      _snack('Chưa có địa chỉ MAC của máy tính');
+      _snack(t('Chưa có địa chỉ MAC của máy tính'));
       return;
     }
     HapticFeedback.mediumImpact();
@@ -464,14 +465,14 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
       final sent =
           await sendWakeOnLan(store.wolMacs, broadcast: store.wolBroadcast);
       if (sent == 0) {
-        _snack('Không gửi được — điện thoại có đang nối Wi-Fi nhà không?');
+        _snack(t('Không gửi được — điện thoại có đang nối Wi-Fi nhà không?'));
         return;
       }
     } catch (e) {
-      _snack('Gửi tín hiệu bật máy lỗi: $e');
+      _snack(t('Gửi tín hiệu bật máy lỗi: {0}', [e]));
       return;
     }
-    _snack('Đã gửi tín hiệu bật máy. Windows cần khoảng 20–60 giây để lên.');
+    _snack(t('Đã gửi tín hiệu bật máy. Windows cần khoảng 20–60 giây để lên.'));
 
     // Đừng để vòng thử lại đang lùi tới 20 giây làm chậm thêm: chủ động gõ
     // cửa vài lần quanh lúc Windows thường khởi động xong.
@@ -495,7 +496,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialog) => AlertDialog(
           backgroundColor: DeckColors.surface,
-          title: Text(restart ? 'Khởi động lại máy?' : 'Tắt máy?',
+          title: Text(restart ? t('Khởi động lại máy?') : t('Tắt máy?'),
               style: const TextStyle(color: DeckColors.text, fontSize: 17)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -503,9 +504,8 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
             children: [
               Text(
                 restart
-                    ? 'Máy sẽ khởi động lại ngay.'
-                    : 'Máy sẽ tắt hẳn. Bật lại bằng nút nguồn trên HeDeck '
-                        'nếu đã cài Wake-on-LAN.',
+                    ? t('Máy sẽ khởi động lại ngay.')
+                    : t('Máy sẽ tắt hẳn. Bật lại bằng nút nguồn trên HeDeck nếu đã cài Wake-on-LAN.'),
                 style: const TextStyle(
                     color: DeckColors.muted, fontSize: 13, height: 1.4),
               ),
@@ -516,21 +516,21 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                 value: force,
                 activeColor: DeckColors.danger,
                 onChanged: (v) => setDialog(() => force = v ?? false),
-                title: const Text('Buộc đóng app chưa lưu',
-                    style: TextStyle(color: DeckColors.text, fontSize: 13)),
-                subtitle: const Text(
-                    'Không chọn thì Windows có thể dừng lại hỏi lưu file.',
-                    style: TextStyle(color: DeckColors.muted, fontSize: 11)),
+                title: Text(t('Buộc đóng app chưa lưu'),
+                    style: const TextStyle(color: DeckColors.text, fontSize: 13)),
+                subtitle: Text(
+                    t('Không chọn thì Windows có thể dừng lại hỏi lưu file.'),
+                    style: const TextStyle(color: DeckColors.muted, fontSize: 11)),
               ),
             ],
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx), child: const Text('Huỷ')),
+                onPressed: () => Navigator.pop(ctx), child: Text(t('Huỷ'))),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: DeckColors.danger),
               onPressed: () => Navigator.pop(ctx, force),
-              child: Text(restart ? 'Khởi động lại' : 'Tắt máy'),
+              child: Text(restart ? t('Khởi động lại') : t('Tắt máy')),
             ),
           ],
         ),
@@ -546,8 +546,8 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: DeckColors.surface,
-        title: const Text('Địa chỉ MAC',
-            style: TextStyle(color: DeckColors.text, fontSize: 17)),
+        title: Text(t('Địa chỉ MAC'),
+            style: const TextStyle(color: DeckColors.text, fontSize: 17)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -559,31 +559,30 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
               decoration: const InputDecoration(hintText: 'AA:BB:CC:DD:EE:FF'),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Agent tự gửi MAC mỗi lần kết nối. Chỉ cần nhập tay nếu cửa sổ '
-              'agent báo không đọc được. Xem bằng lệnh: getmac /v',
+            Text(
+              t('Agent tự gửi MAC mỗi lần kết nối. Chỉ cần nhập tay nếu cửa sổ agent báo không đọc được. Xem bằng lệnh: getmac /v'),
               style:
-                  TextStyle(color: DeckColors.muted, fontSize: 11, height: 1.4),
+                  const TextStyle(color: DeckColors.muted, fontSize: 11, height: 1.4),
             ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Huỷ')),
+              onPressed: () => Navigator.pop(ctx), child: Text(t('Huỷ'))),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, ctl.text),
-              child: const Text('Lưu')),
+              child: Text(t('Lưu'))),
         ],
       ),
     );
     if (text == null || !mounted) return;
     final mac = normalizeMac(text);
     if (mac == null) {
-      _snack('MAC không hợp lệ — cần 12 chữ số hex');
+      _snack(t('MAC không hợp lệ — cần 12 chữ số hex'));
       return;
     }
     await store.setManualMac(mac);
-    _snack('Đã lưu MAC $mac');
+    _snack(t('Đã lưu MAC {0}', [mac]));
   }
 
   // ---------------------------------------------------------------- menu
@@ -608,19 +607,26 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
               children: [
                 _layoutRow(store),
                 const Divider(height: 1, color: DeckColors.line),
+                // Đóng bảng trước rồi mới đổi: đổi ngôn ngữ dựng lại cả màn
+                // hình chính, bảng còn mở thì trỏ vào màn hình đã bỏ.
+                LangPicker(
+                  current: store.lang,
+                  onPick: (l) => Navigator.pop(context, 'lang:${l.name}'),
+                ),
+                const Divider(height: 1, color: DeckColors.line),
                 _autoSwitchRow(store),
-                _sheetItem(Icons.bolt_rounded, 'Tự mở trang này khi…', 'auto'),
+                _sheetItem(Icons.bolt_rounded, t('Tự mở trang này khi…'), 'auto'),
                 const Divider(height: 1, color: DeckColors.line),
                 _sheetItem(Icons.refresh_rounded,
-                    'Quét lại ứng dụng trên thiết bị', 'rescan'),
-                _sheetItem(Icons.add_rounded, 'Thêm trang', 'addPage'),
+                    t('Quét lại ứng dụng trên thiết bị'), 'rescan'),
+                _sheetItem(Icons.add_rounded, t('Thêm trang'), 'addPage'),
                 _sheetItem(Icons.drive_file_rename_outline_rounded,
-                    'Đổi tên trang này', 'rename'),
+                    t('Đổi tên trang này'), 'rename'),
                 if (store.pages.length > 1)
                   _sheetItem(
-                      Icons.delete_outline_rounded, 'Xoá trang này', 'delPage'),
+                      Icons.delete_outline_rounded, t('Xoá trang này'), 'delPage'),
                 _sheetItem(
-                    Icons.link_off_rounded, 'Quên thiết bị này', 'forget'),
+                    Icons.link_off_rounded, t('Quên thiết bị này'), 'forget'),
                 const Divider(height: 1, color: DeckColors.line),
                 _aboutBlock(),
               ],
@@ -631,13 +637,18 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     );
     if (choice == null || !mounted) return;
 
+    if (choice.startsWith('lang:')) {
+      await store.setLang(AppLang.fromCode(choice.substring(5)));
+      return; // màn hình này vừa được dựng lại, không dùng context nữa
+    }
+
     switch (choice) {
       case 'auto':
         await _autoPageSheet(_page);
         break;
       case 'rescan':
         conn.rescan();
-        _snack('Đang quét lại Start Menu…');
+        _snack(t('Đang quét lại Start Menu…'));
         break;
       case 'addPage':
         await store.addPage();
@@ -666,10 +677,10 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
       builder: (context, setSheetState) => SwitchListTile(
         secondary: const Icon(Icons.auto_mode_rounded,
             size: 20, color: DeckColors.muted),
-        title: const Text('Tự đổi trang theo app đang dùng',
-            style: TextStyle(color: DeckColors.text, fontSize: 14)),
-        subtitle: const Text('Như Stream Deck: vào game là sang trang Game',
-            style: TextStyle(color: DeckColors.muted, fontSize: 11)),
+        title: Text(t('Tự đổi trang theo app đang dùng'),
+            style: const TextStyle(color: DeckColors.text, fontSize: 14)),
+        subtitle: Text(t('Như Stream Deck: vào game là sang trang Game'),
+            style: const TextStyle(color: DeckColors.muted, fontSize: 11)),
         value: store.autoSwitch,
         onChanged: (v) async {
           await store.setAutoSwitch(v);
@@ -722,41 +733,39 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Tự mở trang "${page.name}" khi…',
+                    Text(t('Tự mở trang "{0}" khi…', [page.name]),
                         style: const TextStyle(
                             color: DeckColors.text,
                             fontSize: 15,
                             fontWeight: FontWeight.w600)),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Deck chỉ đổi trang lúc bạn chuyển sang app khác trên '
-                      'thiết bị. Tự vuốt sang trang khác thì nó để yên.',
-                      style: TextStyle(
+                    Text(
+                      t('Deck chỉ đổi trang lúc bạn chuyển sang app khác trên thiết bị. Tự vuốt sang trang khác thì nó để yên.'),
+                      style: const TextStyle(
                           color: DeckColors.muted, fontSize: 11, height: 1.4),
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('…đang ở màn hình desktop',
+                      title: Text(t('…đang ở màn hình desktop'),
                           style:
-                              TextStyle(color: DeckColors.text, fontSize: 14)),
-                      subtitle: const Text(
-                          'Thu nhỏ hết cửa sổ hoặc Win+D. Chỉ một trang được '
-                          'chọn mục này.',
+                              const TextStyle(color: DeckColors.text, fontSize: 14)),
+                      subtitle: Text(
+                          t('Thu nhỏ hết cửa sổ hoặc Win+D. Chỉ một trang được chọn mục này.'),
                           style:
-                              TextStyle(color: DeckColors.muted, fontSize: 11)),
+                              const TextStyle(color: DeckColors.muted, fontSize: 11)),
                       value: desktop,
                       onChanged: (v) => setSheet(() => desktop = v),
                     ),
                     const SizedBox(height: 4),
-                    const Text('…đang dùng một trong các app:',
+                    Text(t('…đang dùng một trong các app:'),
                         style:
-                            TextStyle(color: DeckColors.muted, fontSize: 12)),
+                            const TextStyle(color: DeckColors.muted, fontSize: 12)),
                     const SizedBox(height: 8),
                     if (apps.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 8),
-                        child: Text('Chưa chọn app nào',
-                            style: TextStyle(
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(t('Chưa chọn app nào'),
+                            style: const TextStyle(
                                 color: DeckColors.muted, fontSize: 13)),
                       ),
                     Wrap(
@@ -767,7 +776,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                           InputChip(
                             label: Text(
                                 conn.catalogById[id]?.name ??
-                                    'App không còn trên thiết bị',
+                                    t('App không còn trên thiết bị'),
                                 style: const TextStyle(fontSize: 12)),
                             backgroundColor: DeckColors.tile,
                             onDeleted: () => setSheet(() => apps.remove(id)),
@@ -782,7 +791,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                             onPressed:
                                 conn.catalog.isEmpty ? null : () => add(false),
                             icon: const Icon(Icons.add_rounded, size: 18),
-                            label: const Text('Thêm app'),
+                            label: Text(t('Thêm app')),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -790,7 +799,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                           child: OutlinedButton.icon(
                             onPressed: conn.isOnline ? () => add(true) : null,
                             icon: const Icon(Icons.web_asset_rounded, size: 18),
-                            label: const Text('Đang mở'),
+                            label: Text(t('Đang mở')),
                           ),
                         ),
                       ],
@@ -798,7 +807,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                     const SizedBox(height: 12),
                     FilledButton(
                       onPressed: () => Navigator.pop(sheetContext, true),
-                      child: const Text('Lưu'),
+                      child: Text(t('Lưu')),
                     ),
                   ],
                 ),
@@ -811,8 +820,8 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     if (save != true || !mounted) return;
     await store.setPageAuto(pageIndex, apps, desktop);
     _snack(apps.isEmpty && !desktop
-        ? 'Trang này không tự mở nữa'
-        : 'Đã lưu — deck sẽ tự mở trang này');
+        ? t('Trang này không tự mở nữa')
+        : t('Đã lưu — deck sẽ tự mở trang này'));
   }
 
   /// Chọn bố cục ngay trong bảng menu, không cần đóng ra mở lại.
@@ -848,7 +857,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                           fontWeight: FontWeight.w500,
                         )),
                     const SizedBox(height: 2),
-                    Text('${rows * Store.cols} ô mỗi trang',
+                    Text(t('{0} ô mỗi trang', [rows * Store.cols]),
                         style: const TextStyle(
                             color: DeckColors.muted, fontSize: 11)),
                   ],
@@ -863,10 +872,10 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Bố cục lưới',
-                  style: TextStyle(color: DeckColors.muted, fontSize: 12)),
+              Text(t('Bố cục lưới'),
+                  style: const TextStyle(color: DeckColors.muted, fontSize: 12)),
               const SizedBox(height: 8),
-              Row(children: [option(2, '5 × 2'), option(3, '5 × 3')]),
+              Row(children: [option(2, t('5 × 2')), option(3, t('5 × 3'))]),
             ],
           ),
         );
@@ -886,9 +895,9 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Hề IT',
-                style: TextStyle(
+              Text(
+                t('Hề IT'),
+                style: const TextStyle(
                   color: DeckColors.text,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -911,8 +920,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                   final old = conn.agentOutdated;
                   return Text(
                     old
-                        ? 'Agent v${conn.agentVersion} — cần v'
-                            '${DeckConnection.minAgentVersion}, hãy chạy lại agent'
+                        ? t('Agent v{0} — cần v{1}, hãy chạy lại agent', [conn.agentVersion, DeckConnection.minAgentVersion])
                         : 'Agent v${conn.agentVersion}',
                     style: TextStyle(
                       color: old ? DeckColors.warn : DeckColors.muted,
@@ -930,7 +938,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                         size: 12, color: DeckColors.live),
                     const SizedBox(width: 5),
                     Text(
-                      'Vân tay ${store.fingerprint}',
+                      t('Vân tay {0}', [store.fingerprint]),
                       style: const TextStyle(
                         color: DeckColors.live,
                         fontSize: 11,
@@ -960,8 +968,8 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: DeckColors.surface,
-        title: const Text('Tên trang',
-            style: TextStyle(color: DeckColors.text, fontSize: 17)),
+        title: Text(t('Tên trang'),
+            style: const TextStyle(color: DeckColors.text, fontSize: 17)),
         content: TextField(
           controller: ctl,
           autofocus: true,
@@ -969,10 +977,10 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Huỷ')),
+              onPressed: () => Navigator.pop(ctx), child: Text(t('Huỷ'))),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, ctl.text),
-              child: const Text('Lưu')),
+              child: Text(t('Lưu'))),
         ],
       ),
     );
@@ -1028,26 +1036,25 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     final (color, label) = switch (conn.state) {
       ConnState.online when conn.agentOutdated => (
           DeckColors.warn,
-          'Agent trên thiết bị là bản cũ — tắt cửa sổ agent rồi chạy lại '
-              'run_agent.bat'
+          t('Agent trên thiết bị là bản cũ — tắt cửa sổ agent rồi chạy lại run_agent.bat')
         ),
       ConnState.online => (
           conn.catalogStuck ? DeckColors.warn : DeckColors.live,
           conn.catalogStuck
-              ? 'Thiết bị chưa quét xong — xem cửa sổ agent'
+              ? t('Thiết bị chưa quét xong — xem cửa sổ agent')
               : (conn.catalogLoading && conn.catalog.isEmpty
-                  ? 'Đang lấy danh sách ứng dụng…'
+                  ? t('Đang lấy danh sách ứng dụng…')
                   : (conn.hostName.isEmpty ? store.hostName : conn.hostName))
         ),
-      ConnState.connecting => (DeckColors.warn, 'Đang tìm thiết bị…'),
+      ConnState.connecting => (DeckColors.warn, t('Đang tìm thiết bị…')),
       ConnState.failed => (
           DeckColors.warn,
           conn.retryInSeconds > 0
-              ? 'Chưa thấy thiết bị · thử lại sau ${conn.retryInSeconds}s'
-              : 'Đang thử lại…'
+              ? t('Chưa thấy thiết bị · thử lại sau {0}s', [conn.retryInSeconds])
+              : t('Đang thử lại…')
         ),
-      ConnState.needsPairing => (DeckColors.danger, 'Cần ghép cặp lại'),
-      ConnState.offline => (DeckColors.muted, 'Ngoại tuyến'),
+      ConnState.needsPairing => (DeckColors.danger, t('Cần ghép cặp lại')),
+      ConnState.offline => (DeckColors.muted, t('Ngoại tuyến')),
     };
 
     return Row(
@@ -1094,34 +1101,34 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
         if (conn.state == ConnState.needsPairing)
           _barButton(
             icon: Icons.link_rounded,
-            tooltip: 'Ghép cặp lại',
+            tooltip: t('Ghép cặp lại'),
             color: DeckColors.danger,
             onTap: _repair,
           )
         else if (!conn.isOnline)
           _barButton(
             icon: Icons.refresh_rounded,
-            tooltip: 'Thử kết nối lại ngay',
+            tooltip: t('Thử kết nối lại ngay'),
             color: DeckColors.warn,
             onTap: conn.reconnectNow,
           ),
         _barButton(
           icon: Icons.monitor_heart_rounded,
-          tooltip: 'Hiệu năng: FPS, nhiệt độ',
+          tooltip: t('Hiệu năng: FPS, nhiệt độ'),
           color: DeckColors.muted,
           onTap: () => Navigator.of(context)
               .push(MaterialPageRoute(builder: (_) => const PerfScreen())),
         ),
         _barButton(
           icon: Icons.mouse_rounded,
-          tooltip: 'Touchpad và bàn phím',
+          tooltip: t('Touchpad và bàn phím'),
           color: DeckColors.muted,
           onTap: () => Navigator.of(context)
               .push(MaterialPageRoute(builder: (_) => const TouchpadScreen())),
         ),
         _barButton(
           icon: Icons.power_settings_new_rounded,
-          tooltip: conn.isOnline ? 'Nguồn máy tính' : 'Bật máy tính',
+          tooltip: conn.isOnline ? t('Nguồn máy tính') : t('Bật máy tính'),
           // Máy tắt mà bật được thì nút sáng xanh, mời bấm.
           color: !conn.isOnline && store.canWake
               ? DeckColors.live
@@ -1130,13 +1137,13 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
         ),
         _barButton(
           icon: _editing ? Icons.check_rounded : Icons.edit_rounded,
-          tooltip: _editing ? 'Xong' : 'Sửa bố cục',
+          tooltip: _editing ? 'Xong' : t('Sửa bố cục'),
           color: _editing ? DeckColors.accent : DeckColors.muted,
           onTap: () => setState(() => _editing = !_editing),
         ),
         _barButton(
           icon: Icons.settings_rounded,
-          tooltip: 'Tuỳ chọn',
+          tooltip: t('Tuỳ chọn'),
           color: DeckColors.muted,
           onTap: _menu,
         ),
@@ -1148,7 +1155,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
   /// màn hình nên gán luôn cho menu tuỳ chọn thay vì để làm vật trang trí.
   Widget _logo() {
     return Tooltip(
-      message: 'Tuỳ chọn HeDeck',
+      message: t('Tuỳ chọn HeDeck'),
       child: InkWell(
         onTap: _menu,
         borderRadius: BorderRadius.circular(30),
@@ -1197,13 +1204,17 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
         final rows = landscape ? store.rows : Store.cols;
         const gap = 8.0;
 
-        // Ô vuông: cạnh lấy theo chiều chật hơn, rồi căn giữa cả lưới.
-        final side = math.min(
-          (c.maxWidth - gap * (cols - 1)) / cols,
-          (c.maxHeight - gap * (rows - 1)) / rows,
-        );
-        final gridW = side * cols + gap * (cols - 1);
-        final gridH = side * rows + gap * (rows - 1);
+        // Ô giãn theo cả hai chiều cho kín vùng trống. Bản trước ép ô vuông
+        // theo chiều chật hơn: 5x2 gần kín màn hình nhưng 5x3 (cạnh vuông
+        // nhỏ đi một phần ba) chỉ còn hai phần ba bề ngang, dồn vào giữa.
+        // Giới hạn tỉ lệ rộng/cao để màn hình rất dài không làm ô dẹt lép.
+        const minRatio = 0.7, maxRatio = 2.3;
+        var cellW = (c.maxWidth - gap * (cols - 1)) / cols;
+        var cellH = (c.maxHeight - gap * (rows - 1)) / rows;
+        if (cellW / cellH > maxRatio) cellW = cellH * maxRatio;
+        if (cellW / cellH < minRatio) cellH = cellW / minRatio;
+        final gridW = cellW * cols + gap * (cols - 1);
+        final gridH = cellH * rows + gap * (rows - 1);
 
         return Center(
           child: SizedBox(
@@ -1217,7 +1228,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                 crossAxisCount: cols,
                 mainAxisSpacing: gap,
                 crossAxisSpacing: gap,
-                childAspectRatio: 1,
+                childAspectRatio: cellW / cellH,
               ),
               itemBuilder: (_, slot) {
                 final tile = page.tiles[slot];

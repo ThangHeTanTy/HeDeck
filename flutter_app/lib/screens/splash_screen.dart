@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/l10n.dart';
 import '../services/store.dart';
 import '../theme.dart';
 import '../widgets/clown_logo.dart';
@@ -37,6 +38,10 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     final paired = context.watch<Store>().isPaired;
+    // Chuỗi giao diện được dịch lúc dựng widget, nên đổi ngôn ngữ thì dựng
+    // lại cả màn hình chính bằng một khoá mới. Lớp phủ mở đầu nằm ngoài khoá
+    // này nên không chạy lại hoạt ảnh.
+    final lang = context.select<Store, AppLang>((s) => s.lang);
 
     return Material(
       color: DeckColors.bg,
@@ -47,7 +52,10 @@ class _SplashScreenState extends State<SplashScreen> {
         fit: StackFit.expand,
         children: [
           // Màn hình chính dựng ngay từ đầu, nằm dưới lớp phủ
-          paired ? const DeckScreen() : const PairScreen(),
+          KeyedSubtree(
+            key: ValueKey(lang),
+            child: paired ? const DeckScreen() : const PairScreen(),
+          ),
 
           if (_showOverlay) _SplashOverlay(onDone: _dismiss),
         ],
@@ -97,13 +105,13 @@ class _SplashOverlayState extends State<_SplashOverlay>
     );
 
     _c.addStatusListener((s) {
-      if (s == AnimationStatus.completed) _finish('hoạt ảnh xong');
+      if (s == AnimationStatus.completed) _finish(t('hoạt ảnh xong'));
     });
 
     // Lưới an toàn: dù hoạt ảnh có trục trặc gì, lớp phủ vẫn phải biến mất.
     // Không bao giờ để người dùng ngồi nhìn một màn hình đứng yên.
     _safety = Timer(_total + const Duration(seconds: 2), () {
-      _finish('hết thời gian chờ');
+      _finish(t('hết thời gian chờ'));
     });
 
     _c.forward();
@@ -144,11 +152,11 @@ class _SplashOverlayState extends State<_SplashOverlay>
                     opacity: _logoIn.value.clamp(0.0, 1.0),
                     child: Transform.scale(
                       scale: 0.72 + 0.28 * _logoIn.value,
-                      child: Column(
+                      child: const Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const ClownLogo(size: 132, shadow: false),
-                          const SizedBox(height: 18),
+                          ClownLogo(size: 132, shadow: false),
+                          SizedBox(height: 18),
                           Text(
                             'HeDeck',
                             style: TextStyle(

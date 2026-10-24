@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/l10n.dart';
 
 /// Danh tính của điện thoại đối với thiết bị.
 ///
@@ -44,8 +45,8 @@ class DeviceIdentity {
     if (!isReady || publicKeyBase64.isEmpty) {
       throw StateError(
         lastError.isEmpty
-            ? 'Không tạo được khoá điện thoại'
-            : 'Không tạo được khoá điện thoại: $lastError',
+            ? t('Không tạo được khoá điện thoại')
+            : t('Không tạo được khoá điện thoại: {0}', [lastError]),
       );
     }
   }
@@ -67,7 +68,7 @@ class DeviceIdentity {
       seed = prefs.getString(_kSeed);
       public = prefs.getString(_kPublic);
     } catch (e) {
-      lastError = 'không đọc được bộ nhớ máy ($e)';
+      lastError = t('không đọc được bộ nhớ máy ({0})', [e]);
       debugPrint('HeDeck: $lastError');
     }
 
@@ -91,7 +92,7 @@ class DeviceIdentity {
     try {
       await regenerate();
     } catch (e) {
-      lastError = 'sinh khoá thất bại ($e)';
+      lastError = t('sinh khoá thất bại ({0})', [e]);
       debugPrint('HeDeck: $lastError');
     }
     return true;
@@ -120,12 +121,12 @@ class DeviceIdentity {
       // khiến khoá đổi mỗi lần mở app ở bản trước.
       await prefs.reload();
       if (prefs.getString(_kSeed) == null) {
-        lastError = 'không lưu được khoá xuống máy';
+        lastError = t('không lưu được khoá xuống máy');
         debugPrint('HeDeck: CẢNH BÁO — $lastError, mỗi lần mở app sẽ phải '
             'ghép cặp lại');
       }
     } catch (e) {
-      lastError = 'không lưu được khoá ($e)';
+      lastError = t('không lưu được khoá ({0})', [e]);
       debugPrint('HeDeck: $lastError — vẫn dùng được trong phiên này');
     }
   }
@@ -133,7 +134,7 @@ class DeviceIdentity {
   /// Ký một thông điệp. Trả về chữ ký dạng base64.
   Future<String> sign(String message) async {
     final pair = _pair;
-    if (pair == null) throw StateError('Chưa có khoá điện thoại');
+    if (pair == null) throw StateError(t('Chưa có khoá điện thoại'));
     final signature = await _ed25519.sign(utf8.encode(message), keyPair: pair);
     return base64Encode(signature.bytes);
   }
