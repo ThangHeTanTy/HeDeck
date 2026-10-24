@@ -255,6 +255,18 @@ mức âm lượng của những app thật sự có ô âm lượng trên deck,
 `pageup`, `pagedown`, `delete`, `printscreen`, cùng modifier `ctrl` `alt`
 `shift` `win`.
 
+## Ngôn ngữ
+
+`lib/l10n/l10n.dart` có hàm `t()`: câu tiếng Việt viết thẳng trong code chính là
+khoá tra bản dịch trong `lib/l10n/en.dart`, giá trị thay đổi đặt bằng `{0}`,
+`{1}`: `t('Đã tắt {0}', [name])`. Đọc code vẫn hiểu ngay, và câu thiếu bản dịch
+thì hiện nguyên tiếng Việt chứ không trống. **Thêm câu giao diện mới thì bọc
+bằng `t()` và thêm một dòng vào `en.dart`.** Bảng tra như `mediaLabels` phải là
+getter chứ không phải `const`/`final`, nếu không sẽ giữ ngôn ngữ cũ. Đổi ngôn
+ngữ thì `SplashScreen` dựng lại màn hình chính bằng khoá mới
+(`KeyedSubtree(key: ValueKey(lang))`); kết nối tới agent nằm phía trên nên
+không bị ngắt.
+
 ## Giao thức
 
 JSON trên một WebSocket duy nhất.

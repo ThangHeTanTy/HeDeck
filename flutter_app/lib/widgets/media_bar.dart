@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/l10n.dart';
 import '../services/deck_connection.dart';
 import '../theme.dart';
 
@@ -43,13 +44,13 @@ class MediaBar extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          btn(Icons.skip_previous_rounded, 'prev', tip: 'Bài trước'),
-          btn(Icons.play_arrow_rounded, 'playpause', tip: 'Phát hoặc tạm dừng'),
-          btn(Icons.skip_next_rounded, 'next', tip: 'Bài kế'),
+          btn(Icons.skip_previous_rounded, 'prev', tip: t('Bài trước')),
+          btn(Icons.play_arrow_rounded, 'playpause', tip: t('Phát hoặc tạm dừng')),
+          btn(Icons.skip_next_rounded, 'next', tip: t('Bài kế')),
           Container(width: 0.8, height: 20, color: DeckColors.line),
-          btn(Icons.volume_down_rounded, 'voldown', tip: 'Giảm âm lượng'),
-          btn(Icons.volume_off_rounded, 'mute', tip: 'Tắt tiếng'),
-          btn(Icons.volume_up_rounded, 'volup', tip: 'Tăng âm lượng'),
+          btn(Icons.volume_down_rounded, 'voldown', tip: t('Giảm âm lượng')),
+          btn(Icons.volume_off_rounded, 'mute', tip: t('Tắt tiếng')),
+          btn(Icons.volume_up_rounded, 'volup', tip: t('Tăng âm lượng')),
         ],
       ),
     );

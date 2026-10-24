@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+import '../l10n/l10n.dart';
 import '../models/deck.dart';
 import '../models/perf.dart';
 import 'device_identity.dart';
@@ -380,20 +381,20 @@ class DeckConnection extends ChangeNotifier {
 
   /// Danh sách chương trình đang có cửa sổ trên thiết bị.
   Future<List<RunningProgram>> listRunning() {
-    _runningReq?.completeError(StateError('Đã thay bằng yêu cầu mới'));
+    _runningReq?.completeError(StateError(t('Đã thay bằng yêu cầu mới')));
     final req = _runningReq = Completer<List<RunningProgram>>();
     _send({'t': 'running'});
     return req.future.timeout(const Duration(seconds: 20),
-        onTimeout: () => throw StateError('Thiết bị không trả lời'));
+        onTimeout: () => throw StateError(t('Thiết bị không trả lời')));
   }
 
   /// Thêm một chương trình đang mở vào danh sách ứng dụng. Trả về app_id.
   Future<String> adopt(String token) {
-    _adoptReq?.completeError(StateError('Đã thay bằng yêu cầu mới'));
+    _adoptReq?.completeError(StateError(t('Đã thay bằng yêu cầu mới')));
     final req = _adoptReq = Completer<String>();
     _send({'t': 'adopt', 'token': token});
     return req.future.timeout(const Duration(seconds: 15),
-        onTimeout: () => throw StateError('Thiết bị không trả lời'));
+        onTimeout: () => throw StateError(t('Thiết bị không trả lời')));
   }
 
   /// lock | sleep | restart | shutdown. `force` đóng luôn app chưa lưu thay
@@ -541,7 +542,7 @@ class DeckConnection extends ChangeNotifier {
         break;
 
       case 'error':
-        lastError = msg['msg'] as String? ?? 'Lỗi không rõ';
+        lastError = msg['msg'] as String? ?? t('Lỗi không rõ');
         if (_pairing != null && !_pairing!.isCompleted) {
           _pairing!.completeError(StateError(lastError!));
         }
@@ -702,19 +703,20 @@ class DeckConnection extends ChangeNotifier {
 
   static String _friendly(Object e) {
     final s = e.toString();
-    if (s.contains('khoá điện thoại')) {
-      // Giữ nguyên câu chữ từ DeviceIdentity, nó đã nói rõ nguyên nhân.
+    if (s.contains('khoá điện thoại') || s.contains('phone key')) {
+      // Giữ nguyên câu chữ từ DeviceIdentity, nó đã nói rõ nguyên nhân —
+      // ở ngôn ngữ nào cũng vậy, nên so cả hai.
       return s.replaceFirst(RegExp(r'^\w+Error: '), '');
     }
-    if (s.contains('refused')) return 'Thiết bị từ chối kết nối — agent chưa chạy?';
-    if (s.contains('mạng nội bộ')) return 'Agent chỉ nhận kết nối từ mạng nội bộ';
+    if (s.contains('refused')) return t('Thiết bị từ chối kết nối — agent chưa chạy?');
+    if (s.contains('mạng nội bộ')) return t('Agent chỉ nhận kết nối từ mạng nội bộ');
     if (s.contains('timed out') || s.contains('timeout')) {
-      return 'Hết thời gian chờ — kiểm tra Wi-Fi và tường lửa';
+      return t('Hết thời gian chờ — kiểm tra Wi-Fi và tường lửa');
     }
     if (s.contains('unreachable') || s.contains('Network')) {
-      return 'Không tới được máy — hai thiết bị có cùng Wi-Fi không?';
+      return t('Không tới được máy — hai thiết bị có cùng Wi-Fi không?');
     }
-    return 'Không kết nối được';
+    return t('Không kết nối được');
   }
 
   static String _randomHex(int bytes) {

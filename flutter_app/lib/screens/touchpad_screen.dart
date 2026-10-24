@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/l10n.dart';
 import '../services/deck_connection.dart';
 import '../services/store.dart';
 import '../theme.dart';
@@ -245,12 +246,12 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
         title: const Text('Touchpad', style: TextStyle(fontSize: 17)),
         actions: [
           IconButton(
-            tooltip: 'Tốc độ con trỏ',
+            tooltip: t('Tốc độ con trỏ'),
             icon: const Icon(Icons.speed_rounded),
             onPressed: _speedDialog,
           ),
           IconButton(
-            tooltip: _keyboard ? 'Ẩn bàn phím' : 'Bàn phím',
+            tooltip: _keyboard ? t('Ẩn bàn phím') : t('Bàn phím'),
             icon: Icon(_keyboard
                 ? Icons.keyboard_hide_rounded
                 : Icons.keyboard_rounded),
@@ -297,12 +298,10 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
           padding: const EdgeInsets.all(20),
           child: Text(
             !conn.isOnline
-                ? 'Chưa kết nối tới thiết bị'
+                ? t('Chưa kết nối tới thiết bị')
                 : _dragging
-                    ? 'Đang giữ chuột trái — kéo rồi thả tay'
-                    : 'Một ngón: di chuột · chạm để nhấp\n'
-                        'Hai ngón: cuộn · chạm để nhấp phải\n'
-                        'Giữ yên một ngón rồi kéo: kéo thả',
+                    ? t('Đang giữ chuột trái — kéo rồi thả tay')
+                    : t('Một ngón: di chuột · chạm để nhấp\nHai ngón: cuộn · chạm để nhấp phải\nGiữ yên một ngón rồi kéo: kéo thả'),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: conn.isOnline ? DeckColors.muted : DeckColors.warn,
@@ -345,9 +344,9 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
           ),
         );
     return Row(children: [
-      btn('Trái', 'left', flex: 3),
-      btn('Giữa', 'middle'),
-      btn('Phải', 'right', flex: 3),
+      btn(t('Trái'), 'left', flex: 3),
+      btn(t('Giữa'), 'middle'),
+      btn(t('Phải'), 'right', flex: 3),
     ]);
   }
 
@@ -390,10 +389,10 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
             _resetField();
             _focus.requestFocus();
           },
-          decoration: const InputDecoration(
-            hintText: 'Gõ ở đây, chữ hiện thẳng trên thiết bị',
+          decoration: InputDecoration(
+            hintText: t('Gõ ở đây, chữ hiện thẳng trên thiết bị'),
             prefixIcon:
-                Icon(Icons.keyboard_rounded, size: 18, color: DeckColors.muted),
+                const Icon(Icons.keyboard_rounded, size: 18, color: DeckColors.muted),
           ),
         ),
         const SizedBox(height: 8),
@@ -429,8 +428,8 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialog) => AlertDialog(
           backgroundColor: DeckColors.surface,
-          title: const Text('Tốc độ con trỏ',
-              style: TextStyle(color: DeckColors.text, fontSize: 17)),
+          title: Text(t('Tốc độ con trỏ'),
+              style: const TextStyle(color: DeckColors.text, fontSize: 17)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -442,8 +441,8 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
                 label: value.toStringAsFixed(2),
                 onChanged: (v) => setDialog(() => value = v),
               ),
-              const Text('Màn hình thiết bị càng lớn thì nên để càng nhanh.',
-                  style: TextStyle(color: DeckColors.muted, fontSize: 11)),
+              Text(t('Màn hình thiết bị càng lớn thì nên để càng nhanh.'),
+                  style: const TextStyle(color: DeckColors.muted, fontSize: 11)),
             ],
           ),
           actions: [

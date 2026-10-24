@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/l10n.dart';
 import '../services/deck_connection.dart';
 import '../services/discovery.dart';
 import '../services/store.dart';
 import '../theme.dart';
+import '../widgets/lang_picker.dart';
 
 class PairScreen extends StatefulWidget {
   const PairScreen({super.key});
@@ -76,11 +78,11 @@ class _PairScreenState extends State<PairScreen> {
     final code = _code.text.trim();
 
     if (host.isEmpty) {
-      setState(() => _error = 'Nhập địa chỉ IP hiện trên cửa sổ agent');
+      setState(() => _error = t('Nhập địa chỉ IP hiện trên cửa sổ agent'));
       return;
     }
     if (code.length != 6) {
-      setState(() => _error = 'Mã ghép cặp gồm 6 chữ số');
+      setState(() => _error = t('Mã ghép cặp gồm 6 chữ số'));
       return;
     }
 
@@ -97,7 +99,7 @@ class _PairScreenState extends State<PairScreen> {
         port: port,
         code: code,
         deviceId: store.deviceId,
-        deviceName: 'Điện thoại Android',
+        deviceName: t('Điện thoại Android'),
       );
       await store.savePairing(
         host: host,
@@ -114,7 +116,7 @@ class _PairScreenState extends State<PairScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = conn.lastError ?? 'Không ghép cặp được. Kiểm tra IP và mã.';
+        _error = conn.lastError ?? t('Không ghép cặp được. Kiểm tra IP và mã.');
         _connecting = false;
       });
     }
@@ -132,23 +134,32 @@ class _PairScreenState extends State<PairScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'Kết nối tới thiết bị',
-                    style: TextStyle(
+                  // Chưa ghép cặp thì chưa vào được menu tuỳ chọn, nên đổi
+                  // ngôn ngữ phải có ngay ở đây.
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: LangToggle(
+                      current: context.watch<Store>().lang,
+                      onPick: context.read<Store>().setLang,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    t('Kết nối tới thiết bị'),
+                    style: const TextStyle(
                         color: DeckColors.text,
                         fontSize: 22,
                         fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Chạy agent trên máy Windows, rồi nhập địa chỉ và mã 6 số hiện trên cửa sổ đó.',
-                    style: TextStyle(color: DeckColors.muted, fontSize: 13, height: 1.5),
+                  Text(
+                    t('Chạy agent trên máy Windows, rồi nhập địa chỉ và mã 6 số hiện trên cửa sổ đó.'),
+                    style: const TextStyle(color: DeckColors.muted, fontSize: 13, height: 1.5),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Dùng máy ảo Android? Chạy adb reverse tcp:8787 tcp:8787 '
-                    'rồi nhập 127.0.0.1.',
-                    style: TextStyle(
+                  Text(
+                    t('Dùng máy ảo Android? Chạy adb reverse tcp:8787 tcp:8787 rồi nhập 127.0.0.1.'),
+                    style: const TextStyle(
                         color: DeckColors.muted, fontSize: 12, height: 1.5),
                   ),
                   const SizedBox(height: 20),
@@ -162,8 +173,8 @@ class _PairScreenState extends State<PairScreen> {
                           controller: _host,
                           keyboardType: TextInputType.url,
                           style: const TextStyle(color: DeckColors.text),
-                          decoration: const InputDecoration(
-                            labelText: 'Địa chỉ IP',
+                          decoration: InputDecoration(
+                            labelText: t('Địa chỉ IP'),
                             hintText: '192.168.1.12',
                           ),
                         ),
@@ -174,7 +185,7 @@ class _PairScreenState extends State<PairScreen> {
                           controller: _port,
                           keyboardType: TextInputType.number,
                           style: const TextStyle(color: DeckColors.text),
-                          decoration: const InputDecoration(labelText: 'Cổng'),
+                          decoration: InputDecoration(labelText: t('Cổng')),
                         ),
                       ),
                     ],
@@ -186,8 +197,8 @@ class _PairScreenState extends State<PairScreen> {
                     maxLength: 6,
                     style: const TextStyle(
                         color: DeckColors.text, fontSize: 20, letterSpacing: 8),
-                    decoration: const InputDecoration(
-                      labelText: 'Mã ghép cặp',
+                    decoration: InputDecoration(
+                      labelText: t('Mã ghép cặp'),
                       counterText: '',
                     ),
                   ),
@@ -222,8 +233,8 @@ class _PairScreenState extends State<PairScreen> {
                       Expanded(
                         child: Text(
                           _fingerprint.isEmpty
-                              ? 'Máy này chưa tạo được khoá điện thoại'
-                              : 'Khoá điện thoại $_fingerprint',
+                              ? t('Máy này chưa tạo được khoá điện thoại')
+                              : t('Khoá điện thoại {0}', [_fingerprint]),
                           style: TextStyle(
                             color: _fingerprint.isEmpty
                                 ? DeckColors.danger
@@ -244,7 +255,7 @@ class _PairScreenState extends State<PairScreen> {
                             child: CircularProgressIndicator(
                                 strokeWidth: 2, color: Colors.white),
                           )
-                        : const Text('Ghép cặp'),
+                        : Text(t('Ghép cặp')),
                   ),
                 ],
               ),
@@ -271,9 +282,9 @@ class _PairScreenState extends State<PairScreen> {
               const Icon(Icons.wifi_tethering_rounded,
                   size: 16, color: DeckColors.muted),
               const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Máy tìm thấy trong mạng',
-                    style: TextStyle(color: DeckColors.muted, fontSize: 12)),
+              Expanded(
+                child: Text(t('Máy tìm thấy trong mạng'),
+                    style: const TextStyle(color: DeckColors.muted, fontSize: 12)),
               ),
               InkWell(
                 onTap: _scanning ? null : _scan,
@@ -287,18 +298,18 @@ class _PairScreenState extends State<PairScreen> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: DeckColors.muted),
                         )
-                      : const Text('Quét lại',
+                      : Text(t('Quét lại'),
                           style:
-                              TextStyle(color: DeckColors.accent, fontSize: 12)),
+                              const TextStyle(color: DeckColors.accent, fontSize: 12)),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           if (_found.isEmpty)
-            const Text(
-              'Chưa thấy máy nào. Nhập IP thủ công ở dưới cũng được.',
-              style: TextStyle(color: DeckColors.muted, fontSize: 12),
+            Text(
+              t('Chưa thấy máy nào. Nhập IP thủ công ở dưới cũng được.'),
+              style: const TextStyle(color: DeckColors.muted, fontSize: 12),
             )
           else
             ..._found.map(

@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/l10n.dart';
 import '../models/deck.dart';
 import '../theme.dart';
 import 'app_icon.dart';
@@ -145,7 +146,7 @@ class _DeckTileViewState extends State<DeckTileView>
   /// Chữ dưới icon. Trạng thái đã do màu viền lo, nên chỉ còn tên tự đặt.
   String? get _caption {
     final tile = widget.tile;
-    if (tile.isEmpty) return widget.isFirstEmpty ? 'Thêm ô' : null;
+    if (tile.isEmpty) return widget.isFirstEmpty ? t('Thêm ô') : null;
     final label = _face.label;
     if (label.isNotEmpty) return label;
     // Macro không đặt tên thì hiện tổ hợp phím: icon giống nhau hết, không có
@@ -154,7 +155,7 @@ class _DeckTileViewState extends State<DeckTileView>
       return _face.keys.join(' › ');
     }
     if (tile.kind == TileKind.scene && tile.steps.isNotEmpty) {
-      return '${tile.steps.length} bước';
+      return t('{0} bước', [tile.steps.length]);
     }
     return null;
   }
@@ -337,7 +338,7 @@ class _DeckTileViewState extends State<DeckTileView>
                   height: 14,
                   child: Text(
                     holding
-                        ? 'Tắt sau ${(3 - _hold.value * 3).ceil()}s'
+                        ? t('Tắt sau {0}s', [(3 - _hold.value * 3).ceil()])
                         : caption!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
