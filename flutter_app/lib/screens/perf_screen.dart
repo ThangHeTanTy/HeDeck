@@ -80,7 +80,7 @@ class _PerfScreenState extends State<PerfScreen> {
         child: !conn.isOnline
             ? _Center(t('Chưa kết nối tới thiết bị'))
             : conn.agentOutdated
-                ? _Center(t('Agent trên thiết bị là bản cũ — tắt cửa sổ agent rồi chạy lại run_agent.bat'))
+                ? _Center(t('Agent trên thiết bị là bản cũ — gõ C trong cửa sổ agent để cập nhật, hoặc tắt rồi mở lại agent'))
                 : s == null
                     ? _Center(t('Đang đo…'), busy: true)
                     : LayoutBuilder(

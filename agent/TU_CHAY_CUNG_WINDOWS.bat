@@ -4,8 +4,12 @@ setlocal
 cd /d "%~dp0"
 
 rem Bat may tu xa xong ma agent khong tu chay thi app van khong ket noi duoc.
-rem File nay dat loi tat run_agent.bat vao thu muc Startup cua tai khoan hien
+rem File nay dat loi tat cua agent vao thu muc Startup cua tai khoan hien
 rem tai: dang nhap Windows la agent tu mo (thu nho). Chay lai lan nua de go bo.
+rem Ban tai tu GitHub dung HeDeckAgent.exe, ban ma nguon dung run_agent.bat.
+
+set "TARGET=%~dp0run_agent.bat"
+if exist "%~dp0HeDeckAgent.exe" set "TARGET=%~dp0HeDeckAgent.exe"
 
 set "LNK=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\HeDeck Agent.lnk"
 
@@ -18,7 +22,7 @@ if exist "%LNK%" (
 
 powershell -NoProfile -Command ^
   "$s = (New-Object -ComObject WScript.Shell).CreateShortcut($env:LNK);" ^
-  "$s.TargetPath = '%~dp0run_agent.bat';" ^
+  "$s.TargetPath = $env:TARGET;" ^
   "$s.WorkingDirectory = '%~dp0';" ^
   "$s.WindowStyle = 7;" ^
   "$s.Description = 'HeDeck Agent';" ^

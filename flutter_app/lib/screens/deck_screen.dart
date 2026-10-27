@@ -17,6 +17,7 @@ import '../widgets/clown_logo.dart';
 import '../widgets/deck_tile_view.dart';
 import '../widgets/lang_picker.dart';
 import '../widgets/theme_switch.dart';
+import '../widgets/update_dialog.dart';
 import '../widgets/media_bar.dart';
 import 'tile_edit_screen.dart';
 import 'perf_screen.dart';
@@ -649,6 +650,8 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                 _sheetItem(
                     Icons.link_off_rounded, t('Quên thiết bị này'), 'forget'),
                 Divider(height: 1, color: DeckColors.line),
+                _sheetItem(Icons.system_update_rounded,
+                    t('Kiểm tra cập nhật'), 'update'),
                 _aboutBlock(),
               ],
             ),
@@ -689,6 +692,9 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
         if (!mounted) return;
         setState(() => _page = 0);
         _pager.jumpToPage(0);
+        break;
+      case 'update':
+        await showUpdateDialog(context);
         break;
       case 'forget':
         await conn.stop();
@@ -1061,7 +1067,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     final (color, label) = switch (conn.state) {
       ConnState.online when conn.agentOutdated => (
           DeckColors.warn,
-          t('Agent trên thiết bị là bản cũ — tắt cửa sổ agent rồi chạy lại run_agent.bat')
+          t('Agent trên thiết bị là bản cũ — gõ C trong cửa sổ agent để cập nhật, hoặc tắt rồi mở lại agent')
         ),
       ConnState.online => (
           conn.catalogStuck ? DeckColors.warn : DeckColors.live,

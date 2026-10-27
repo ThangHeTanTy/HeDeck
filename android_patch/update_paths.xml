@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Thu muc APK tai ve khi cap nhat, chia se cho trinh cai dat qua
+     FileProvider. Khop voi "apkDir" trong MainActivity.kt. -->
+<paths>
+    <cache-path name="updates" path="updates/" />
+</paths>

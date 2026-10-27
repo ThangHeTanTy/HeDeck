@@ -67,3 +67,12 @@ $RECYCLE.BIN/
 # dụng kèm đường dẫn thật trên máy.
 .hedeck/
 *.local
+
+# ── Phát hành ────────────────────────────────────────────────
+# CI ghi số phiên bản vào đây lúc đóng gói agent .exe.
+agent/_build_version.py
+# Khoá ký APK. TAO_KHOA_KY.bat cất ở %USERPROFILE%\HeDeck-khoa-ky, không bao
+# giờ trong kho mã; dòng này chỉ phòng khi ai lỡ chép vào.
+*.jks
+*.keystore
+key.properties

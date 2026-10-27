@@ -1,0 +1,238 @@
+# Build APK và agent .exe, rồi đăng lên GitHub Releases.
+#
+# - Đẩy thẻ phiên bản (v1.2.3) -> build, ký APK bằng khoá phát hành, đăng
+#   Release. App và agent của người dùng thấy bản mới khi bấm kiểm tra.
+# - Pull request -> chỉ build thử để chắc master luôn build được. Không ký,
+#   không đăng gì cả. File build thử nằm ở mục Artifacts của lượt chạy.
+#
+# Cách phát hành và cài khoá ký: docs/PHAT_HANH.md
+
+name: Phát hành
+
+on:
+  push:
+    tags: ['v*.*.*']
+  pull_request:
+    paths:
+      - 'flutter_app/**'
+      - 'agent/**'
+      - 'android_patch/**'
+      - 'setup_app.sh'
+      - '.github/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Số phiên bản
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.v.outputs.name }}
+      code: ${{ steps.v.outputs.code }}
+      release: ${{ steps.v.outputs.release }}
+    steps:
+      - id: v
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            name="${GITHUB_REF#refs/tags/v}"
+            if [[ ! "$name" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              echo "::error::Thẻ phải có dạng v1.2.3, nhận được v$name"
+              exit 1
+            fi
+            # Android chỉ cho cài đè khi versionCode không giảm.
+            code=$(( BASH_REMATCH[1] * 1000000 + BASH_REMATCH[2] * 1000 + BASH_REMATCH[3] ))
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          else
+            name="dev"
+            code=1
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "Phiên bản: $name ($code)"
+
+  apk:
+    name: APK Android
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Sinh phần khung Android
+        run: bash setup_app.sh
+
+      - name: Build APK
+        working-directory: flutter_app
+        env:
+          RELEASE: ${{ needs.version.outputs.release }}
+          NAME: ${{ needs.version.outputs.name }}
+          CODE: ${{ needs.version.outputs.code }}
+        run: |
+          extra=()
+          if [ "$RELEASE" = "true" ]; then
+            # App đọc số này để so với bản mới nhất trên GitHub.
+            extra=(--build-name="$NAME" --build-number="$CODE"
+                   --dart-define=HEDECK_VERSION="$NAME")
+          fi
+          # Giống BUILD_APK.bat: tắt R8, làm rối mã Dart.
+          flutter build apk --release \
+            --android-project-arg=shrink=false \
+            --obfuscate --split-debug-info=../debug_symbols \
+            "${extra[@]}"
+
+      - name: Ký APK bằng khoá phát hành
+        if: needs.version.outputs.release == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          NAME: ${{ needs.version.outputs.name }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::error::Chưa có secret ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD. Xem docs/PHAT_HANH.md."
+            exit 1
+          fi
+          ks="$RUNNER_TEMP/release.jks"
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > "$ks"
+          bt=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          mkdir -p out
+          # Flutter ký sẵn bằng khoá debug; apksigner thay hẳn chữ ký đó.
+          "$bt/apksigner" sign \
+            --ks "$ks" --ks-key-alias hedeck \
+            --ks-pass env:KEYSTORE_PASSWORD --key-pass env:KEYSTORE_PASSWORD \
+            --out "out/HeDeck-$NAME.apk" \
+            flutter_app/build/app/outputs/flutter-apk/app-release.apk
+          rm -f "$ks"
+          "$bt/apksigner" verify --print-certs "out/HeDeck-$NAME.apk"
+
+      - name: Gom APK build thử
+        if: needs.version.outputs.release != 'true'
+        run: |
+          mkdir -p out
+          cp flutter_app/build/app/outputs/flutter-apk/app-release.apk out/HeDeck-dev.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: out/*.apk
+          if-no-files-found: error
+
+      # Bảng đối chiếu để đọc stack trace từ bản đã phát hành. Không đính kèm
+      # vào Release, vì công khai nó thì làm rối mã cũng như không.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols
+          path: debug_symbols/
+          retention-days: 90
+
+  agent:
+    name: Agent Windows
+    needs: version
+    runs-on: windows-latest
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: agent/requirements.txt
+
+      - name: Tự kiểm tra agent
+        working-directory: agent
+        run: python kiem_tra_agent.py
+
+      - name: Cài thư viện
+        working-directory: agent
+        run: python -m pip install -r requirements.txt "pyinstaller>=6.10"
+
+      - name: Ghi số phiên bản
+        if: needs.version.outputs.release == 'true'
+        working-directory: agent
+        run: Set-Content -Encoding ascii _build_version.py "VERSION = '${{ needs.version.outputs.name }}'"
+
+      - name: Đóng gói .exe
+        working-directory: agent
+        # Giống build_exe.bat, thêm icon HeDeck.
+        run: >
+          python -m PyInstaller --onefile --name HeDeckAgent
+          --icon ..\flutter_app\assets\icon\icon.png
+          --hidden-import win32timezone
+          --collect-all zeroconf --collect-all pycaw --collect-all comtypes
+          agent.py
+
+      - name: Gom gói cài đặt
+        env:
+          NAME: ${{ needs.version.outputs.name }}
+        run: |
+          $dir = "out\HeDeckAgent"
+          New-Item -ItemType Directory -Force $dir | Out-Null
+          Copy-Item agent\dist\HeDeckAgent.exe, agent\CAI_BAT_MAY_TU_XA.bat, `
+                    agent\cau_hinh_wol.ps1, agent\TU_CHAY_CUNG_WINDOWS.bat, `
+                    agent\HUONG_DAN.txt $dir
+          Compress-Archive -Path $dir -DestinationPath "out\HeDeckAgent-$env:NAME.zip"
+          Copy-Item agent\dist\HeDeckAgent.exe out\
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agent
+          path: |
+            out/HeDeckAgent.exe
+            out/*.zip
+          if-no-files-found: error
+
+  release:
+    name: Đăng Release
+    needs: [version, apk, agent]
+    if: needs.version.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: apk
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: agent
+          path: dist
+
+      - name: Ghi chú phát hành
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          # checkout chỉ lấy commit, lấy lại thẻ để đọc được lời ghi chú.
+          git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
+          notes=$(git tag -l --format='%(contents)' "$TAG" | sed '/-----BEGIN PGP/,$d')
+          [ -n "$notes" ] || notes=$(git log -1 --format=%B "$TAG")
+          {
+            printf '%s\n\n' "$notes"
+            # App và agent chỉ hiện phần phía trên dòng --- này.
+            printf -- '---\n\n'
+            cat .github/release_body.md
+          } > notes.md
+          (cd dist && sha256sum * > SHA256SUMS.txt)
+          ls -l dist
+          cat notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: HeDeck ${{ needs.version.outputs.name }}
+          body_path: notes.md
+          files: dist/*

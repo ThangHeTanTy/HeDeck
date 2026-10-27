@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Dùng cho macOS / Linux. Trên Windows chạy setup_app.bat.
+# Dùng cho macOS / Linux và cho GitHub Actions. Trên Windows chạy setup_app.bat.
+# Giữ đồng bộ với android_patch/patch_manifest.ps1: bản APK phát hành trên
+# GitHub được build bằng chính script này.
 set -e
 cd "$(dirname "$0")/flutter_app"
 
@@ -27,7 +29,34 @@ if "android.permission.INTERNET" not in m:
 """
     m = re.sub(r"(<manifest[^>]*>)", r"\1" + perms, m, count=1)
 
+if "REQUEST_INSTALL_PACKAGES" not in m:
+    m = re.sub(r"(<manifest[^>]*>)", r"\1" + """
+    <!-- Mở trình cài đặt khi cập nhật app từ GitHub -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />""", m, count=1)
+
 m = re.sub(r'android:label="[^"]*"', 'android:label="HeDeck"', m, count=1)
+
+# Android khôi phục dữ liệu cũ sau khi cài lại app, nhưng khoá giải mã thì
+# không còn -> kho khoá hỏng. Tắt sao lưu tự động.
+if "allowBackup" not in m:
+    m = m.replace('android:label="HeDeck"',
+                  'android:label="HeDeck"\n        android:allowBackup="false"'
+                  '\n        android:fullBackupContent="false"', 1)
+
+# Chia sẻ APK tải về cho trình cài đặt (Android 7+ cấm dùng file://).
+if "update_paths" not in m:
+    provider = """    <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/update_paths" />
+        </provider>
+    """
+    i = m.rindex("</application>")
+    m = m[:i] + provider + m[i:]
 
 if "networkSecurityConfig" not in m:
     m = m.replace(
@@ -46,32 +75,24 @@ print("  vá manifest xong")
 PYEOF
 
 mkdir -p android/app/src/main/res/xml
-cp ../android_patch/network_security_config.xml android/app/src/main/res/xml/
+cp ../android_patch/network_security_config.xml ../android_patch/update_paths.xml \
+   android/app/src/main/res/xml/
 
 for d in drawable drawable-v21; do
   mkdir -p "android/app/src/main/res/$d"
   cp ../android_patch/launch_background.xml "android/app/src/main/res/$d/"
 done
 
+# MainActivity: giữ màn hình sáng và kênh hedeck/update để mở trình cài đặt.
+# Lấy từ android_patch/MainActivity.kt, chỉ giữ tên package Flutter đã sinh.
 MAIN_ACTIVITY=$(find android/app/src/main -name MainActivity.kt | head -1)
-if [ -n "$MAIN_ACTIVITY" ] && ! grep -q FLAG_KEEP_SCREEN_ON "$MAIN_ACTIVITY"; then
-  PKG=$(grep '^package ' "$MAIN_ACTIVITY")
-  cat > "$MAIN_ACTIVITY" <<EOF
-$PKG
-
-import android.os.Bundle
-import android.view.WindowManager
-import io.flutter.embedding.android.FlutterActivity
-
-class MainActivity : FlutterActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        // Màn hình không tắt khi đang dùng deck.
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-    }
-}
-EOF
-  echo "  bật giữ màn hình sáng"
+if [ -n "$MAIN_ACTIVITY" ]; then
+  PKG=$(grep '^package ' "$MAIN_ACTIVITY" | tr -d '\r')
+  sed "s/^package __PACKAGE__$/$PKG/" ../android_patch/MainActivity.kt > "$MAIN_ACTIVITY"
+  echo "  cập nhật MainActivity"
+else
+  echo "  ! không thấy MainActivity.kt"
+  exit 1
 fi
 
 cp ../android_patch/proguard-rules.pro android/app/ 2>/dev/null || true

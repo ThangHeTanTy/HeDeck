@@ -80,7 +80,8 @@ def main():
     main_fn = function_body(agent, "main")
     started = called_names(main_fn) if main_fn else set()
 
-    for task in ("status_loop", "watch_console", "load_catalog", "perf_loop"):
+    for task in ("status_loop", "watch_console", "load_catalog", "perf_loop",
+                 "update_loop"):
         check(
             f"main() có gọi {task}()",
             task in started,
@@ -182,6 +183,19 @@ def main():
           "self.power_later(" in source)
     check("tắt máy là tắt hẳn, không qua Fast Startup",
           "/hybrid" not in pw_src)
+
+    # --- Cập nhật -------------------------------------------------------
+    print("\n[Cập nhật từ GitHub]")
+    up_src = (HERE / "updater.py").read_text(encoding="utf-8")
+    console = ast.get_source_segment(source, function_body(agent, "watch_console")) or ""
+    loop_src = ast.get_source_segment(source, function_body(agent, "update_loop")) or ""
+    check("chỉ cài khi người dùng gõ C trong cửa sổ agent",
+          "self.self_update()" in console and "self_update" not in loop_src
+          and source.count("self.self_update()") == 1,
+          "Agent không được tự cài bản mới khi chưa hỏi người dùng.")
+    check("kiểm tra SHA-256 file tải về", "sha.hexdigest()" in up_src)
+    check("bản chạy từ mã nguồn không tự ghi đè file",
+          "FROZEN and" in up_src.split("def can_self_update", 1)[1][:120])
 
     # --- Bảo mật ----------------------------------------------------------
     print("\n[Bảo mật]")
