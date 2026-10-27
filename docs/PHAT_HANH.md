@@ -26,18 +26,35 @@ lại**.
 
 1. Cần Android Studio (hoặc JDK 17) trên máy — chính cái đang dùng để build.
 2. Nháy đúp **`TAO_KHOA_KY.bat`**. Script:
-   - tạo khoá ở `%USERPROFILE%\HeDeck-khoa-ky\` (ngoài kho mã, không bao giờ
-     lên Git), kèm mật khẩu ngẫu nhiên trong `MAT_KHAU.txt`;
+   - hỏi có **dùng lại khoá debug của máy này** không (xem dưới). Không thì
+     tạo khoá mới kèm mật khẩu ngẫu nhiên. Khoá cất ở
+     `%USERPROFILE%\HeDeck-khoa-ky\`, ngoài kho mã, không bao giờ lên Git;
    - mở trang tạo secret của GitHub và chép sẵn từng giá trị vào clipboard.
-     Bạn chỉ cần dán (Ctrl+V) và bấm **Add secret** hai lần:
+     Bạn chỉ cần dán (Ctrl+V) và bấm **Add secret** ba lần:
 
      | Name | Secret |
      |---|---|
      | `ANDROID_KEYSTORE_BASE64` | (script đã chép sẵn) |
      | `ANDROID_KEYSTORE_PASSWORD` | (script đã chép sẵn) |
+     | `ANDROID_KEY_ALIAS` | (script đã chép sẵn) |
 
 3. **Sao lưu thư mục `HeDeck-khoa-ky`** sang USB, Google Drive… Không gửi cho
    ai, không đưa vào kho mã.
+
+### Dùng lại khoá debug — để lần đầu không phải gỡ app
+
+App đang cài trên điện thoại bằng `CHAY_APP.bat`, `BUILD_APK.bat` hay
+Android Studio đều ký bằng **khoá debug của máy build**
+(`%USERPROFILE%\.android\debug.keystore`). Chọn dùng lại khoá đó làm khoá
+phát hành thì bản tải từ GitHub cài đè lên được ngay: **không gỡ app, giữ
+nguyên ô, trang, cài đặt và ghép cặp.**
+
+- Chỉ có tác dụng với điện thoại cài app build từ **chính máy chạy script**.
+  Điện thoại khác (build ở máy khác) vẫn phải gỡ một lần.
+- Mật khẩu khoá debug là `android`, ai cũng biết — nhưng thiếu file khoá thì
+  vô dụng. Giữ file như giữ một khoá mới.
+- Script chép khoá vào `HeDeck-khoa-ky`, nên lỡ cài lại Android Studio mất
+  `debug.keystore` thì vẫn còn bản sao.
 
 Chạy lại `TAO_KHOA_KY.bat` không tạo khoá mới — chỉ chép lại secret (dùng
 khi cần dán lại, hoặc sang máy khác sau khi chép thư mục khoá qua).
@@ -84,8 +101,8 @@ Mở lượt chạy đỏ trong tab **Actions**, bấm vào bước đỏ để 
 
 | Báo lỗi | Cách sửa |
 |---|---|
-| `Chưa có secret ANDROID_KEYSTORE_BASE64…` | Chạy `TAO_KHOA_KY.bat`, dán đủ 2 secret. |
-| `apksigner … password` / `Failed to load signer` | Secret mật khẩu sai — chạy lại `TAO_KHOA_KY.bat`, dán lại secret 2. |
+| `Chưa có secret ANDROID_KEYSTORE_BASE64…` | Chạy `TAO_KHOA_KY.bat`, dán đủ 3 secret. |
+| `apksigner … password` / `Failed to load signer` | Secret mật khẩu hoặc alias sai — chạy lại `TAO_KHOA_KY.bat`, dán lại secret 2 và 3. |
 | `Thẻ phải có dạng v1.2.3` | Xoá thẻ sai (`git push --delete origin <thẻ>`), gắn lại cho đúng. |
 
 Build lại cùng thẻ sau khi sửa secret: tab **Actions** → lượt chạy đỏ →
@@ -109,6 +126,12 @@ Build lại cùng thẻ sau khi sửa secret: tab **Actions** → lượt chạy
   `FileProvider` (kênh `hedeck/update` trong `android_patch/MainActivity.kt`).
   Android luôn bắt người dùng bấm **Cài đặt** — app ngoài Play Store không
   cài im lặng được.
+- Cập nhật app không đụng tới dữ liệu: Android giữ nguyên vùng dữ liệu
+  riêng của app (thiết lập, trang, ô, khoá ghép cặp — tất cả nằm trong
+  SharedPreferences) khi cài đè bản cùng khoá ký. Chỉ **gỡ app** mới xoá.
+  Nếu một bản sau đổi cách lưu ô mà đọc không được trang cũ, app bỏ qua
+  riêng trang đó và cất nguyên bản gốc ở khoá `deck.pages.backup`, không
+  ghi đè mất.
 - Agent (`agent/updater.py`) chỉ tự thay được bản `.exe`: tải về cạnh file
   đang chạy, đổi tên file cũ thành `.old` (Windows cho đổi tên file đang
   chạy), đặt file mới vào chỗ cũ, mở lại. Chạy từ mã nguồn thì chỉ nhắc

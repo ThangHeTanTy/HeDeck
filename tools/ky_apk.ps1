@@ -38,8 +38,10 @@ if (-not $env:JAVA_HOME -and -not (Get-Command java -ErrorAction SilentlyContinu
     }
 }
 
+$aliasFile = Join-Path $dir "ALIAS.txt"
+$alias = if (Test-Path $aliasFile) { (Get-Content $aliasFile -Raw).Trim() } else { "hedeck" }
 $env:HEDECK_KS_PASS = (Get-Content $passFile -Raw).Trim()
-& $signer sign --ks $jks --ks-key-alias hedeck `
+& $signer sign --ks $jks --ks-key-alias $alias `
     --ks-pass env:HEDECK_KS_PASS --key-pass env:HEDECK_KS_PASS $Apk
 $code = $LASTEXITCODE
 Remove-Item Env:\HEDECK_KS_PASS

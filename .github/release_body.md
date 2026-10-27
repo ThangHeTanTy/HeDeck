@@ -9,6 +9,8 @@ Hướng dẫn đầy đủ: [docs/CAI_DAT.md](https://github.com/ThangHeTanTy/H
 ## Cập nhật về sau
 
 - **App:** bánh răng → **Kiểm tra cập nhật**.
-- **Agent:** cửa sổ agent tự báo khi có bản mới, gõ `C` rồi Enter để cập nhật.
+- **Agent:** cửa sổ agent tự báo khi có bản mới, bấm **Xem và cập nhật**.
+
+Bấm X trên cửa sổ agent là agent ẩn xuống khay hệ thống (mũi tên ^ góc phải thanh tác vụ) và vẫn chạy; chuột phải icon → **Thoát** để tắt hẳn.
 
 `SHA256SUMS.txt` chứa mã kiểm tra của từng file.

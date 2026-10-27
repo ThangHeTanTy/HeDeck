@@ -189,13 +189,31 @@ def main():
     up_src = (HERE / "updater.py").read_text(encoding="utf-8")
     console = ast.get_source_segment(source, function_body(agent, "watch_console")) or ""
     loop_src = ast.get_source_segment(source, function_body(agent, "update_loop")) or ""
-    check("chỉ cài khi người dùng gõ C trong cửa sổ agent",
+    check("cửa sổ lệnh: chỉ cài khi người dùng gõ C",
           "self.self_update()" in console and "self_update" not in loop_src
           and source.count("self.self_update()") == 1,
           "Agent không được tự cài bản mới khi chưa hỏi người dùng.")
     check("kiểm tra SHA-256 file tải về", "sha.hexdigest()" in up_src)
     check("bản chạy từ mã nguồn không tự ghi đè file",
           "FROZEN and" in up_src.split("def can_self_update", 1)[1][:120])
+
+    # --- Cửa sổ và khay hệ thống -----------------------------------------
+    print("\n[Cửa sổ và khay hệ thống]")
+    ui_src = (HERE / "tray_ui.py").read_text(encoding="utf-8")
+    ui = parse("tray_ui.py")
+    ask = ast.get_source_segment(ui_src, function_body(ui, "ask_update")) or ""
+    check("bấm X chỉ ẩn cửa sổ, agent vẫn chạy",
+          'protocol("WM_DELETE_WINDOW", self.hide)' in ui_src)
+    check("chỉ thoát hẳn từ menu chuột phải ở khay",
+          ui_src.count("self.quit()") == 1 and '"Thoát HeDeck Agent"' in ui_src)
+    check("cửa sổ chỉ cập nhật sau khi người dùng đồng ý",
+          "askyesno" in ask and "self_update()" in ask
+          and ui_src.count("self_update()") == 1)
+    check("gỡ icon ở khay trước khi tự mở lại bản mới",
+          "updater.before_restart.append" in ui_src
+          and "for hook in before_restart" in up_src)
+    check("mở lần hai thì hiện cửa sổ cũ, không chạy agent thứ hai",
+          "instance.acquire(" in source and "instance.ask_running_to_show()" in source)
 
     # --- Bảo mật ----------------------------------------------------------
     print("\n[Bảo mật]")

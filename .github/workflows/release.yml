@@ -97,6 +97,8 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          # Khoá tạo mới dùng "hedeck"; khoá debug dùng lại thì "androiddebugkey".
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'hedeck' }}
           NAME: ${{ needs.version.outputs.name }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
@@ -109,7 +111,7 @@ jobs:
           mkdir -p out
           # Flutter ký sẵn bằng khoá debug; apksigner thay hẳn chữ ký đó.
           "$bt/apksigner" sign \
-            --ks "$ks" --ks-key-alias hedeck \
+            --ks "$ks" --ks-key-alias "$KEY_ALIAS" \
             --ks-pass env:KEYSTORE_PASSWORD --key-pass env:KEYSTORE_PASSWORD \
             --out "out/HeDeck-$NAME.apk" \
             flutter_app/build/app/outputs/flutter-apk/app-release.apk
@@ -166,11 +168,14 @@ jobs:
 
       - name: Đóng gói .exe
         working-directory: agent
-        # Giống build_exe.bat, thêm icon HeDeck.
+        # Giống build_exe.bat. --windowed: không có cửa sổ lệnh, agent dùng
+        # cửa sổ riêng và icon ở khay hệ thống.
         run: >
-          python -m PyInstaller --onefile --name HeDeckAgent
+          python -m PyInstaller --onefile --windowed --name HeDeckAgent
           --icon ..\flutter_app\assets\icon\icon.png
+          --add-data "..\flutter_app\assets\icon\icon.png;."
           --hidden-import win32timezone
+          --hidden-import pystray._win32
           --collect-all zeroconf --collect-all pycaw --collect-all comtypes
           agent.py
 

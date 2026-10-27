@@ -18,14 +18,23 @@ Không cần Python, Flutter hay cáp USB — chỉ tải hai file từ trang
      chứng chỉ trả phí, không phải vì có virus.
    - Windows Firewall hỏi: chọn **Private networks** (mạng riêng) rồi
      **Allow access**.
-3. Cửa sổ agent hiện **địa chỉ IP** và **mã ghép cặp 6 số**. Giữ cửa sổ này
-   mở (thu nhỏ được) trong lúc dùng.
+3. Cửa sổ agent hiện **địa chỉ IP** và **mã ghép cặp 6 số**.
+
+**Agent chạy ngầm, không chiếm chỗ làm việc.** Bấm **X** trên cửa sổ agent
+chỉ ẩn cửa sổ đi — agent vẫn chạy, icon HeDeck nằm ở khay hệ thống (bấm mũi
+tên **^** góc phải thanh tác vụ, *Show hidden icons*):
+
+- **Bấm** icon: mở lại cửa sổ agent.
+- **Chuột phải** icon → **Mã ghép cặp mới**, hoặc **Thoát HeDeck Agent** để
+  tắt hẳn. Chỉ cách này mới tắt agent.
+- Lỡ nháy đúp `HeDeckAgent.exe` thêm lần nữa thì cửa sổ cũ hiện lên, không
+  chạy agent thứ hai.
 
 Tuỳ chọn, trong cùng thư mục:
 
 | File | Làm gì |
 |---|---|
-| `TU_CHAY_CUNG_WINDOWS.bat` | Agent tự mở mỗi khi đăng nhập Windows. Chạy lại để gỡ. |
+| `TU_CHAY_CUNG_WINDOWS.bat` | Agent tự chạy ngầm ở khay mỗi khi đăng nhập Windows, không mở cửa sổ nào. Chạy lại để gỡ. |
 | `CAI_BAT_MAY_TU_XA.bat` | Cấu hình để bật máy từ điện thoại. Xem [BAT_MAY_TU_XA.md](BAT_MAY_TU_XA.md). |
 
 ## 2. Điện thoại Android — app
@@ -42,7 +51,7 @@ Tuỳ chọn, trong cùng thư mục:
 ## 3. Ghép cặp
 
 Mở app, chọn máy tính trong danh sách (hoặc nhập IP), nhập mã 6 số, bấm
-**Ghép cặp**. Mã hết hạn thì nhấn **Enter** trong cửa sổ agent để lấy mã mới.
+**Ghép cặp**. Mã hết hạn thì bấm **Mã mới** trong cửa sổ agent.
 
 ---
 
@@ -53,19 +62,17 @@ Không có gì tự cài sau lưng bạn — cả hai đều hỏi trước.
 **App:** bánh răng ⚙ → **Kiểm tra cập nhật**. Có bản mới thì app hiện ghi
 chú thay đổi; bấm **Cập nhật**, app tải về và mở trình cài đặt của Android,
 bấm **Cài đặt** để xong. Lần đầu Android hỏi cho phép HeDeck cài ứng dụng —
-bật lên rồi quay lại. Dữ liệu và ghép cặp giữ nguyên.
+bật lên rồi quay lại.
 
-**Agent:** khi mở và cứ 12 giờ, agent hỏi GitHub. Có bản mới thì cửa sổ
-agent báo kèm ghi chú thay đổi:
+Cập nhật **giữ nguyên mọi thứ**: các trang, ô và app đã chọn, ngôn ngữ, giao
+diện sáng/tối, tốc độ chuột, tự đổi trang, MAC bật máy và ghép cặp. Android
+chỉ xoá dữ liệu khi **gỡ** app, không xoá khi cài bản mới đè lên.
 
-```
-  [↑] Có bản mới 1.3.0 trên GitHub:
-        - Thêm ô hẹn giờ tắt máy
-      Gõ C rồi Enter để cập nhật, agent tự mở lại sau đó.
-```
-
-Gõ `C` rồi Enter: agent tải bản mới, kiểm tra mã SHA-256, thay file và tự
-mở lại trong cửa sổ mới. Tải hỏng thì giữ nguyên bản cũ.
+**Agent:** khi mở và cứ 12 giờ, agent hỏi GitHub. Có bản mới thì icon ở
+khay báo một thông báo nhỏ, và cửa sổ agent hiện dải **"Có bản mới …"**. Bấm
+**Xem và cập nhật** để đọc ghi chú thay đổi, đồng ý thì agent tải bản mới,
+kiểm tra mã SHA-256, thay file và tự mở lại. Tải hỏng thì giữ nguyên bản cũ.
+Điện thoại đã ghép và danh mục app (`%USERPROFILE%\.hedeck`) giữ nguyên.
 
 > App và agent nên cùng phiên bản. App báo *"Agent là bản cũ"* thì cập nhật
 > agent trước.
@@ -75,6 +82,6 @@ mở lại trong cửa sổ mới. Tải hỏng thì giữ nguyên bản cũ.
 ## Gỡ cài đặt
 
 - **App:** gỡ như mọi app Android.
-- **Agent:** chạy lại `TU_CHAY_CUNG_WINDOWS.bat` nếu đã bật tự chạy, rồi xoá
-  thư mục agent. Dữ liệu (điện thoại đã ghép, danh mục app) nằm ở
+- **Agent:** chuột phải icon ở khay → **Thoát HeDeck Agent**, chạy lại
+  `TU_CHAY_CUNG_WINDOWS.bat` nếu đã bật tự chạy, rồi xoá thư mục agent. Dữ liệu (điện thoại đã ghép, danh mục app) nằm ở
   `%USERPROFILE%\.hedeck`, xoá luôn nếu muốn sạch hẳn.
