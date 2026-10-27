@@ -1,0 +1,121 @@
+# Phát hành bản mới
+
+Dành cho người giữ kho mã. Người dùng cài theo [CAI_DAT.md](CAI_DAT.md).
+
+```
+PHAT_HANH.bat ──► thẻ v1.3.0 ──► GitHub Actions ──► Release v1.3.0
+                                  • build APK, ký      ├─ HeDeck-1.3.0.apk
+                                  • đóng gói agent     ├─ HeDeckAgent.exe
+                                                       ├─ HeDeckAgent-1.3.0.zip
+                                                       └─ SHA256SUMS.txt
+                                                              │
+         App: ⚙ → Kiểm tra cập nhật ◄─────────────────────────┤
+         Agent: tự báo, gõ C để cài ◄─────────────────────────┘
+```
+
+Chỉ **gắn thẻ phiên bản** mới phát hành. Merge vào `master` không phát hành
+gì cả — chỉ chạy build thử trên pull request để chắc `master` luôn build được.
+
+---
+
+## Việc làm một lần: khoá ký APK
+
+Android chỉ cho cài bản mới đè lên bản cũ khi cả hai **ký bằng cùng một
+khoá**. Khoá này phải giữ mãi: **mất khoá là mọi người dùng phải gỡ app cài
+lại**.
+
+1. Cần Android Studio (hoặc JDK 17) trên máy — chính cái đang dùng để build.
+2. Nháy đúp **`TAO_KHOA_KY.bat`**. Script:
+   - tạo khoá ở `%USERPROFILE%\HeDeck-khoa-ky\` (ngoài kho mã, không bao giờ
+     lên Git), kèm mật khẩu ngẫu nhiên trong `MAT_KHAU.txt`;
+   - mở trang tạo secret của GitHub và chép sẵn từng giá trị vào clipboard.
+     Bạn chỉ cần dán (Ctrl+V) và bấm **Add secret** hai lần:
+
+     | Name | Secret |
+     |---|---|
+     | `ANDROID_KEYSTORE_BASE64` | (script đã chép sẵn) |
+     | `ANDROID_KEYSTORE_PASSWORD` | (script đã chép sẵn) |
+
+3. **Sao lưu thư mục `HeDeck-khoa-ky`** sang USB, Google Drive… Không gửi cho
+   ai, không đưa vào kho mã.
+
+Chạy lại `TAO_KHOA_KY.bat` không tạo khoá mới — chỉ chép lại secret (dùng
+khi cần dán lại, hoặc sang máy khác sau khi chép thư mục khoá qua).
+
+Có khoá trên máy thì `BUILD_APK.bat` cũng tự ký bằng khoá này, nên APK tự
+build cài đè lên được bản tải từ GitHub và ngược lại, không mất ghép cặp.
+
+---
+
+## Mỗi lần phát hành
+
+1. Merge mọi thay đổi vào `master`, rồi trên máy:
+   `git checkout master` và `git pull`.
+2. Nháy đúp **`PHAT_HANH.bat`**:
+   - kiểm tra đang ở `master`, không còn thay đổi chưa commit, khớp GitHub;
+   - gợi ý số phiên bản kế tiếp;
+   - mở Notepad để viết **ghi chú thay đổi** — người dùng đọc phần này trong
+     app và cửa sổ agent, nên viết cho người dùng chứ không cho lập trình viên;
+   - gắn thẻ và đẩy lên GitHub.
+3. Theo dõi ở tab **Actions** (khoảng 10–15 phút). Xong thì bản mới nằm ở
+   tab **Releases** và người dùng thấy ngay khi kiểm tra cập nhật.
+
+Đánh số `chính.phụ.sửa`: sửa lỗi nhỏ tăng số cuối (`1.2.0 → 1.2.1`), thêm
+tính năng tăng số giữa (`1.2.1 → 1.3.0`). Số phải luôn tăng — app và agent
+chỉ coi là bản mới khi số lớn hơn bản đang chạy.
+
+Không dùng được `PHAT_HANH.bat` thì gắn thẻ bằng tay, kết quả như nhau:
+
+```
+git tag -a v1.3.0 -m "- Thêm ô hẹn giờ tắt máy"
+git push origin v1.3.0
+```
+
+### Lỡ phát hành bản lỗi
+
+Đừng xoá rồi đăng lại cùng số — máy đã tải bản lỗi sẽ không nhận ra bản sửa.
+Sửa lỗi rồi phát hành số mới (`1.3.1`).
+
+---
+
+## Build hỏng trên GitHub
+
+Mở lượt chạy đỏ trong tab **Actions**, bấm vào bước đỏ để xem log.
+
+| Báo lỗi | Cách sửa |
+|---|---|
+| `Chưa có secret ANDROID_KEYSTORE_BASE64…` | Chạy `TAO_KHOA_KY.bat`, dán đủ 2 secret. |
+| `apksigner … password` / `Failed to load signer` | Secret mật khẩu sai — chạy lại `TAO_KHOA_KY.bat`, dán lại secret 2. |
+| `Thẻ phải có dạng v1.2.3` | Xoá thẻ sai (`git push --delete origin <thẻ>`), gắn lại cho đúng. |
+
+Build lại cùng thẻ sau khi sửa secret: tab **Actions** → lượt chạy đỏ →
+**Re-run all jobs**.
+
+---
+
+## Bên trong
+
+- Workflow: [`.github/workflows/release.yml`](../.github/workflows/release.yml).
+  APK build trên Linux bằng `setup_app.sh` (giữ đồng bộ với
+  `android_patch/patch_manifest.ps1`), agent đóng gói bằng PyInstaller trên
+  Windows.
+- Flutter ký APK bằng khoá debug như mọi khi; workflow dùng `apksigner` ký
+  lại bằng khoá phát hành. Không phải sửa file Gradle do `flutter create` sinh.
+- Số phiên bản lấy từ thẻ: `--build-name`, `versionCode = chính×1 000 000 +
+  phụ×1 000 + sửa`, và `--dart-define=HEDECK_VERSION` để app biết mình là bản
+  nào. Bản tự build không có số này và tự coi là *"bản tự build"*.
+- App hỏi `api.github.com/repos/ThangHeTanTy/HeDeck/releases/latest`, tải
+  APK, so SHA-256 GitHub ghi cho file, rồi mở trình cài đặt qua
+  `FileProvider` (kênh `hedeck/update` trong `android_patch/MainActivity.kt`).
+  Android luôn bắt người dùng bấm **Cài đặt** — app ngoài Play Store không
+  cài im lặng được.
+- Agent (`agent/updater.py`) chỉ tự thay được bản `.exe`: tải về cạnh file
+  đang chạy, đổi tên file cũ thành `.old` (Windows cho đổi tên file đang
+  chạy), đặt file mới vào chỗ cũ, mở lại. Chạy từ mã nguồn thì chỉ nhắc
+  `git pull`.
+- Ghi chú phát hành = lời ghi chú của thẻ, nối thêm
+  [`.github/release_body.md`](../.github/release_body.md) (hướng dẫn cài lần
+  đầu) sau dòng `---`. App và agent chỉ hiện phần trên dòng đó.
+- Bảng đối chiếu stack trace (`debug_symbols`) nằm ở mục Artifacts của lượt
+  chạy, giữ 90 ngày; không đính vào Release vì công khai nó thì làm rối mã
+  như không.

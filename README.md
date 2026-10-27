@@ -74,6 +74,14 @@ không tự mở được ứng dụng trên máy tính, nên agent là bắt bu
 
 ## Cài đặt
 
+**Cách nhanh nhất:** tải APK và agent `.exe` dựng sẵn ở trang
+[**Releases**](https://github.com/ThangHeTanTy/HeDeck/releases/latest), làm
+theo [`docs/CAI_DAT.md`](docs/CAI_DAT.md). Không cần Python hay Flutter, và
+cập nhật được ngay trong app (⚙ → **Kiểm tra cập nhật**) lẫn cửa sổ agent
+(gõ `C`).
+
+Phần dưới đây là cách chạy từ mã nguồn, dành cho người muốn sửa code.
+
 ### Bước 1 — Chạy agent trên thiết bị
 
 ```
@@ -457,6 +465,9 @@ hedeck/
 ├── BUILD_APK.bat          xuất APK bản phát hành
 ├── SUA_LOI_*.bat          các script sửa lỗi môi trường
 ├── DON_DEP.bat            xoá file thừa sót lại từ bản cũ
+├── PHAT_HANH.bat          gắn thẻ phiên bản, GitHub tự build và đăng Release
+├── TAO_KHOA_KY.bat        tạo khoá ký APK (làm một lần)
+├── .github/workflows/     build và phát hành trên GitHub Actions
 ├── agent/                 phần chạy trên thiết bị Windows
 │   ├── run_agent.bat
 │   ├── agent.py           server WebSocket, ghép cặp, xác thực
@@ -468,13 +479,14 @@ hedeck/
 │   ├── power.py           tắt/ngủ/khoá máy, thông tin Wake-on-LAN
 │   ├── remote_input.py    touchpad, bàn phím ảo
 │   ├── perf.py            đo FPS, nhiệt độ, tải CPU/GPU
+│   ├── updater.py         kiểm tra và cài bản agent mới từ GitHub
 │   ├── CAI_BAT_MAY_TU_XA.bat   cấu hình Windows cho Wake-on-LAN
 │   ├── TU_CHAY_CUNG_WINDOWS.bat agent tự chạy khi đăng nhập
 │   ├── security.py        chặn IP lạ, chữ ký Ed25519
 │   └── kiem_tra_*.py      công cụ tự kiểm tra và chẩn đoán
 ├── flutter_app/lib/       phần chạy trên điện thoại
 ├── android_patch/         script cấu hình Android và Gradle
-├── tools/make_icon.py     script vẽ logo
+├── tools/                 vẽ logo, script phát hành và ký APK
 └── docs/KY_THUAT.md       tài liệu kỹ thuật chi tiết
 ```
 
@@ -482,12 +494,14 @@ hedeck/
 
 ## Đóng góp và phát triển
 
-Hai tài liệu đi kèm:
+Các tài liệu đi kèm:
 
 - [`docs/BAT_DAU.md`](docs/BAT_DAU.md) — hướng dẫn cài đặt chi tiết từng bước,
   dành cho người chưa từng dùng Flutter
 - [`docs/KY_THUAT.md`](docs/KY_THUAT.md) — giao thức, kiến trúc, quyết định
   thiết kế và lý do đằng sau từng lựa chọn
+- [`docs/PHAT_HANH.md`](docs/PHAT_HANH.md) — phát hành bản mới lên GitHub,
+  khoá ký APK, cách cập nhật tự động hoạt động
 
 Trước khi gửi thay đổi cho phần agent, chạy bộ tự kiểm tra:
 

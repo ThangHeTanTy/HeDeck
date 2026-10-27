@@ -25,6 +25,7 @@ import perf
 import power
 import remote_input
 import security
+import updater
 import win_control
 
 PORT = 8787
@@ -32,6 +33,7 @@ SERVICE_TYPE = "_hedeck._tcp.local."
 STATE_FILE = catalog.CONFIG_DIR / "agent.json"
 PAIR_WINDOW = 300          # mã ghép cặp sống 5 phút
 STATUS_INTERVAL = 1.5      # giây
+UPDATE_INTERVAL = 12 * 3600  # hỏi GitHub bản mới mỗi 12 giờ
 ALLOW_MACROS = True        # đặt False nếu không muốn điện thoại gõ phím vào máy
 # Tăng mỗi khi giao thức với app thay đổi. App so số này để báo người dùng
 # chạy lại agent sau khi cập nhật code — pull code xong mà quên tắt cửa sổ
@@ -104,6 +106,8 @@ class Agent:
         # agent không tốn chút CPU nào của game.
         self._perf_watchers = set()
         self._perf = None
+        # Bản mới trên GitHub, None nếu đang là bản mới nhất.
+        self.update = None
         self.loop = None
 
     # -- tiện ích ---------------------------------------------------------
@@ -242,6 +246,7 @@ class Agent:
         st = self.guard.status()
         lines = [
             f"HeDeck Agent v{AGENT_VERSION} · {self.host_name}",
+            f"Phiên bản: {updater.VERSION or ('bản tự đóng gói' if updater.FROZEN else 'chạy từ mã nguồn')}",
             f"Địa chỉ  : ws://{ip}:{port}",
             f"Mã ghép  : {self.pair_code}  ({self.code_status()})",
             f"Ứng dụng : {len(self.apps) if self.catalog_ready else 'đang quét…'}"
@@ -260,8 +265,25 @@ class Agent:
         print("  └" + "─" * width + "┘")
         for warning in self.wol.get("warnings", []):
             print(f"  [!] {warning}")
+        self.print_update()
         print("  Enter: mã mới · U: gỡ chặn IP · D: xoá điện thoại đã ghép · "
-              "Ctrl+C: thoát\n")
+              + ("C: cập nhật · " if updater.can_self_update(self.update) else "")
+              + "Ctrl+C: thoát\n")
+
+    def print_update(self):
+        info = self.update
+        if not info:
+            return
+        print(f"  [↑] Có bản mới {info['version']} trên GitHub:")
+        for line in updater.short_notes(info["notes"]):
+            print(f"        {line}")
+        if updater.can_self_update(info):
+            print("      Gõ C rồi Enter để cập nhật, agent tự mở lại sau đó.")
+        elif updater.FROZEN:
+            print(f"      Tải tại: {info['page']}")
+        else:
+            print("      Đang chạy từ mã nguồn: chạy git pull rồi mở lại "
+                  "run_agent.bat.")
 
     async def watch_console(self, ip, port):
         """Nhấn Enter trong cửa sổ agent là có mã mới, khỏi phải khởi động lại."""
@@ -275,6 +297,12 @@ class Agent:
             command = line.strip().lower()
             if command == "u":
                 self.guard.unban_all()
+            elif command == "c":
+                if not updater.can_self_update(self.update):
+                    log("Không có bản mới để cập nhật.")
+                    continue
+                await self.self_update()
+                continue  # cập nhật hỏng thì vẫn chạy tiếp bản cũ
             elif command == "d":
                 count = len(self.state["devices"])
                 self.state["devices"] = {}
@@ -284,6 +312,36 @@ class Agent:
             else:
                 self.new_pair_code(announce=False)
             self.print_banner(ip, port)
+
+    async def update_loop(self):
+        """Hỏi GitHub bản mới lúc khởi động rồi cứ 12 giờ một lần.
+
+        Chỉ báo trong cửa sổ agent; người dùng gõ C thì mới cài.
+        """
+        await asyncio.sleep(5)  # để bảng thông tin in xong trước
+        while True:
+            try:
+                info = await self.run_blocking(updater.check)
+            except Exception as exc:
+                info = None
+                log("Không kiểm tra được bản mới:", exc)
+            if info and info != self.update:
+                self.update = info
+                print()
+                self.print_update()
+                print()
+            await asyncio.sleep(UPDATE_INTERVAL)
+
+    async def self_update(self):
+        info = self.update
+        log(f"Bắt đầu cập nhật lên {info['version']}...")
+        try:
+            await self.run_blocking(updater.install, info, log)
+        except Exception as exc:
+            log(f"Cập nhật thất bại: {exc}. Agent tiếp tục chạy bản cũ.")
+            return
+        log("Đã cài xong, đang mở lại agent...")
+        updater.restart()
 
     def verify(self, ip, device_id, ts, nonce, sig, claimed_key=None):
         """Xác thực bằng chữ ký. Agent chỉ giữ khoá công khai của thiết bị.
@@ -810,6 +868,7 @@ async def main():
     ap.add_argument("--port", type=int, default=PORT)
     args = ap.parse_args()
 
+    updater.cleanup()
     agent = Agent(rescan=args.rescan)
     agent.loop = asyncio.get_running_loop()
     ip = lan_ip()
@@ -839,14 +898,27 @@ async def main():
     agent._spawn(agent.status_loop())
     agent._spawn(agent.perf_loop())
     agent._spawn(agent.watch_console(ip, args.port))
+    agent._spawn(agent.update_loop())
     # Dựng danh mục ở nền. Cổng đã mở trước nên điện thoại kết nối được ngay,
     # không phải chờ quét xong.
     agent._spawn(agent.load_catalog())
 
-    async with websockets.serve(agent.serve, "0.0.0.0", args.port,
-                                ping_interval=20, ping_timeout=20,
-                                max_size=32 * 2 ** 20):
+    # Ngay sau khi tự cập nhật, bản cũ có thể chưa nhả cổng kịp: thử lại vài
+    # giây thay vì chết với lỗi "cổng đã có người dùng".
+    for attempt in range(10):
+        try:
+            server = await websockets.serve(
+                agent.serve, "0.0.0.0", args.port,
+                ping_interval=20, ping_timeout=20, max_size=32 * 2 ** 20)
+            break
+        except OSError:
+            if attempt == 9:
+                raise
+            await asyncio.sleep(1)
+    try:
         await asyncio.Future()
+    finally:
+        server.close()
 
 
 if __name__ == "__main__":

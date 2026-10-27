@@ -29,10 +29,13 @@ call flutter clean >nul
 call flutter pub get
 if errorlevel 1 (echo [X] pub get that bai & pause & exit /b 1)
 
-rem Chep lai quy tac R8 moi lan build: file trong android\app chi duoc chep luc
-rem chay setup_app.bat, sua android_patch\proguard-rules.pro sau do se khong
-rem toi duoc ban build neu khong chep lai o day.
-if exist android\app copy /Y "..\android_patch\proguard-rules.pro" android\app\ >nul
+rem Va lai thu muc android moi lan build: file trong do chi duoc tao luc chay
+rem setup_app.bat, sua android_patch sau do (quy tac R8, bo cap nhat app...)
+rem se khong toi duoc ban build neu khong va lai o day. Va nhieu lan van an toan.
+if exist android\app (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "..\android_patch\patch_manifest.ps1"
+    if errorlevel 1 (echo [X] Va thu muc android that bai & pause & exit /b 1)
+)
 
 echo [2/3] Build APK release ^(obfuscate^)...
 rem --obfuscate doi ten lop, ham, bien trong ma Dart thanh ky tu vo nghia.
@@ -54,6 +57,10 @@ if errorlevel 1 (echo [X] Build that bai & pause & exit /b 1)
 echo [3/3] Kiem tra ket qua...
 set APK=build\app\outputs\flutter-apk\app-release.apk
 if not exist "%APK%" (echo [X] Khong thay file APK & pause & exit /b 1)
+
+rem Co khoa phat hanh (TAO_KHOA_KY.bat) thi ky bang khoa do, de cai de len
+rem duoc ban tai tu GitHub. Khong co thi bo qua.
+powershell -NoProfile -ExecutionPolicy Bypass -File "..\tools\ky_apk.ps1" -Apk "%APK%"
 
 powershell -NoProfile -Command ^
   "$f = Get-Item '%APK%'; " ^

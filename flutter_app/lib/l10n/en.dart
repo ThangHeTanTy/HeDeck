@@ -189,8 +189,8 @@ const en = <String, String>{
       'Fingerprint {0}',
   'Tên trang':
       'Page name',
-  'Agent trên thiết bị là bản cũ — tắt cửa sổ agent rồi chạy lại run_agent.bat':
-      'The agent on the device is outdated — close the agent window and run run_agent.bat again',
+  'Agent trên thiết bị là bản cũ — gõ C trong cửa sổ agent để cập nhật, hoặc tắt rồi mở lại agent':
+      'The agent on the device is outdated — type C in the agent window to update, or close and reopen the agent',
   'Thiết bị chưa quét xong — xem cửa sổ agent':
       'The device has not finished scanning — check the agent window',
   'Đang lấy danh sách ứng dụng…':
@@ -687,4 +687,44 @@ const en = <String, String>{
       'Number 8',
   'Số 9':
       'Number 9',
+  'Kiểm tra cập nhật':
+      'Check for updates',
+  'Không hỏi được GitHub. Kiểm tra mạng Internet rồi thử lại.':
+      'Could not reach GitHub. Check your Internet connection and try again.',
+  'File tải về bị hỏng. Thử tải lại.':
+      'The download is corrupted. Please download it again.',
+  'Bản build này chưa có bộ cập nhật. Chạy lại setup_app.bat rồi build lại, hoặc tải APK trên trang GitHub.':
+      'This build has no updater. Re-run setup_app.bat and build again, or download the APK from the GitHub page.',
+  'Tải bản mới thất bại. Kiểm tra mạng rồi thử lại.':
+      'Download failed. Check your network and try again.',
+  'Không mở được trình cài đặt: {0}':
+      'Could not open the installer: {0}',
+  'Bản tự build trên máy':
+      'Self-built version',
+  'Đang dùng bản {0}':
+      'Current version {0}',
+  'Đang hỏi GitHub…':
+      'Asking GitHub…',
+  'Bạn đang dùng bản mới nhất.':
+      'You are on the latest version.',
+  'Có bản mới {0}':
+      'Version {0} is available',
+  'Bản đang dùng do bạn tự build, ký bằng khoá khác bản trên GitHub. Nếu Android báo "Chưa cài đặt ứng dụng", hãy gỡ HeDeck rồi cài lại — sẽ phải ghép cặp lại một lần.':
+      'This copy was built on your own computer and signed with a different key than the GitHub version. If Android says "App not installed", uninstall HeDeck and install again — you will need to pair once more.',
+  'Android sẽ hỏi xác nhận trước khi cài. Lần đầu cần cho phép HeDeck cài ứng dụng.':
+      'Android will ask you to confirm before installing. The first time, allow HeDeck to install apps.',
+  'Để sau':
+      'Later',
+  'Cập nhật':
+      'Update',
+  'Đang tải bản {0}… {1}%':
+      'Downloading {0}… {1}%',
+  'Đang tải bản {0}…':
+      'Downloading {0}…',
+  'Đã tải xong. Bấm "Cài đặt" trên màn hình của Android để hoàn tất. Nếu lỡ đóng, bấm "Mở lại trình cài đặt".':
+      'Download complete. Tap "Install" on the Android screen to finish. If you closed it, tap "Open installer again".',
+  'Mở lại trình cài đặt':
+      'Open installer again',
+  'Cập nhật HeDeck':
+      'Update HeDeck',
 };
