@@ -13,6 +13,7 @@ import os
 import secrets
 import socket
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -22,6 +23,7 @@ import websockets
 import app_volume
 import catalog
 import perf
+import instance
 import power
 import remote_input
 import security
@@ -108,6 +110,8 @@ class Agent:
         self._perf = None
         # Bản mới trên GitHub, None nếu đang là bản mới nhất.
         self.update = None
+        # Chạy có cửa sổ và icon ở khay (tray_ui) thay vì cửa sổ lệnh.
+        self.gui = False
         self.loop = None
 
     # -- tiện ích ---------------------------------------------------------
@@ -237,7 +241,8 @@ class Agent:
 
     def code_status(self):
         if self.code_expired:
-            return "đã hết hạn — nhấn Enter để lấy mã mới"
+            return ("đã hết hạn — bấm Mã mới" if self.gui
+                    else "đã hết hạn — nhấn Enter để lấy mã mới")
         left = int(self.pair_until - time.time())
         return f"còn {left // 60}p{left % 60:02d}s"
 
@@ -266,9 +271,11 @@ class Agent:
         for warning in self.wol.get("warnings", []):
             print(f"  [!] {warning}")
         self.print_update()
-        print("  Enter: mã mới · U: gỡ chặn IP · D: xoá điện thoại đã ghép · "
-              + ("C: cập nhật · " if updater.can_self_update(self.update) else "")
-              + "Ctrl+C: thoát\n")
+        if not self.gui:
+            print("  Enter: mã mới · U: gỡ chặn IP · D: xoá điện thoại đã ghép · "
+                  + ("C: cập nhật · " if updater.can_self_update(self.update)
+                     else "")
+                  + "Ctrl+C: thoát\n")
 
     def print_update(self):
         info = self.update
@@ -278,7 +285,9 @@ class Agent:
         for line in updater.short_notes(info["notes"]):
             print(f"        {line}")
         if updater.can_self_update(info):
-            print("      Gõ C rồi Enter để cập nhật, agent tự mở lại sau đó.")
+            print("      Bấm Cập nhật trong cửa sổ agent, agent tự mở lại sau đó."
+                  if self.gui else
+                  "      Gõ C rồi Enter để cập nhật, agent tự mở lại sau đó.")
         elif updater.FROZEN:
             print(f"      Tải tại: {info['page']}")
         else:
@@ -304,14 +313,17 @@ class Agent:
                 await self.self_update()
                 continue  # cập nhật hỏng thì vẫn chạy tiếp bản cũ
             elif command == "d":
-                count = len(self.state["devices"])
-                self.state["devices"] = {}
-                save_state(self.state)
-                log(f"Đã xoá {count} điện thoại đã ghép cặp. "
-                    "Hãy ghép cặp lại từ điện thoại.")
+                self.forget_devices()
             else:
                 self.new_pair_code(announce=False)
             self.print_banner(ip, port)
+
+    def forget_devices(self):
+        count = len(self.state["devices"])
+        self.state["devices"] = {}
+        save_state(self.state)
+        log(f"Đã xoá {count} điện thoại đã ghép cặp. "
+            "Hãy ghép cặp lại từ điện thoại.")
 
     async def update_loop(self):
         """Hỏi GitHub bản mới lúc khởi động rồi cứ 12 giờ một lần.
@@ -862,14 +874,24 @@ class Agent:
             self.clients.discard(ws)
 
 
-async def main():
+def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rescan", action="store_true", help="Quét lại Start Menu")
     ap.add_argument("--port", type=int, default=PORT)
-    args = ap.parse_args()
+    ap.add_argument("--console", action="store_true",
+                    help="Chạy trong cửa sổ lệnh như bản cũ, không dùng khay")
+    ap.add_argument("--tray", action="store_true",
+                    help="Mở thẳng xuống khay hệ thống (dùng khi tự chạy)")
+    ap.add_argument("--after-update", action="store_true",
+                    help=argparse.SUPPRESS)
+    return ap.parse_args()
 
+
+async def main(args, on_ready=None):
+    """Chạy agent. on_ready(agent, ip, port) báo cho cửa sổ khi đã sẵn sàng."""
     updater.cleanup()
     agent = Agent(rescan=args.rescan)
+    agent.gui = on_ready is not None
     agent.loop = asyncio.get_running_loop()
     ip = lan_ip()
 
@@ -894,6 +916,8 @@ async def main():
     agent.wol = await agent.run_blocking(power.wol_info, ip)
 
     agent.print_banner(ip, args.port)
+    if on_ready:
+        on_ready(agent, ip, args.port)
 
     agent._spawn(agent.status_loop())
     agent._spawn(agent.perf_loop())
@@ -913,6 +937,8 @@ async def main():
             break
         except OSError:
             if attempt == 9:
+                log(f"Cổng {args.port} đang bị chiếm. Có thể một agent bản cũ "
+                    "(cửa sổ lệnh màu đen) vẫn đang chạy — tắt nó rồi mở lại.")
                 raise
             await asyncio.sleep(1)
     try:
@@ -921,11 +947,54 @@ async def main():
         server.close()
 
 
+def start_in_thread(args):
+    """Chạy agent ở luồng nền, để luồng chính lo cửa sổ và icon ở khay."""
+    def starter(on_ready):
+        def target():
+            try:
+                asyncio.run(main(args, on_ready))
+            except Exception:
+                import traceback
+                traceback.print_exc()
+        thread = threading.Thread(target=target, daemon=True,
+                                  name="hedeck-agent")
+        thread.start()
+        return thread
+    return starter
+
+
 if __name__ == "__main__":
     if sys.platform != "win32":
         print("Agent này chỉ chạy trên Windows.")
         sys.exit(1)
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("\nĐã dừng agent.")
+    args = parse_args()
+
+    # Đã có agent chạy (thường là đang ẩn ở khay): nhờ nó hiện cửa sổ lên
+    # rồi thoát, thay vì chạy agent thứ hai tranh cổng.
+    if not instance.acquire(wait_seconds=20 if args.after_update else 0):
+        instance.ask_running_to_show()
+        print("HeDeck Agent đang chạy rồi — xem icon ở khay hệ thống.")
+        sys.exit(0)
+
+    tray_ui = None
+    if not args.console:
+        try:
+            import tray_ui
+        except Exception as exc:
+            if updater.FROZEN:
+                # Bản .exe không có cửa sổ lệnh để lùi về: báo lỗi rồi thoát,
+                # đừng chạy ngầm mà không ai thấy.
+                import ctypes
+                ctypes.windll.user32.MessageBoxW(
+                    None, f"Không mở được cửa sổ agent: {exc}",
+                    "HeDeck Agent", 0x10)
+                sys.exit(1)
+            print("Không mở được cửa sổ agent, chạy trong cửa sổ lệnh:", exc)
+
+    if tray_ui:
+        tray_ui.run(start_in_thread(args), start_hidden=args.tray)
+    else:
+        try:
+            asyncio.run(main(args))
+        except KeyboardInterrupt:
+            print("\nĐã dừng agent.")

@@ -16,6 +16,7 @@ class Store extends ChangeNotifier {
   static const _kDeviceId = 'deck.deviceId';
   static const _kHostName = 'deck.hostName';
   static const _kPages = 'deck.pages';
+  static const _kPagesBackup = 'deck.pages.backup';
   static const _kRows = 'deck.rows';
   static const _kFlipped = 'deck.flipped';
   static const _kWolMacs = 'deck.wolMacs';
@@ -100,12 +101,27 @@ class Store extends ChangeNotifier {
     // dựng lại cho đúng tên theo ngôn ngữ vừa đọc.
     if (raw == null) pages = DeckPage.starter();
     if (raw != null) {
+      // Đọc từng trang riêng: một trang hỏng (ví dụ bản cập nhật đổi cách
+      // lưu ô) không được kéo theo mất cả bố cục. Có trang đọc không được thì
+      // cất nguyên bản cũ sang khoá dự phòng trước khi lần lưu sau ghi đè.
+      var broken = false;
       try {
-        pages = (jsonDecode(raw) as List)
-            .map((e) => DeckPage.fromJson(e as Map<String, dynamic>))
-            .toList();
+        pages = [];
+        for (final e in jsonDecode(raw) as List) {
+          try {
+            pages.add(DeckPage.fromJson(e as Map<String, dynamic>));
+          } catch (_) {
+            broken = true;
+          }
+        }
       } catch (_) {
+        broken = true;
         pages = DeckPage.starter();
+      }
+      if (broken) {
+        debugPrint('HeDeck: bố cục đã lưu có phần đọc không được, '
+            'đã cất bản gốc ở $_kPagesBackup');
+        await _prefs.setString(_kPagesBackup, raw);
       }
     }
     if (pages.isEmpty) pages = DeckPage.starter();

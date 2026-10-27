@@ -23,6 +23,7 @@ from pathlib import Path
 
 REPO = "ThangHeTanTy/HeDeck"
 LATEST = f"https://api.github.com/repos/{REPO}/releases/latest"
+RELEASES = f"https://github.com/{REPO}/releases/latest"
 ASSET = "HeDeckAgent.exe"
 
 # CI ghi file này lúc đóng gói .exe. Chạy từ mã nguồn thì không có.
@@ -32,6 +33,9 @@ except ImportError:
     VERSION = ""
 
 FROZEN = getattr(sys, "frozen", False)
+
+# Việc cần làm ngay trước khi thoát để mở bản mới (gỡ icon ở khay...).
+before_restart = []
 EXE = Path(sys.executable) if FROZEN else None
 
 
@@ -131,13 +135,21 @@ def install(info, log=print):
 
 
 def restart():
-    """Mở bản vừa cài trong cửa sổ mới rồi thoát bản đang chạy."""
+    """Mở bản vừa cài rồi thoát bản đang chạy."""
     # Không có biến này, bản mới tưởng mình là tiến trình con của bản cũ và
     # dùng chung thư mục giải nén tạm — bản cũ thoát là xoá mất thư mục đó.
     env = dict(os.environ, PYINSTALLER_RESET_ENVIRONMENT="1")
-    subprocess.Popen([str(EXE), *sys.argv[1:]],
+    # --after-update: bản mới chờ bản này thoát hẳn thay vì tưởng đã có một
+    # agent khác đang chạy rồi tự thoát.
+    args = [a for a in sys.argv[1:] if a != "--after-update"]
+    subprocess.Popen([str(EXE), *args, "--after-update"],
                      creationflags=subprocess.CREATE_NEW_CONSOLE,
                      cwd=str(EXE.parent), env=env)
+    for hook in before_restart:
+        try:
+            hook()
+        except Exception:
+            pass
     os._exit(0)
 
 

@@ -78,7 +78,7 @@ không tự mở được ứng dụng trên máy tính, nên agent là bắt bu
 [**Releases**](https://github.com/ThangHeTanTy/HeDeck/releases/latest), làm
 theo [`docs/CAI_DAT.md`](docs/CAI_DAT.md). Không cần Python hay Flutter, và
 cập nhật được ngay trong app (⚙ → **Kiểm tra cập nhật**) lẫn cửa sổ agent
-(gõ `C`).
+(**Xem và cập nhật**).
 
 Phần dưới đây là cách chạy từ mã nguồn, dành cho người muốn sửa code.
 
@@ -91,20 +91,17 @@ agent\run_agent.bat
 Lần đầu mất khoảng một phút để tự tạo môi trường ảo và cài thư viện. Windows
 Firewall sẽ hỏi — chọn **Cho phép ở mạng riêng (Private networks)**.
 
-Cửa sổ hiện ra:
+Cửa sổ agent hiện ra với **địa chỉ IP**, **mã ghép cặp 6 số** (nút **Mã
+mới** khi hết hạn), số điện thoại đã ghép, nút **Gỡ chặn IP**, **Xoá điện
+thoại đã ghép** và khung log.
 
-```
-  ┌─────────────────────────────────────────────┐
-  │  HeDeck Agent · DESKTOP-A1B2C3              │
-  │  Địa chỉ  : ws://192.168.1.12:8787          │
-  │  Mã ghép  : 481902  (còn 4p58s)             │
-  │  Ứng dụng : 75  (danh mục v9)               │
-  │  Bảo vệ   : chỉ mạng nội bộ · Ed25519       │
-  └─────────────────────────────────────────────┘
-  Enter: mã mới · U: gỡ chặn IP · D: xoá điện thoại · Ctrl+C: thoát
-```
+**Bấm X chỉ ẩn cửa sổ** — agent vẫn chạy ngầm, icon HeDeck nằm ở khay hệ
+thống (mũi tên **^** góc phải thanh tác vụ). Bấm icon để mở lại cửa sổ;
+**chuột phải → Thoát HeDeck Agent** mới tắt hẳn. Mở agent lần nữa khi nó đang
+chạy thì cửa sổ cũ hiện lên, không chạy agent thứ hai. Log còn được ghi ở
+`%USERPROFILE%\.hedeck\agent.log`.
 
-Ghi lại **địa chỉ IP** và **mã 6 số**. Giữ cửa sổ này mở trong lúc dùng.
+Muốn kiểu cửa sổ lệnh như bản cũ (gõ Enter/U/D/C): `run_agent.bat --console`.
 
 ### Bước 2 — Cài app lên điện thoại
 
@@ -316,9 +313,11 @@ Không có dòng nào và màn hình vẫn trắng nghĩa là lỗi vẽ đồ h
 
 Pull code chỉ thay file trên ổ đĩa, **chương trình đang chạy vẫn là bản cũ**:
 
-1. **Agent:** đóng cửa sổ agent (Ctrl+C), chạy lại `agent\run_agent.bat`. Dòng
-   đầu bảng thông tin phải ghi đúng phiên bản mới, ví dụ `HeDeck Agent v4`.
-   Nếu đang dùng `HeDeckAgent.exe` thì phải chạy `build_exe.bat` lại.
+1. **Agent:** chuột phải icon HeDeck ở khay → **Thoát HeDeck Agent** (bản cũ
+   chạy trong cửa sổ lệnh thì Ctrl+C), rồi chạy lại `agent\run_agent.bat`.
+   Dòng đầu log phải ghi đúng phiên bản mới, ví dụ `HeDeck Agent v6`. Bấm X
+   **không** tắt agent, chỉ ẩn xuống khay. Nếu đang dùng `HeDeckAgent.exe` tự
+   đóng gói thì phải chạy `build_exe.bat` lại.
 2. **App:** build và cài lại (`CHAY_APP.bat`, hoặc Run trong Android Studio).
    Hot reload không đủ khi code dịch vụ thay đổi.
 
@@ -480,6 +479,8 @@ hedeck/
 │   ├── remote_input.py    touchpad, bàn phím ảo
 │   ├── perf.py            đo FPS, nhiệt độ, tải CPU/GPU
 │   ├── updater.py         kiểm tra và cài bản agent mới từ GitHub
+│   ├── tray_ui.py         cửa sổ agent và icon ở khay hệ thống
+│   ├── instance.py        chỉ cho một agent chạy mỗi lúc
 │   ├── CAI_BAT_MAY_TU_XA.bat   cấu hình Windows cho Wake-on-LAN
 │   ├── TU_CHAY_CUNG_WINDOWS.bat agent tự chạy khi đăng nhập
 │   ├── security.py        chặn IP lạ, chữ ký Ed25519

@@ -19,9 +19,12 @@ agent\run_agent.bat
 Lần đầu mất khoảng một phút để cài thư viện và quét Start Menu. Windows Firewall
 sẽ hỏi — chọn **Cho phép ở mạng riêng (Private networks)**.
 
-Cửa sổ hiện ra sẽ có **địa chỉ IP** và **mã ghép cặp 6 số**. Giữ cửa sổ này mở.
+Cửa sổ hiện ra sẽ có **địa chỉ IP** và **mã ghép cặp 6 số**.
 
-Mã sống 5 phút. Hết hạn thì **nhấn Enter** ngay trong cửa sổ đó để lấy mã mới.
+Mã sống 5 phút. Hết hạn thì bấm **Mã mới** ngay trong cửa sổ đó.
+
+Bấm **X** chỉ ẩn cửa sổ xuống khay hệ thống (mũi tên **^** góc phải thanh tác
+vụ), agent vẫn chạy. Chuột phải icon HeDeck → **Thoát HeDeck Agent** để tắt hẳn.
 
 > Muốn một file `.exe` chạy thẳng, không cần Python: nháy đúp `agent\build_exe.bat`,
 > kết quả nằm ở `agent\dist\HeDeckAgent.exe`.

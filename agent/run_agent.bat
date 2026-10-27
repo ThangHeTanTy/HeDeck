@@ -35,7 +35,7 @@ if errorlevel 1 goto :venv_failed
 goto :install
 
 :check_deps
-"%VPY%" -c "import websockets, win32gui, psutil, PIL, cryptography, zeroconf" >nul 2>nul
+"%VPY%" -c "import websockets, win32gui, psutil, PIL, cryptography, zeroconf, pystray" >nul 2>nul
 if not errorlevel 1 goto :run
 
 :install
@@ -45,7 +45,7 @@ echo [2/2] Cai thu vien, lan dau mat khoang mot phut...
 if errorlevel 1 goto :pip_failed
 
 rem Kiem tra lai cho chac, pip co the bao thanh cong ma van thieu
-"%VPY%" -c "import websockets, win32gui, psutil, PIL, cryptography, zeroconf" >nul 2>nul
+"%VPY%" -c "import websockets, win32gui, psutil, PIL, cryptography, zeroconf, pystray" >nul 2>nul
 if errorlevel 1 goto :pip_failed
 
 :run
@@ -66,6 +66,21 @@ rem cai bo sung (may da cai tu ban cu se khong tu cai lai requirements).
 "%VPY%" -c "import pynvml" >nul 2>nul
 if errorlevel 1 "%VPY%" -m pip install nvidia-ml-py --quiet >nul 2>nul
 
+rem Mac dinh: agent co cua so rieng va icon o khay he thong, bam X la an
+rem xuong khay. Chay bang pythonw de khong giu lai cua so lenh nay.
+rem   run_agent.bat --console   chay trong cua so lenh nhu ban cu
+rem   run_agent.bat --tray      mo thang xuong khay (dung khi tu chay)
+if /i "%~1"=="--console" goto :console
+"%VPY%" -c "import tkinter, pystray" >nul 2>nul
+if errorlevel 1 (
+    echo [!] Python tren may nay thieu tkinter: chay trong cua so lenh.
+    echo     Cai lai Python tu python.org, tick "tcl/tk and IDLE" de co khay.
+    goto :console
+)
+start "" "%VENV%\Scripts\pythonw.exe" agent.py %*
+exit /b 0
+
+:console
 echo.
 "%VPY%" agent.py %*
 pause

@@ -9,23 +9,26 @@ HeDeck Agent — chạy trên máy tính Windows, nhận lệnh từ điện tho
 
 2. Cửa sổ agent hiện địa chỉ IP và mã ghép cặp 6 số. Mở app HeDeck trên
    điện thoại (cùng Wi-Fi), chọn máy này và nhập mã.
-   Hết hạn mã thì nhấn Enter trong cửa sổ agent để lấy mã mới.
+   Hết hạn mã thì bấm "Mã mới" trong cửa sổ agent.
 
-3. Giữ cửa sổ agent mở trong lúc dùng (thu nhỏ được).
+3. Bấm X là agent ẩn xuống khay hệ thống và vẫn chạy ngầm, không chiếm chỗ.
+   Icon HeDeck nằm trong mũi tên ^ ở góc phải thanh tác vụ:
+     - bấm icon: mở lại cửa sổ agent
+     - chuột phải icon -> Thoát HeDeck Agent: tắt hẳn agent
 
 Tuỳ chọn
 --------
-- TU_CHAY_CUNG_WINDOWS.bat : tự mở agent mỗi khi đăng nhập Windows.
-                             Chạy lại lần nữa để gỡ bỏ.
+- TU_CHAY_CUNG_WINDOWS.bat : agent tự chạy ngầm ở khay mỗi khi đăng nhập
+                             Windows. Chạy lại lần nữa để gỡ bỏ.
 - CAI_BAT_MAY_TU_XA.bat    : cấu hình card mạng để bật máy từ điện thoại
                              (Wake-on-LAN). Cần cắm dây LAN và bật trong BIOS,
                              xem docs/BAT_MAY_TU_XA.md trên GitHub.
 
 Cập nhật
 --------
-Agent tự hỏi GitHub khi mở và mỗi 12 giờ. Có bản mới thì cửa sổ agent báo
-kèm ghi chú thay đổi; gõ C rồi Enter để cập nhật, agent tự mở lại.
-Không gõ C thì agent không bao giờ tự cài gì cả.
+Agent tự hỏi GitHub khi mở và mỗi 12 giờ. Có bản mới thì cửa sổ agent hiện
+nút "Xem và cập nhật"; bấm, đọc ghi chú thay đổi, đồng ý thì agent tự tải,
+cài và mở lại. Bạn không đồng ý thì agent không bao giờ tự cài gì cả.
 
 Dữ liệu (điện thoại đã ghép cặp, danh mục app) lưu ở %USERPROFILE%\.hedeck,
 không mất khi cập nhật.
