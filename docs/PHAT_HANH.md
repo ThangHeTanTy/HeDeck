@@ -4,13 +4,13 @@ Dành cho người giữ kho mã. Người dùng cài theo [CAI_DAT.md](CAI_DAT.
 
 ```
 PHAT_HANH.bat ──► thẻ v1.3.0 ──► GitHub Actions ──► Release v1.3.0
-                                  • build APK, ký      ├─ HeDeck-1.3.0.apk
+                                  • build APK, ký      ├─ HeDeck.apk
                                   • đóng gói agent     ├─ HeDeckAgent.exe
-                                                       ├─ HeDeckAgent-1.3.0.zip
+                                                       ├─ HeDeckAgent.zip
                                                        └─ SHA256SUMS.txt
                                                               │
          App: ⚙ → Kiểm tra cập nhật ◄─────────────────────────┤
-         Agent: tự báo, gõ C để cài ◄─────────────────────────┘
+         Agent: tự báo, bấm Cập nhật ◄────────────────────────┘
 ```
 
 Chỉ **gắn thẻ phiên bản** mới phát hành. Merge vào `master` không phát hành
@@ -61,6 +61,28 @@ khi cần dán lại, hoặc sang máy khác sau khi chép thư mục khoá qua)
 
 Có khoá trên máy thì `BUILD_APK.bat` cũng tự ký bằng khoá này, nên APK tự
 build cài đè lên được bản tải từ GitHub và ngược lại, không mất ghép cặp.
+
+---
+
+## Việc làm một lần: bật trang tải
+
+Trang https://thanghetanty.github.io/HeDeck/ dựng từ thư mục `site/` bằng
+workflow `.github/workflows/pages.yml`. GitHub chỉ cho bật bằng tay:
+
+1. Repo trên GitHub → **Settings** → **Pages** (cột trái).
+2. Mục **Build and deployment** → **Source**: chọn **GitHub Actions**.
+3. Tab **Actions** → **Trang tải** → **Run workflow** → **Run workflow**.
+   Khoảng một phút sau trang chạy ở địa chỉ trên.
+
+Trang tự hỏi GitHub bản phát hành mới nhất (số phiên bản, dung lượng, ghi chú,
+link tải), nên phát hành bản mới **không** cần đăng lại trang. Workflow chỉ tự
+chạy lại khi sửa `site/` hoặc ảnh trong `docs/images/`.
+
+Nút tải trong README trỏ tới link cố định
+`releases/latest/download/HeDeck.apk` và `.../HeDeckAgent.zip`. Từ bản `1.0.1`
+file mới mang tên cố định này; bản `1.0.0` còn tên kèm số phiên bản nên hai nút
+đó chỉ chạy được khi đã có bản `1.0.1` trở lên. Trang tải thì chạy được với
+mọi bản, vì nó tìm file theo đuôi `.apk` / `.zip`.
 
 ---
 

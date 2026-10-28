@@ -1,0 +1,53 @@
+# Đăng trang tải HeDeck lên GitHub Pages: https://thanghetanty.github.io/HeDeck/
+#
+# Trang tự hỏi GitHub bản phát hành mới nhất (số phiên bản, dung lượng, ghi
+# chú), nên phát hành bản mới không cần đăng lại trang. Chỉ chạy lại khi sửa
+# nội dung trang.
+#
+# Lần đầu: Settings → Pages → Source: "GitHub Actions" (xem docs/PHAT_HANH.md).
+
+name: Trang tải
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'site/**'
+      - 'docs/images/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Đăng trang
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gom file trang
+        run: |
+          mkdir -p _site/images
+          cp -r site/. _site/
+          cp docs/images/*.png _site/images/
+          ls -R _site
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

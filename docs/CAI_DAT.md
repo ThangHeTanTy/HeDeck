@@ -1,6 +1,7 @@
 # Cài HeDeck từ bản phát hành
 
-Không cần Python, Flutter hay cáp USB — chỉ tải hai file từ trang
+Không cần Python, Flutter hay cáp USB — chỉ tải hai file từ
+[**trang tải HeDeck**](https://thanghetanty.github.io/HeDeck/) hoặc trang
 [**Releases**](https://github.com/ThangHeTanTy/HeDeck/releases/latest).
 
 Điện thoại và máy tính phải dùng **cùng một mạng Wi-Fi / mạng nhà**.
@@ -13,7 +14,7 @@ Quét mã trên bằng điện thoại để mở thẳng trang tải bản mớ
 
 ## 1. Máy tính Windows — agent
 
-1. Tải **`HeDeckAgent-x.y.z.zip`**, giải nén ra một thư mục cố định, ví dụ
+1. Tải **[`HeDeckAgent.zip`](https://github.com/ThangHeTanTy/HeDeck/releases/latest/download/HeDeckAgent.zip)**, giải nén ra một thư mục cố định, ví dụ
    `C:\HeDeck`. Đừng chạy thẳng trong file zip, cũng đừng để trong
    Downloads rồi lỡ xoá.
 2. Nháy đúp **`HeDeckAgent.exe`**.
@@ -43,7 +44,7 @@ Tuỳ chọn, trong cùng thư mục:
 
 ## 2. Điện thoại Android — app
 
-1. Trên điện thoại, mở trang Releases và tải **`HeDeck-x.y.z.apk`**.
+1. Trên điện thoại, tải **[`HeDeck.apk`](https://github.com/ThangHeTanTy/HeDeck/releases/latest/download/HeDeck.apk)** (hoặc quét mã QR ở trên).
 2. Mở file vừa tải. Android hỏi *"Cho phép cài ứng dụng từ nguồn này?"* —
    bật cho trình duyệt (Chrome…), quay lại, bấm **Cài đặt**.
 3. Play Protect cảnh báo ứng dụng lạ: bấm **Vẫn cài đặt** (*Install anyway*).
