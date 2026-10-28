@@ -5,6 +5,10 @@ Không cần Python, Flutter hay cáp USB — chỉ tải hai file từ trang
 
 Điện thoại và máy tính phải dùng **cùng một mạng Wi-Fi / mạng nhà**.
 
+<img src="images/qr-tai-hedeck.png" width="180" alt="Mã QR mở trang tải HeDeck">
+
+Quét mã trên bằng điện thoại để mở thẳng trang tải bản mới nhất.
+
 ---
 
 ## 1. Máy tính Windows — agent
