@@ -36,8 +36,32 @@ $branch = (Invoke-Git rev-parse --abbrev-ref HEAD).Trim()
 if ($branch -ne "master") {
     Fail "Dang o nhanh '$branch'. Chuyen sang master: git checkout master"
 }
-if (Invoke-Git status --porcelain) {
-    Fail "Con thay doi chua commit. Commit hoac bo di truoc khi phat hanh."
+# Chi xet file Git dang theo doi. File moi chua add (??) khong anh huong
+# toi the phien ban nen khong chan.
+$changed = @(Invoke-Git status --porcelain --untracked-files=no |
+    Where-Object { $_ } | ForEach-Object { $_.Substring(3).Trim('"') })
+if ($changed) {
+    # Flutter tu ghi lai hai file nay moi lan chay setup_app.bat, BUILD_APK.bat
+    # hay CHAY_APP.bat, du ban khong sua gi. Ban phat hanh build tren GitHub
+    # dung dung ban da commit, nen tra chung ve nhu cu la an toan.
+    $auto = @("flutter_app/.metadata", "flutter_app/pubspec.lock")
+    $others = @($changed | Where-Object { $_ -notin $auto })
+    Write-Host ""
+    Write-Host "  File da thay doi ma chua commit:" -ForegroundColor Yellow
+    $changed | ForEach-Object { Write-Host "    $_" }
+    if ($others) {
+        Write-Host ""
+        Write-Host "  Neu la thay doi ban muon giu: commit va push len GitHub truoc."
+        Write-Host "  Neu khong can giu: git checkout -- <ten file>"
+        Write-Host "  Xem chi tiet: git diff <ten file>"
+        Fail "Con thay doi chua commit, chua phat hanh."
+    }
+    Write-Host ""
+    Write-Host "  Day la file Flutter tu ghi lai khi build, khong phai ban sua." -ForegroundColor Cyan
+    $ok = Read-Host "Tra ve nhu tren GitHub roi phat hanh tiep? (c/k)"
+    if ($ok -notin @("c", "C", "y", "Y")) { Write-Host "Da huy."; exit 0 }
+    Invoke-Git checkout -- @changed | Out-Null
+    Write-Host "  + Da tra ve: $($changed -join ', ')" -ForegroundColor Green
 }
 Write-Host "  Lay ban moi nhat tu GitHub..."
 Invoke-Git fetch origin master --tags | Out-Null
