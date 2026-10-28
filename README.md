@@ -80,6 +80,11 @@ theo [`docs/CAI_DAT.md`](docs/CAI_DAT.md). Không cần Python hay Flutter, và
 cập nhật được ngay trong app (⚙ → **Kiểm tra cập nhật**) lẫn cửa sổ agent
 (**Xem và cập nhật**).
 
+<p align="center">
+  <img src="docs/images/qr-tai-hedeck.png" width="200" alt="Mã QR mở trang tải HeDeck"><br>
+  <sub>Quét bằng điện thoại để mở trang tải bản mới nhất</sub>
+</p>
+
 Phần dưới đây là cách chạy từ mã nguồn, dành cho người muốn sửa code.
 
 ### Bước 1 — Chạy agent trên thiết bị
