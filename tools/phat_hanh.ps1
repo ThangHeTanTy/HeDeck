@@ -13,15 +13,18 @@ function Fail($msg) {
     exit 1
 }
 
-function Git {
+# Khong dat ten ham la "Git": PowerShell khong phan biet hoa thuong va uu
+# tien ham hon chuong trinh, nen "git" ben trong ham se goi lai chinh ham do
+# mai khong dung (StackOverflowException). Goi thang git.exe cho chac.
+function Invoke-Git {
     # git ghi tien trinh ra stderr; de "Stop" thi PowerShell 5 coi do la loi.
     $ErrorActionPreference = "Continue"
-    $out = & git @args 2>&1
-    if ($LASTEXITCODE -ne 0) { Fail "git $($args -join ' ') that bai:`n$out" }
+    $out = & git.exe @args 2>&1 | ForEach-Object { "$_" }
+    if ($LASTEXITCODE -ne 0) { Fail "git $($args -join ' ') that bai:`n$($out -join "`n")" }
     return $out
 }
 
-if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+if (-not (Get-Command git.exe -CommandType Application -ErrorAction SilentlyContinue)) {
     Fail "Khong tim thay git. Cai Git for Windows roi chay lai."
 }
 
@@ -29,23 +32,23 @@ Write-Host ""
 Write-Host "Phat hanh HeDeck"
 Write-Host ("-" * 58)
 
-$branch = (Git rev-parse --abbrev-ref HEAD).Trim()
+$branch = (Invoke-Git rev-parse --abbrev-ref HEAD).Trim()
 if ($branch -ne "master") {
     Fail "Dang o nhanh '$branch'. Chuyen sang master: git checkout master"
 }
-if (Git status --porcelain) {
+if (Invoke-Git status --porcelain) {
     Fail "Con thay doi chua commit. Commit hoac bo di truoc khi phat hanh."
 }
 Write-Host "  Lay ban moi nhat tu GitHub..."
-Git fetch origin master --tags | Out-Null
-$local  = (Git rev-parse HEAD).Trim()
-$remote = (Git rev-parse origin/master).Trim()
+Invoke-Git fetch origin master --tags | Out-Null
+$local  = (Invoke-Git rev-parse HEAD).Trim()
+$remote = (Invoke-Git rev-parse origin/master).Trim()
 if ($local -ne $remote) {
     Fail "master tren may khac master tren GitHub. Chay git pull (va git push neu can) truoc."
 }
 
 # Goi y so phien ban ke tiep tu the moi nhat
-$tags = @(Git tag -l "v*") | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' } |
+$tags = @(Invoke-Git tag -l "v*") | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' } |
     Sort-Object { [version]($_.Substring(1)) }
 $last = $tags | Select-Object -Last 1
 if ($last) {
@@ -98,7 +101,7 @@ if (-not $lines) { Fail "Can it nhat mot dong ghi chu." }
 Write-Host ""
 Write-Host ("-" * 58)
 Write-Host "  The   : $tag"
-Write-Host "  Commit: $($local.Substring(0, 7))  $((Git log -1 --format=%s).Trim())"
+Write-Host "  Commit: $($local.Substring(0, 7))  $((Invoke-Git log -1 --format=%s).Trim())"
 $lines | ForEach-Object { Write-Host "  $_" }
 Write-Host ("-" * 58)
 $ok = Read-Host "Phat hanh? (c/k)"
@@ -107,12 +110,12 @@ if ($ok -notin @("c", "C", "y", "Y")) { Write-Host "Da huy."; exit 0 }
 # Ghi ra file UTF-8 de giu nguyen dau tieng Viet
 [System.IO.File]::WriteAllText($msgFile, ($lines -join "`n") + "`n",
     (New-Object System.Text.UTF8Encoding($false)))
-Git tag -a $tag -F $msgFile | Out-Null
+Invoke-Git tag -a $tag -F $msgFile | Out-Null
 Remove-Item $msgFile
 $ErrorActionPreference = "Continue"
-& git push origin $tag
+& git.exe push origin $tag
 if ($LASTEXITCODE -ne 0) {
-    & git tag -d $tag | Out-Null
+    & git.exe tag -d $tag | Out-Null
     Fail "Day the len GitHub that bai, da xoa the tren may. Kiem tra mang roi chay lai."
 }
 
