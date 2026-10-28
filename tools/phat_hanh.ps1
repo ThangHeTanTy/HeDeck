@@ -19,13 +19,44 @@ function Fail($msg) {
 function Invoke-Git {
     # git ghi tien trinh ra stderr; de "Stop" thi PowerShell 5 coi do la loi.
     $ErrorActionPreference = "Continue"
-    $out = & git.exe @args 2>&1 | ForEach-Object { "$_" }
+    # Dong stderr bi PowerShell boc thanh ErrorRecord; lay lai chu goc, neu
+    # khong se in ra "System.Management.Automation.RemoteException".
+    $out = & git.exe @args 2>&1 | ForEach-Object {
+        if ($_ -is [System.Management.Automation.ErrorRecord]) { "$($_.TargetObject)" }
+        else { "$_" }
+    }
     if ($LASTEXITCODE -ne 0) { Fail "git $($args -join ' ') that bai:`n$($out -join "`n")" }
     return $out
 }
 
 if (-not (Get-Command git.exe -CommandType Application -ErrorAction SilentlyContinue)) {
     Fail "Khong tim thay git. Cai Git for Windows roi chay lai."
+}
+
+# The phien ban ghi ten nguoi tao, giong chu ky. Git chua biet ban la ai thi
+# hoi ngay tu dau, dung de toi buoc cuoi moi bao loi.
+function Get-GitConfig($key) {
+    $ErrorActionPreference = "Continue"
+    $v = & git.exe config --get $key 2>$null
+    if ($LASTEXITCODE -ne 0) { return "" }
+    return "$v".Trim()
+}
+if (-not (Get-GitConfig "user.name") -or -not (Get-GitConfig "user.email")) {
+    Write-Host ""
+    Write-Host "Git tren may nay chua co ten va email nguoi dung (can de ky ten" -ForegroundColor Yellow
+    Write-Host "vao the phien ban). Chi hoi mot lan, luu cho rieng kho HeDeck."   -ForegroundColor Yellow
+    Write-Host "Email se hien cong khai tren GitHub - nen dung email an danh cua"
+    Write-Host "GitHub (Settings -> Emails), dang <so>+<ten>@users.noreply.github.com"
+    Write-Host ""
+    $defName  = "ThangHeTanTy"
+    $defEmail = "64769041+ThangHeTanTy@users.noreply.github.com"
+    $name = Read-Host "Ten (Enter = $defName)"
+    if (-not $name) { $name = $defName }
+    $email = Read-Host "Email (Enter = $defEmail)"
+    if (-not $email) { $email = $defEmail }
+    Invoke-Git config user.name $name.Trim() | Out-Null
+    Invoke-Git config user.email $email.Trim() | Out-Null
+    Write-Host "  + Da luu: $name <$email>" -ForegroundColor Green
 }
 
 Write-Host ""
@@ -102,7 +133,8 @@ $tag = "v$ver"
 $msgFile = Join-Path $env:TEMP "hedeck-$tag.txt"
 $template = @"
 # Ghi chu thay doi cua $tag. Nguoi dung doc phan nay trong app va cua so agent.
-# Moi dong mot y. Dong bat dau bang dau # se bi bo qua.
+# Viet tu do: tieu de, gach dau dong "- ", dong trong deu duoc giu nguyen.
+# Dong bat dau bang dau # se bi bo qua.
 # Viet xong thi luu (Ctrl+S) va dong Notepad.
 
 "@
@@ -113,14 +145,15 @@ Write-Host "Notepad dang mo de ban viet ghi chu thay doi."
 Start-Process notepad $msgFile
 # Khong dung -Wait: Notepad moi cua Windows 11 tra ve ngay luc vua mo.
 Read-Host "Luu (Ctrl+S) va dong Notepad xong thi nhan Enter o day"
+# Giu nguyen cach ban viet (tieu de, gach dau dong, dong trong ngan cach),
+# chi bo cac dong # huong dan va dong trong thua o dau, cuoi.
 $lines = @(Get-Content $msgFile -Encoding UTF8 |
-    Where-Object { $_.Trim() -and -not $_.TrimStart().StartsWith("#") } |
-    ForEach-Object {
-        $t = $_.Trim()
-        if ($t -match '^[-*] ') { $t } else { "- $t" }
-    })
+    Where-Object { -not $_.TrimStart().StartsWith("#") } |
+    ForEach-Object { $_.TrimEnd() })
 Remove-Item $msgFile
-if (-not $lines) { Fail "Can it nhat mot dong ghi chu." }
+while ($lines.Count -and -not $lines[0]) { $lines = @($lines | Select-Object -Skip 1) }
+while ($lines.Count -and -not $lines[-1]) { $lines = @($lines | Select-Object -SkipLast 1) }
+if (-not ($lines | Where-Object { $_ })) { Fail "Can it nhat mot dong ghi chu." }
 
 Write-Host ""
 Write-Host ("-" * 58)
