@@ -109,20 +109,22 @@ jobs:
           printf '%s' "$KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > "$ks"
           bt=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           mkdir -p out
+          # Tên file không kèm số phiên bản, để link
+          # releases/latest/download/HeDeck.apk luôn tải được bản mới nhất.
           # Flutter ký sẵn bằng khoá debug; apksigner thay hẳn chữ ký đó.
           "$bt/apksigner" sign \
             --ks "$ks" --ks-key-alias "$KEY_ALIAS" \
             --ks-pass env:KEYSTORE_PASSWORD --key-pass env:KEYSTORE_PASSWORD \
-            --out "out/HeDeck-$NAME.apk" \
+            --out out/HeDeck.apk \
             flutter_app/build/app/outputs/flutter-apk/app-release.apk
           rm -f "$ks"
-          "$bt/apksigner" verify --print-certs "out/HeDeck-$NAME.apk"
+          "$bt/apksigner" verify --print-certs out/HeDeck.apk
 
       - name: Gom APK build thử
         if: needs.version.outputs.release != 'true'
         run: |
           mkdir -p out
-          cp flutter_app/build/app/outputs/flutter-apk/app-release.apk out/HeDeck-dev.apk
+          cp flutter_app/build/app/outputs/flutter-apk/app-release.apk out/HeDeck.apk
 
       - uses: actions/upload-artifact@v4
         with:
@@ -188,7 +190,7 @@ jobs:
           Copy-Item agent\dist\HeDeckAgent.exe, agent\CAI_BAT_MAY_TU_XA.bat, `
                     agent\cau_hinh_wol.ps1, agent\TU_CHAY_CUNG_WINDOWS.bat, `
                     agent\HUONG_DAN.txt $dir
-          Compress-Archive -Path $dir -DestinationPath "out\HeDeckAgent-$env:NAME.zip"
+          Compress-Archive -Path $dir -DestinationPath out\HeDeckAgent.zip
           Copy-Item agent\dist\HeDeckAgent.exe out\
 
       - uses: actions/upload-artifact@v4

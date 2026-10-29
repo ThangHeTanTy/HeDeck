@@ -9,6 +9,16 @@
 Chạm một ô là ứng dụng trên máy tính mở lên và nhảy ra trước. Kèm điều khiển
 nhạc, âm lượng riêng từng ứng dụng, và các ô macro gõ tổ hợp phím.
 
+**🇻🇳 Tiếng Việt** · [🇬🇧 English](README.en.md)
+
+<a href="https://thanghetanty.github.io/HeDeck/"><img src="https://img.shields.io/badge/T%E1%BA%A3i%20v%E1%BB%81-Trang%20t%E1%BA%A3i%20HeDeck-7B6EF6?style=for-the-badge" alt="Trang tải HeDeck"></a>
+<a href="https://github.com/ThangHeTanTy/HeDeck/releases/latest/download/HeDeckAgent.zip"><img src="https://img.shields.io/badge/Windows%2010%2F11-HeDeckAgent.zip-0078D4?style=for-the-badge" alt="Tải cho Windows"></a>
+<a href="https://github.com/ThangHeTanTy/HeDeck/releases/latest/download/HeDeck.apk"><img src="https://img.shields.io/badge/Android%207%2B-HeDeck.apk-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Tải cho Android"></a>
+
+<a href="https://github.com/ThangHeTanTy/HeDeck/releases/latest"><img src="https://img.shields.io/github/v/release/ThangHeTanTy/HeDeck?label=phi%C3%AAn%20b%E1%BA%A3n&color=7B6EF6" alt="Phiên bản mới nhất"></a>
+<a href="https://github.com/ThangHeTanTy/HeDeck/releases"><img src="https://img.shields.io/github/downloads/ThangHeTanTy/HeDeck/total?label=l%C6%B0%E1%BB%A3t%20t%E1%BA%A3i&color=3FB27F" alt="Lượt tải"></a>
+<a href="https://github.com/ThangHeTanTy/HeDeck/stargazers"><img src="https://img.shields.io/github/stars/ThangHeTanTy/HeDeck?style=flat&label=sao&color=E0A030" alt="Sao trên GitHub"></a>
+
 <img src="docs/images/deck-5x2.png" width="620" alt="Giao diện HeDeck">
 
 </div>
@@ -60,7 +70,9 @@ không tự mở được ứng dụng trên máy tính, nên agent là bắt bu
 
 **Thiết bị**
 - Windows 10 hoặc 11
-- [Python 3.10+](https://www.python.org/downloads/) — nhớ tick *Add python.exe to PATH* lúc cài
+- Dùng bản tải sẵn (`HeDeckAgent.exe`) thì không cần cài gì thêm. Chỉ khi chạy
+  agent từ mã nguồn mới cần [Python 3.10+](https://www.python.org/downloads/)
+  — nhớ tick *Add python.exe to PATH* lúc cài
 
 **Điện thoại**
 - Android 7.0 trở lên
@@ -74,7 +86,8 @@ không tự mở được ứng dụng trên máy tính, nên agent là bắt bu
 
 ## Cài đặt
 
-**Cách nhanh nhất:** tải APK và agent `.exe` dựng sẵn ở trang
+**Cách nhanh nhất:** tải APK và agent `.exe` dựng sẵn ở
+[**trang tải HeDeck**](https://thanghetanty.github.io/HeDeck/) hoặc trang
 [**Releases**](https://github.com/ThangHeTanTy/HeDeck/releases/latest), làm
 theo [`docs/CAI_DAT.md`](docs/CAI_DAT.md). Không cần Python hay Flutter, và
 cập nhật được ngay trong app (⚙ → **Kiểm tra cập nhật**) lẫn cửa sổ agent

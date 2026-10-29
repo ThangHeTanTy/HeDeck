@@ -1,10 +1,10 @@
 ## Cài lần đầu
 
-**Điện thoại Android:** tải `HeDeck-*.apk` bên dưới, mở file, cho phép trình duyệt cài ứng dụng khi Android hỏi. Đang dùng bản tự build thì gỡ app cũ trước.
+**Điện thoại Android:** tải [`HeDeck.apk`](https://github.com/ThangHeTanTy/HeDeck/releases/latest/download/HeDeck.apk), mở file, cho phép trình duyệt cài ứng dụng khi Android hỏi. Đang dùng bản tự build thì gỡ app cũ trước.
 
-**Máy tính Windows:** tải `HeDeckAgent-*.zip`, giải nén, nháy đúp `HeDeckAgent.exe`. Windows SmartScreen cảnh báo thì bấm **More info → Run anyway**; Firewall hỏi thì cho phép ở **Private networks**.
+**Máy tính Windows:** tải [`HeDeckAgent.zip`](https://github.com/ThangHeTanTy/HeDeck/releases/latest/download/HeDeckAgent.zip), giải nén, nháy đúp `HeDeckAgent.exe`. Windows SmartScreen cảnh báo thì bấm **More info → Run anyway**; Firewall hỏi thì cho phép ở **Private networks**.
 
-Hướng dẫn đầy đủ: [docs/CAI_DAT.md](https://github.com/ThangHeTanTy/HeDeck/blob/master/docs/CAI_DAT.md)
+Trang tải: https://thanghetanty.github.io/HeDeck/ · Hướng dẫn đầy đủ: [docs/CAI_DAT.md](https://github.com/ThangHeTanTy/HeDeck/blob/master/docs/CAI_DAT.md)
 
 ## Cập nhật về sau
 
