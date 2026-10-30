@@ -28,6 +28,7 @@ import power
 import remote_input
 import security
 import updater
+import web_ui
 import win_control
 
 PORT = 8787
@@ -112,6 +113,8 @@ class Agent:
         self.update = None
         # Chạy có cửa sổ và icon ở khay (tray_ui) thay vì cửa sổ lệnh.
         self.gui = False
+        # Bản web cho iPhone/iPad/trình duyệt, phục vụ trên cùng cổng.
+        self.web = web_ui.WebFiles(log=log)
         self.loop = None
 
     # -- tiện ích ---------------------------------------------------------
@@ -260,6 +263,8 @@ class Agent:
             f"{st['banned']} IP bị chặn",
             f"Điện thoại: {len(self.state['devices'])} đã ghép cặp",
             f"Bật từ xa: {power.describe(self.wol)}",
+            "Bản web  : " + (web_ui.page_url(ip, port) if self.web.available
+                              else "chưa build (chạy BUILD_WEB.bat)"),
         ]
         width = max(len(line) for line in lines) + 4
         print()
@@ -927,13 +932,23 @@ async def main(args, on_ready=None):
     # không phải chờ quét xong.
     agent._spawn(agent.load_catalog())
 
+    # websockets bản cũ (môi trường ảo cài từ lâu) gọi móc này theo kiểu khác
+    # và sẽ hỏng lúc bắt tay. Khi đó bỏ bản web, WebSocket vẫn chạy.
+    extra = {"process_request": agent.web.process_request}
+    if int(websockets.__version__.split(".")[0]) < 14:
+        extra = {}
+        log("Thư viện websockets quá cũ nên chưa phục vụ bản web. "
+            "Chạy SUA_LOI_AGENT.bat để cài lại thư viện.")
+
     # Ngay sau khi tự cập nhật, bản cũ có thể chưa nhả cổng kịp: thử lại vài
     # giây thay vì chết với lỗi "cổng đã có người dùng".
     for attempt in range(10):
         try:
             server = await websockets.serve(
                 agent.serve, "0.0.0.0", args.port,
-                ping_interval=20, ping_timeout=20, max_size=32 * 2 ** 20)
+                ping_interval=20, ping_timeout=20, max_size=32 * 2 ** 20,
+                # Cùng cổng: yêu cầu thường là tải bản web, WebSocket đi tiếp.
+                **extra)
             break
         except OSError:
             if attempt == 9:

@@ -11,6 +11,10 @@ HeDeck Agent — chạy trên máy tính Windows, nhận lệnh từ điện tho
    điện thoại (cùng Wi-Fi), chọn máy này và nhập mã.
    Hết hạn mã thì bấm "Mã mới" trong cửa sổ agent.
 
+   iPhone / iPad: mở Camera, quét mã QR ở góc phải cửa sổ agent -> HeDeck mở
+   trong Safari và tự ghép cặp. Bấm Chia sẻ -> Thêm vào Màn hình chính để
+   dùng như app. (Bản web không bật được máy đang tắt.)
+
 3. Bấm X là agent ẩn xuống khay hệ thống và vẫn chạy ngầm, không chiếm chỗ.
    Icon HeDeck nằm trong mũi tên ^ ở góc phải thanh tác vụ:
      - bấm icon: mở lại cửa sổ agent

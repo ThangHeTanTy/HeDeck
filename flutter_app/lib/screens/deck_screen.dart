@@ -17,7 +17,8 @@ import '../widgets/clown_logo.dart';
 import '../widgets/deck_tile_view.dart';
 import '../widgets/lang_picker.dart';
 import '../widgets/theme_switch.dart';
-import '../widgets/update_dialog.dart';
+import '../widgets/update_dialog.dart'
+    if (dart.library.js_interop) '../widgets/update_dialog_web.dart';
 import '../widgets/media_bar.dart';
 import 'tile_edit_screen.dart';
 import 'perf_screen.dart';
@@ -458,6 +459,11 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
   Future<void> _wake() async {
     final store = context.read<Store>();
     final conn = context.read<DeckConnection>();
+    if (!canSendWakeOnLan) {
+      _snack(t('Bản web không bật được máy đang tắt — trình duyệt không gửi '
+          'được tín hiệu bật máy. Dùng app Android, hoặc bật máy bằng tay.'));
+      return;
+    }
     if (!store.canWake) {
       _snack(t('Chưa có địa chỉ MAC của máy tính'));
       return;

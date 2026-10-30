@@ -34,6 +34,7 @@ nhạc, âm lượng riêng từng ứng dụng, và các ô macro gõ tổ hợ
 | **Tự đổi trang** | Như Stream Deck: vào Liên Minh thì deck tự sang trang Game, về desktop thì về trang Làm việc. |
 | **Touchpad và bàn phím** | Điều khiển chuột, cuộn, kéo thả và gõ chữ tiếng Việt từ xa. |
 | **Sáng / tối** | Nút trượt mặt trời / mặt trăng trong bánh răng. Chủ đề sáng có bộ màu ô riêng, đủ tương phản trên nền trắng. |
+| **iPhone, iPad, trình duyệt** | Agent phục vụ sẵn bản web: quét mã QR trên cửa sổ agent là dùng được trên iPhone/iPad, không cần cài, không cần tài khoản Apple. Xem [CAI_DAT.md](docs/CAI_DAT.md#iphone-ipad--bản-web). |
 | **Tiếng Việt / English** | Đổi ngôn ngữ trong bánh răng (hoặc nút 🌐 ở màn hình ghép cặp). Lần đầu tự theo ngôn ngữ của điện thoại. |
 | **Đo hiệu năng** | FPS, 1% low, nhiệt độ và tải CPU/GPU, VRAM, RAM, mạng — như màn hình test máy ở cửa hàng. |
 | **Ô chế độ** | Một chạm mở và đóng nhiều app: "Chơi game" mở Discord + Liên Minh, tắt Chrome. |
@@ -75,7 +76,7 @@ không tự mở được ứng dụng trên máy tính, nên agent là bắt bu
   — nhớ tick *Add python.exe to PATH* lúc cài
 
 **Điện thoại**
-- Android 7.0 trở lên
+- Android 7.0 trở lên — hoặc iPhone/iPad dùng bản web qua Safari
 - Cùng mạng Wi-Fi với thiết bị
 
 **Chỉ cần nếu bạn tự build từ mã nguồn**
@@ -480,6 +481,7 @@ hedeck/
 ├── CHAY_APP.bat           chạy app lên thiết bị
 ├── setup_app.bat          dựng project Android lần đầu
 ├── BUILD_APK.bat          xuất APK bản phát hành
+├── BUILD_WEB.bat          build bản web cho agent phục vụ (iPhone, iPad)
 ├── SUA_LOI_*.bat          các script sửa lỗi môi trường
 ├── DON_DEP.bat            xoá file thừa sót lại từ bản cũ
 ├── PHAT_HANH.bat          gắn thẻ phiên bản, GitHub tự build và đăng Release
@@ -498,6 +500,7 @@ hedeck/
 │   ├── perf.py            đo FPS, nhiệt độ, tải CPU/GPU
 │   ├── updater.py         kiểm tra và cài bản agent mới từ GitHub
 │   ├── tray_ui.py         cửa sổ agent và icon ở khay hệ thống
+│   ├── web_ui.py          phục vụ bản web (iPhone, iPad) trên cổng 8787
 │   ├── instance.py        chỉ cho một agent chạy mỗi lúc
 │   ├── CAI_BAT_MAY_TU_XA.bat   cấu hình Windows cho Wake-on-LAN
 │   ├── TU_CHAY_CUNG_WINDOWS.bat agent tự chạy khi đăng nhập

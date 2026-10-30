@@ -41,6 +41,7 @@ overlay — no dedicated hardware to buy.
 | **Two-state tiles** | Tap on, tap off. Each side has its own icon and colour, so you can see from across the room whether the mic is muted. |
 | **Media controls** | A fixed bar at the bottom of the screen, using no tiles. |
 | **Remote power** | Wake the PC even after a full shutdown (Wake-on-LAN). While it runs: lock, sleep, restart, shut down. |
+| **iPhone, iPad, any browser** | The agent serves a web version: scan the QR code in the agent window and HeDeck opens in Safari, already paired. No install, no Apple account. |
 | **Light / dark, Vietnamese / English** | Switch in the gear menu. The first launch follows the phone's language. |
 | **Self-updating** | The app and the agent tell you when a new version is out. Updating keeps all your pages, tiles and settings. |
 
@@ -68,8 +69,8 @@ command is signed with the phone's Ed25519 key, set up when you pair.
 
 ## Install
 
-You need Windows 10 or 11, Android 7.0 or later, and both devices on the same
-Wi-Fi. Nothing else to install.
+You need Windows 10 or 11, Android 7.0 or later (or an iPhone/iPad, see below),
+and both devices on the same Wi-Fi. Nothing else to install.
 
 <img src="docs/images/qr-tai-hedeck.png" width="160" align="right" alt="QR code to the download page">
 
@@ -97,6 +98,23 @@ Open the app, pick your PC (or type the IP address shown by the agent) and enter
 the 6-digit code from the agent window. The code expires after 5 minutes — click
 **Mã mới** (*new code*) in the agent window to get another. After pairing, the phone
 reconnects by itself, even if the router gives the PC a new IP.
+
+### iPhone and iPad (web version)
+
+iPhones cannot install apps from a file the way Android installs an APK, so the
+agent serves HeDeck as a web page on your home network:
+
+1. With the agent running, open the iPhone **Camera** and scan the QR code at
+   the right of the agent window, next to the pairing code. HeDeck opens in
+   Safari and pairs by itself. (Or type the **Bản web** address shown in the
+   agent window, e.g. `http://192.168.1.12:8787/`, and enter the code.)
+2. Tap **Share → Add to Home Screen** to use it full screen like an app. Turn
+   the phone sideways for more room.
+
+The web version does almost everything the Android app does. It cannot wake a
+PC that is fully off (browsers cannot send Wake-on-LAN packets), and it updates
+together with the agent. The home-screen icon remembers the PC's IP address, so
+give your PC a fixed IP in your router (DHCP reservation) to keep it working.
 
 ### The agent runs in the background
 

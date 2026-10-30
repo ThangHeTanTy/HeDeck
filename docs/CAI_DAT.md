@@ -60,6 +60,39 @@ Mở app, chọn máy tính trong danh sách (hoặc nhập IP), nhập mã 6 s�
 
 ---
 
+## iPhone, iPad — bản web
+
+iPhone không cài được file như APK, nên HeDeck chạy trên Safari: **agent tự
+phục vụ bản web**, không cần cài gì, không cần tài khoản Apple.
+
+1. Chạy agent trên máy tính như bước 1. iPhone/iPad dùng cùng Wi-Fi.
+2. Mở **Camera** trên iPhone, quét **mã QR** ở góc phải cửa sổ agent (cạnh mã
+   ghép cặp), bấm vào đường link hiện ra. HeDeck mở trong Safari và **tự ghép
+   cặp** — không phải gõ mã.
+   - Không quét được: mở Safari, gõ địa chỉ dòng **Bản web** trong cửa sổ
+     agent, ví dụ `http://192.168.1.12:8787/`, rồi nhập mã 6 số.
+3. Để dùng như app, toàn màn hình: bấm nút **Chia sẻ** (ô vuông có mũi tên
+   lên) → **Thêm vào Màn hình chính** → **Thêm**. Từ giờ mở HeDeck từ biểu
+   tượng trên màn hình chính. Xoay ngang điện thoại cho rộng.
+
+Bản web làm được gần như mọi thứ của app Android: các ô, macro, media, âm
+lượng từng app, touchpad, bàn phím, đo hiệu năng, khoá/ngủ/tắt máy. Khác biệt:
+
+- **Không bật được máy đang tắt** (Wake-on-LAN): trình duyệt không gửi được
+  tín hiệu bật máy. Các lệnh khi máy đang chạy vẫn dùng được.
+- **Tự cập nhật theo agent:** cập nhật agent là bản web mới theo, tải lại trang.
+- Màn hình được giữ sáng sau lần chạm đầu tiên. Không rung khi chạm (Safari
+  không hỗ trợ).
+- Biểu tượng trên màn hình chính gắn với **địa chỉ IP** của máy tính. Nếu router
+  đổi IP máy tính, biểu tượng cũ không mở được: quét lại mã QR và ghép cặp lại.
+  Để tránh, đặt **IP cố định** (DHCP reservation) cho máy tính trong trang quản
+  lý router.
+
+Cũng dùng được trên máy tính bảng Android hay bất kỳ trình duyệt nào trong mạng
+nhà, theo đúng cách trên.
+
+---
+
 ## Cập nhật
 
 Không có gì tự cài sau lưng bạn — cả hai đều hỏi trước.

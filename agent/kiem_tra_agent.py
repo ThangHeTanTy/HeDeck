@@ -215,6 +215,20 @@ def main():
     check("mở lần hai thì hiện cửa sổ cũ, không chạy agent thứ hai",
           "instance.acquire(" in source and "instance.ask_running_to_show()" in source)
 
+    # --- Bản web ---------------------------------------------------------
+    print("\n[Bản web cho iPhone, iPad, trình duyệt]")
+    web_src = (HERE / "web_ui.py").read_text(encoding="utf-8")
+    check("phục vụ bản web trên cùng cổng với WebSocket",
+          '"process_request": agent.web.process_request' in source)
+    check("yêu cầu WebSocket đi tiếp, không bị trả nhầm file",
+          '"websocket" in request.headers.get("Upgrade"' in web_src)
+    check("chỉ trả trang cho máy trong mạng nội bộ",
+          "security.is_private_ip(peer)" in web_src)
+    check("chặn đường dẫn ../ ra ngoài thư mục web",
+          "file.relative_to(self.root)" in web_src)
+    check("hỗ trợ tải từng đoạn (Safari cần để phát video giữ màn hình sáng)",
+          '"Partial Content"' in web_src)
+
     # --- Bảo mật ----------------------------------------------------------
     print("\n[Bảo mật]")
     sec_src = (HERE / "security.py").read_text(encoding="utf-8")

@@ -28,6 +28,16 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icon/
+  # Font cho bản web (Android dùng font hệ thống). Roboto, Apache 2.0, chỉ giữ
+  # chữ Latin và tiếng Việt cho nhẹ — xem assets/fonts/LICENSE-Roboto.txt.
+  fonts:
+    - family: HeDeckRoboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
 
 # Sinh icon launcher cho Android: dart run flutter_launcher_icons
 flutter_launcher_icons:

@@ -35,7 +35,7 @@ if errorlevel 1 goto :venv_failed
 goto :install
 
 :check_deps
-"%VPY%" -c "import websockets, win32gui, psutil, PIL, cryptography, zeroconf, pystray" >nul 2>nul
+"%VPY%" -c "import websockets, win32gui, psutil, PIL, cryptography, zeroconf, pystray, qrcode" >nul 2>nul
 if not errorlevel 1 goto :run
 
 :install
@@ -45,7 +45,7 @@ echo [2/2] Cai thu vien, lan dau mat khoang mot phut...
 if errorlevel 1 goto :pip_failed
 
 rem Kiem tra lai cho chac, pip co the bao thanh cong ma van thieu
-"%VPY%" -c "import websockets, win32gui, psutil, PIL, cryptography, zeroconf, pystray" >nul 2>nul
+"%VPY%" -c "import websockets, win32gui, psutil, PIL, cryptography, zeroconf, pystray, qrcode" >nul 2>nul
 if errorlevel 1 goto :pip_failed
 
 :run

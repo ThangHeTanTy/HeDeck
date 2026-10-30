@@ -1,5 +1,6 @@
 import 'dart:ui' show FontFeature;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Một bộ màu đầy đủ cho một chủ đề.
@@ -129,7 +130,10 @@ ThemeData buildDeckTheme() {
     useMaterial3: true,
     colorScheme: scheme,
     scaffoldBackgroundColor: DeckColors.bg,
-    fontFamily: 'Roboto',
+    // Bản web không có font hệ thống: Flutter tự tải Roboto từ Google, mạng
+    // chập chờn là mất hết chữ. Đóng gói sẵn Roboto (đủ dấu tiếng Việt) cho
+    // web; Android vẫn dùng Roboto của máy như trước.
+    fontFamily: kIsWeb ? 'HeDeckRoboto' : 'Roboto',
     textTheme: TextTheme(
       titleMedium: TextStyle(color: DeckColors.text, fontWeight: FontWeight.w500),
       bodyMedium: TextStyle(color: DeckColors.text),

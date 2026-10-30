@@ -727,4 +727,16 @@ const en = <String, String>{
       'Open installer again',
   'Cập nhật HeDeck':
       'Update HeDeck',
+  'Bản web luôn cùng phiên bản với agent trên máy tính. Khi cửa sổ agent báo có bản mới, bấm "Xem và cập nhật" ở đó rồi tải lại trang này.':
+      'The web version always matches the agent on your PC. When the agent window says a new version is out, click "Xem và cập nhật" (view and update) there, then reload this page.',
+  'Bản web không bật được máy đang tắt — trình duyệt không gửi được tín hiệu bật máy. Dùng app Android, hoặc bật máy bằng tay.':
+      'The web version cannot wake a PC that is off — browsers cannot send the wake-up signal. Use the Android app, or turn the PC on by hand.',
+  'iPhone / iPad (web)':
+      'iPhone / iPad (web)',
+  'Android (web)':
+      'Android (web)',
+  'Trình duyệt web':
+      'Web browser',
+  'Quét mã QR trên cửa sổ agent là ghép cặp luôn, khỏi phải gõ mã.':
+      'Scan the QR code in the agent window to pair instantly, no code to type.',
 };
