@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <!-- Thay bằng --base-href lúc build. Agent phục vụ trang ở gốc "/". -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta name="description" content="HeDeck — bàn điều khiển cho PC Windows.">
+  <meta name="theme-color" content="#0F1218">
+
+  <!-- "Thêm vào Màn hình chính" trên iPhone/iPad: mở toàn màn hình như app -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HeDeck">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="manifest" href="manifest.json">
+
+  <title>HeDeck</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0F1218; }
+    #splash { position: fixed; inset: 0; display: flex; flex-direction: column;
+              align-items: center; justify-content: center; gap: 18px;
+              font: 600 15px -apple-system, "Segoe UI", Roboto, sans-serif;
+              color: #8A90A0; transition: opacity .3s; }
+    #splash img { width: 96px; height: 96px; border-radius: 22px; }
+    #splash i { width: 120px; height: 3px; border-radius: 2px; overflow: hidden;
+                background: #262C38; position: relative; }
+    #splash i::after { content: ""; position: absolute; inset: 0; width: 40%;
+                       background: #7B6EF6; border-radius: 2px;
+                       animation: load 1.1s ease-in-out infinite; }
+    @keyframes load { from { left: -40%; } to { left: 100%; } }
+  </style>
+</head>
+<body>
+  <div id="splash">
+    <img src="icons/Icon-192.png" alt="">
+    <span>HeDeck</span>
+    <i></i>
+  </div>
+
+  <script>
+    // Mã QR trên cửa sổ agent mở trang kèm mã ghép cặp: …/#ghep=123456. Đọc
+    // ngay bây giờ, trước khi Flutter ghi đè phần sau dấu #, rồi xoá khỏi
+    // thanh địa chỉ để "Thêm vào Màn hình chính" không lưu mã đã hết hạn.
+    window.hedeckPairCode = (location.hash.match(/ghep=(\d{6})/) || [])[1] || "";
+    if (window.hedeckPairCode) {
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+
+    // Ẩn màn hình chờ khi Flutter vẽ xong khung hình đầu tiên.
+    window.addEventListener("flutter-first-frame", function () {
+      var s = document.getElementById("splash");
+      if (!s) return;
+      s.style.opacity = "0";
+      setTimeout(function () { s.remove(); }, 300);
+    });
+
+    // Giữ màn hình sáng trong lúc dùng deck (app Android làm việc này bằng
+    // cờ của hệ điều hành). Wake Lock API chỉ có trên trang https, mà agent
+    // phục vụ qua http trong mạng nhà; nên dùng cách quen thuộc: phát lặp một
+    // video câm rất nhỏ — trình duyệt không cho tắt màn hình khi có video đang
+    // phát. Chỉ phát được sau một lần chạm, nên gắn vào sự kiện chạm.
+    (function () {
+      var video = null;
+      function keepAwake() {
+        if (navigator.wakeLock && window.isSecureContext) {
+          navigator.wakeLock.request("screen").catch(function () {});
+          return;
+        }
+        if (!video) {
+          video = document.createElement("video");
+          video.setAttribute("playsinline", "");
+          video.setAttribute("muted", "");
+          video.muted = true;
+          video.loop = true;
+          video.src = "nosleep.mp4";
+          video.style.cssText = "position:fixed;left:0;top:0;width:1px;" +
+              "height:1px;opacity:0;pointer-events:none";
+          document.body.appendChild(video);
+        }
+        if (video.paused) video.play().catch(function () {});
+      }
+      ["touchend", "click"].forEach(function (e) {
+        document.addEventListener(e, keepAwake, { capture: true, passive: true });
+      });
+    })();
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

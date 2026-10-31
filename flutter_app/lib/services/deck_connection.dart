@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../l10n/l10n.dart';
@@ -11,6 +10,8 @@ import '../models/deck.dart';
 import '../models/perf.dart';
 import 'device_identity.dart';
 import 'discovery.dart';
+import 'platform/socket_io.dart'
+    if (dart.library.js_interop) 'platform/socket_web.dart';
 import 'wake_on_lan.dart';
 
 enum ConnState {
@@ -246,15 +247,8 @@ class DeckConnection extends ChangeNotifier {
     }
   }
 
-  Future<WebSocketChannel> _open(String host, int port) async {
-    final ch = IOWebSocketChannel.connect(
-      Uri.parse('ws://$host:$port'),
-      connectTimeout: const Duration(seconds: 6),
-      pingInterval: const Duration(seconds: 15),
-    );
-    await ch.ready;
-    return ch;
-  }
+  Future<WebSocketChannel> _open(String host, int port) =>
+      openDeckSocket(Uri.parse('ws://$host:$port'));
 
   void _bind(WebSocketChannel ch) {
     _ch = ch;

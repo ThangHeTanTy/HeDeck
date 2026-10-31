@@ -27,6 +27,13 @@ import catalog
 import instance
 import power
 import updater
+import web_ui
+
+# Mã QR mở bản web trên iPhone/iPad. Thiếu thư viện thì chỉ hiện địa chỉ.
+try:
+    import qrcode
+except ImportError:
+    qrcode = None
 
 try:
     from PIL import ImageTk
@@ -154,7 +161,7 @@ class AgentWindow:
         self.root = tk.Tk()
         self.root.title("HeDeck Agent")
         self.root.configure(bg=BG)
-        self.root.geometry("560x700")
+        self.root.geometry("600x760")
         self.root.minsize(480, 520)
         self.root.protocol("WM_DELETE_WINDOW", self.hide)
         if ImageTk:
@@ -207,12 +214,20 @@ class AgentWindow:
         self._button(card, "Mã mới", self.new_code, primary=True).grid(
             row=1, column=1, sticky="e", padx=(12, 0))
         card.columnconfigure(0, weight=1)
+        # iPhone/iPad quét mã này: mở bản web và ghép cặp luôn, khỏi gõ mã.
+        self.qr = tk.Label(card, bg="white", bd=0)
+        self.qr.grid(row=0, column=2, rowspan=3, sticky="e", padx=(16, 0))
+        self.qr_caption = self._label(card, "iPhone / iPad: quét để dùng",
+                                      8, MUTED)
+        self.qr_caption.grid(row=3, column=2, sticky="e", padx=(16, 0),
+                             pady=(4, 0))
+        self._qr_url = None
 
         info = tk.Frame(root, bg=BG, padx=18, pady=10)
         info.pack(fill="x")
         self.info = {}
-        for row, key in enumerate(("Địa chỉ", "Ứng dụng", "Điện thoại",
-                                   "Bật từ xa", "Phiên bản")):
+        for row, key in enumerate(("Địa chỉ", "Bản web", "Ứng dụng",
+                                   "Điện thoại", "Bật từ xa", "Phiên bản")):
             self._label(info, key, 9, MUTED).grid(row=row, column=0,
                                                   sticky="w", padx=(0, 14))
             self.info[key] = self._label(info, "", 9)
@@ -420,6 +435,10 @@ class AgentWindow:
             apps = len(agent.apps) if agent.catalog_ready else "đang quét…"
             for key, value in {
                 "Địa chỉ": f"ws://{self.ip}:{self.port}",
+                "Bản web": (web_ui.page_url(self.ip, self.port)
+                            + "  (iPhone, iPad, trình duyệt)"
+                            if agent.web.available
+                            else "chưa có — chạy BUILD_WEB.bat"),
                 "Ứng dụng": apps,
                 "Điện thoại": f"{len(agent.state['devices'])} đã ghép cặp"
                               f" · {st['banned']} IP bị chặn",
@@ -427,12 +446,35 @@ class AgentWindow:
                 "Phiên bản": version,
             }.items():
                 self.info[key].configure(text=value)
+            self._refresh_qr(agent)
             self._refresh_update(agent.update)
             if self.icon:
                 tip = f"HeDeck Agent · {self.ip} · {clients} điện thoại"
                 if self.icon.title != tip:
                     self.icon.title = tip[:127]
         self.root.after(1000, self._refresh)
+
+    def _refresh_qr(self, agent):
+        """Mã QR mở bản web, kèm mã ghép cặp khi mã còn hạn."""
+        if qrcode is None or ImageTk is None or not agent.web.available:
+            self.qr.grid_remove()
+            self.qr_caption.grid_remove()
+            return
+        url = web_ui.page_url(self.ip, self.port,
+                              None if agent.code_expired else agent.pair_code)
+        if url == self._qr_url:
+            return
+        self._qr_url = url
+        code = qrcode.QRCode(box_size=3, border=2,
+                             error_correction=qrcode.constants.ERROR_CORRECT_M)
+        code.add_data(url)
+        code.make(fit=True)
+        img = code.make_image(fill_color="black", back_color="white")
+        img = img.get_image() if hasattr(img, "get_image") else img
+        self._qr_image = ImageTk.PhotoImage(img.convert("RGB"))
+        self.qr.configure(image=self._qr_image)
+        self.qr.grid()
+        self.qr_caption.grid()
 
     def _refresh_update(self, info):
         if not info:

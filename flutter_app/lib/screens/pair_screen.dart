@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -5,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../l10n/l10n.dart';
 import '../services/deck_connection.dart';
 import '../services/discovery.dart';
+import '../services/platform/link_io.dart'
+    if (dart.library.js_interop) '../services/platform/link_web.dart';
 import '../services/store.dart';
 import '../theme.dart';
 import '../widgets/lang_picker.dart';
@@ -30,8 +33,24 @@ class _PairScreenState extends State<PairScreen> {
   @override
   void initState() {
     super.initState();
-    _scan();
+    // Bản web: mã QR trên cửa sổ agent mở trang kèm mã ghép cặp
+    // (…/#ghep=123456). Có mã thì điền sẵn và ghép luôn, khỏi phải gõ.
+    final code = pairCodeFromLink();
+    if (code != null) _code.text = code;
+    _scan().then((_) {
+      if (code != null && mounted && _host.text.isNotEmpty) _connect();
+    });
     _loadFingerprint();
+  }
+
+  /// Tên agent ghi lại cho điện thoại này, hiện trong cửa sổ agent.
+  static String _deviceName() {
+    if (!kIsWeb) return t('Điện thoại Android');
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.iOS => t('iPhone / iPad (web)'),
+      TargetPlatform.android => t('Android (web)'),
+      _ => t('Trình duyệt web'),
+    };
   }
 
   /// Vân tay khoá của chính máy này. Hiện lên để biết khoá có tồn tại không —
@@ -99,7 +118,7 @@ class _PairScreenState extends State<PairScreen> {
         port: port,
         code: code,
         deviceId: store.deviceId,
-        deviceName: t('Điện thoại Android'),
+        deviceName: _deviceName(),
       );
       await store.savePairing(
         host: host,
@@ -158,7 +177,9 @@ class _PairScreenState extends State<PairScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    t('Dùng máy ảo Android? Chạy adb reverse tcp:8787 tcp:8787 rồi nhập 127.0.0.1.'),
+                    kIsWeb
+                        ? t('Quét mã QR trên cửa sổ agent là ghép cặp luôn, khỏi phải gõ mã.')
+                        : t('Dùng máy ảo Android? Chạy adb reverse tcp:8787 tcp:8787 rồi nhập 127.0.0.1.'),
                     style: TextStyle(
                         color: DeckColors.muted, fontSize: 12, height: 1.5),
                   ),

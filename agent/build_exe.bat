@@ -15,13 +15,21 @@ echo [1/2] Cai pyinstaller...
 "%VPY%" -m pip install pyinstaller --quiet
 if errorlevel 1 (echo [X] Cai pyinstaller that bai & pause & exit /b 1)
 
+rem Ban web (iPhone, iPad, trinh duyet) dong goi vao .exe neu da build bang
+rem BUILD_WEB.bat. Chua co thi .exe van chay, chi la chua co ban web.
+set "WEBDATA="
+if exist web\index.html set "WEBDATA=--add-data web;web"
+if not defined WEBDATA echo [!] Chua co ban web: chay BUILD_WEB.bat truoc neu muon dung tren iPhone.
+
 echo [2/2] Dong goi...
 rem --windowed: khong co cua so lenh, agent dung cua so rieng va icon o khay.
 "%VPY%" -m PyInstaller --onefile --windowed --name HeDeckAgent ^
     --icon ..\flutter_app\assets\icon\icon.png ^
     --add-data "..\flutter_app\assets\icon\icon.png;." ^
+    %WEBDATA% ^
     --hidden-import win32timezone ^
     --hidden-import pystray._win32 ^
+    --collect-submodules qrcode ^
     --collect-all zeroconf ^
     --collect-all pycaw ^
     --collect-all comtypes ^

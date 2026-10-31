@@ -21,7 +21,8 @@ flutter_app/coverage/
 # phiên bản Flutter của máy họ. Đưa lên Git chỉ tổ gây xung đột.
 flutter_app/android/
 flutter_app/ios/
-flutter_app/web/
+# flutter_app/web/ thì giữ: đã chỉnh riêng cho bản web (biểu tượng, màn hình
+# chờ, giữ màn hình sáng), flutter create không sinh lại đè lên.
 flutter_app/windows/
 flutter_app/linux/
 flutter_app/macos/
@@ -76,3 +77,6 @@ agent/_build_version.py
 *.jks
 *.keystore
 key.properties
+
+# Bản web build sẵn để đóng gói vào agent (BUILD_WEB.bat chép vào đây).
+agent/web/
