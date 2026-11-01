@@ -650,7 +650,7 @@ class Agent:
 
         if kind == "screen":
             if not ALLOW_SCREEN_VIEW:
-                return {"t": "error", "msg": "Agent đã tắt xem màn hình"}
+                return {"t": "error", "msg": "Máy tính đã tắt chế độ xem màn hình"}
             if msg.get("off"):
                 if self._screen_last.pop(ws, None) is not None:
                     log("Đã ngừng xem màn hình.")
@@ -799,7 +799,7 @@ class Agent:
 
         if kind == "power":
             if not ALLOW_POWER:
-                return {"t": "error", "msg": "Lệnh nguồn đang bị tắt trên agent"}
+                return {"t": "error", "msg": "Máy tính đang tắt lệnh nguồn (khoá, ngủ, tắt máy)"}
             action = msg.get("action", "")
             if action not in power.ACTIONS:
                 return {"t": "error", "msg": f"Hành động nguồn lạ: {action}"}
@@ -815,7 +815,7 @@ class Agent:
 
         if kind == "macro":
             if not ALLOW_MACROS:
-                return {"t": "error", "msg": "Macro đang bị tắt trên agent"}
+                return {"t": "error", "msg": "Máy tính đang tắt macro"}
             keys = msg.get("keys")
             combos = keys if isinstance(keys, list) else [keys]
             combos = [c for c in combos if isinstance(c, str) and c.strip()]
@@ -835,7 +835,7 @@ class Agent:
         lệnh chạy đúng thứ tự gửi. Di chuột không trả lời gì — 60 lần mỗi
         giây mà lần nào cũng trả lời thì chỉ tốn mạng."""
         if not ALLOW_REMOTE_INPUT:
-            return {"t": "error", "msg": "Điều khiển từ xa đang bị tắt trên agent"}
+            return {"t": "error", "msg": "Máy tính đang tắt điều khiển chuột và bàn phím"}
         try:
             if kind == "mouse_move":
                 remote_input.move(msg.get("dx", 0), msg.get("dy", 0))
@@ -884,11 +884,11 @@ class Agent:
                 if not authed and kind == "pair":
                     if self.code_expired:
                         log("Có máy xin ghép cặp nhưng mã đã hết hạn "
-                            "— nhấn Enter ở cửa sổ này để lấy mã mới.")
+                            "— bấm Mã mới (hoặc Enter) để lấy mã mới.")
                         await ws.send(json.dumps({
                             "t": "error",
-                            "msg": "Mã đã hết hạn. Nhấn Enter ở cửa sổ agent "
-                                   "trên thiết bị để lấy mã mới.",
+                            "msg": "Mã đã hết hạn. Bấm \"Mã mới\" trên cửa sổ "
+                                   "HeDeck ở máy tính để lấy mã mới.",
                         }))
                         continue
 

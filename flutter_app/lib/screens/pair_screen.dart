@@ -97,7 +97,7 @@ class _PairScreenState extends State<PairScreen> {
     final code = _code.text.trim();
 
     if (host.isEmpty) {
-      setState(() => _error = t('Nhập địa chỉ IP hiện trên cửa sổ agent'));
+      setState(() => _error = t('Nhập địa chỉ IP hiện trên cửa sổ HeDeck ở máy tính'));
       return;
     }
     if (code.length != 6) {
@@ -172,13 +172,13 @@ class _PairScreenState extends State<PairScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    t('Chạy agent trên máy Windows, rồi nhập địa chỉ và mã 6 số hiện trên cửa sổ đó.'),
+                    t('Mở HeDeck trên máy tính Windows, rồi nhập địa chỉ và mã 6 số hiện trên cửa sổ đó.'),
                     style: TextStyle(color: DeckColors.muted, fontSize: 13, height: 1.5),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     kIsWeb
-                        ? t('Quét mã QR trên cửa sổ agent là ghép cặp luôn, khỏi phải gõ mã.')
+                        ? t('Quét mã QR trên cửa sổ HeDeck ở máy tính là ghép cặp luôn, khỏi phải gõ mã.')
                         : t('Dùng máy ảo Android? Chạy adb reverse tcp:8787 tcp:8787 rồi nhập 127.0.0.1.'),
                     style: TextStyle(
                         color: DeckColors.muted, fontSize: 12, height: 1.5),

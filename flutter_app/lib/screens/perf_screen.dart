@@ -80,7 +80,7 @@ class _PerfScreenState extends State<PerfScreen> {
         child: !conn.isOnline
             ? _Center(t('Chưa kết nối tới thiết bị'))
             : conn.agentOutdated
-                ? _Center(t('Agent trên thiết bị là bản cũ — gõ C trong cửa sổ agent để cập nhật, hoặc tắt rồi mở lại agent'))
+                ? _Center(t('HeDeck trên máy tính là bản cũ — mở cửa sổ HeDeck trên máy tính, bấm "Xem và cập nhật"'))
                 : s == null
                     ? _Center(t('Đang đo…'), busy: true)
                     : LayoutBuilder(

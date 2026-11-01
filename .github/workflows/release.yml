@@ -154,11 +154,16 @@ jobs:
 
       - name: Build bản web
         working-directory: flutter_app
+        env:
+          RELEASE: ${{ needs.version.outputs.release }}
+          NAME: ${{ needs.version.outputs.name }}
         # Giống BUILD_WEB.bat: không tải gì từ CDN (agent phục vụ trong mạng
         # nhà), không service worker (trang http không dùng được).
         run: |
           flutter pub get
-          flutter build web --release --no-web-resources-cdn --pwa-strategy=none
+          extra=()
+          if [ "$RELEASE" = "true" ]; then extra=(--dart-define=HEDECK_VERSION="$NAME"); fi
+          flutter build web --release --no-web-resources-cdn --pwa-strategy=none "${extra[@]}"
           # Bản JS chỉ dùng CanvasKit: bỏ skwasm và bảng ký hiệu gỡ lỗi (~15 MB).
           find build/web -name '*.symbols' -delete
           rm -f build/web/canvaskit/skwasm*

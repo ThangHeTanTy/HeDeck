@@ -414,7 +414,7 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
           padding: const EdgeInsets.all(20),
           child: Text(
             _showScreen && conn.isOnline && !_screenSupported
-                ? t('Cập nhật agent trên máy tính để xem màn hình tại đây.')
+                ? t('Cập nhật HeDeck trên máy tính để xem màn hình tại đây.')
                 : !conn.isOnline
                 ? t('Chưa kết nối tới thiết bị')
                 : _dragging

@@ -591,7 +591,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 10),
             Text(
-              t('Agent tự gửi MAC mỗi lần kết nối. Chỉ cần nhập tay nếu cửa sổ agent báo không đọc được. Xem bằng lệnh: getmac /v'),
+              t('Máy tính tự gửi MAC mỗi lần kết nối. Chỉ cần nhập tay nếu cửa sổ HeDeck trên máy tính báo không đọc được. Xem bằng lệnh: getmac /v'),
               style:
                   TextStyle(color: DeckColors.muted, fontSize: 11, height: 1.4),
             ),
@@ -1019,23 +1019,24 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                   height: 1.2,
                 ),
               ),
-              if (context.read<DeckConnection>().isOnline) ...[
-                const SizedBox(height: 6),
-                Builder(builder: (_) {
-                  final conn = context.read<DeckConnection>();
-                  final old = conn.agentOutdated;
-                  return Text(
-                    old
-                        ? t('Agent v{0} — cần v{1}, hãy chạy lại agent', [conn.agentVersion, DeckConnection.minAgentVersion])
-                        : 'Agent v${conn.agentVersion}',
-                    style: TextStyle(
-                      color: old ? DeckColors.warn : DeckColors.muted,
-                      fontSize: 11,
-                      height: 1.2,
-                    ),
-                  );
-                }),
-              ],
+              const SizedBox(height: 6),
+              Builder(builder: (_) {
+                // Phiên bản app; chỉ nhắc tới máy tính khi bên đó cần cập nhật.
+                final old = context.read<DeckConnection>().agentOutdated;
+                const version = String.fromEnvironment('HEDECK_VERSION');
+                return Text(
+                  old
+                      ? t('HeDeck trên máy tính là bản cũ — hãy cập nhật')
+                      : version.isEmpty
+                          ? t('Bản tự build')
+                          : t('Phiên bản {0}', [version]),
+                  style: TextStyle(
+                    color: old ? DeckColors.warn : DeckColors.muted,
+                    fontSize: 11,
+                    height: 1.2,
+                  ),
+                );
+              }),
               if (store.fingerprint.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Row(
@@ -1142,12 +1143,12 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     final (color, label) = switch (conn.state) {
       ConnState.online when conn.agentOutdated => (
           DeckColors.warn,
-          t('Agent trên thiết bị là bản cũ — gõ C trong cửa sổ agent để cập nhật, hoặc tắt rồi mở lại agent')
+          t('HeDeck trên máy tính là bản cũ — mở cửa sổ HeDeck trên máy tính, bấm "Xem và cập nhật"')
         ),
       ConnState.online => (
           conn.catalogStuck ? DeckColors.warn : DeckColors.live,
           conn.catalogStuck
-              ? t('Thiết bị chưa quét xong — xem cửa sổ agent')
+              ? t('Máy tính chưa quét xong — xem cửa sổ HeDeck trên máy tính')
               : (conn.catalogLoading && conn.catalog.isEmpty
                   ? t('Đang lấy danh sách ứng dụng…')
                   : (conn.hostName.isEmpty ? store.hostName : conn.hostName))

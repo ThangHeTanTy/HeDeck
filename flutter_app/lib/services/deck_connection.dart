@@ -691,7 +691,8 @@ class DeckConnection extends ChangeNotifier {
         break;
 
       case 'error':
-        lastError = msg['msg'] as String? ?? t('Lỗi không rõ');
+        // Máy tính gửi câu tiếng Việt; t() đổi sang tiếng Anh nếu có bản dịch.
+        lastError = t(msg['msg'] as String? ?? 'Lỗi không rõ');
         if (_pairing != null && !_pairing!.isCompleted) {
           _pairing!.completeError(StateError(lastError!));
         }
@@ -858,8 +859,8 @@ class DeckConnection extends ChangeNotifier {
       // ở ngôn ngữ nào cũng vậy, nên so cả hai.
       return s.replaceFirst(RegExp(r'^\w+Error: '), '');
     }
-    if (s.contains('refused')) return t('Thiết bị từ chối kết nối — agent chưa chạy?');
-    if (s.contains('mạng nội bộ')) return t('Agent chỉ nhận kết nối từ mạng nội bộ');
+    if (s.contains('refused')) return t('Máy tính từ chối kết nối — HeDeck trên máy tính đã mở chưa?');
+    if (s.contains('mạng nội bộ')) return t('Máy tính chỉ nhận kết nối từ mạng nhà hoặc Tailscale');
     if (s.contains('timed out') || s.contains('timeout')) {
       return t('Hết thời gian chờ — kiểm tra Wi-Fi và tường lửa');
     }
