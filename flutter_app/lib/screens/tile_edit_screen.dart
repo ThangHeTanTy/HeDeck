@@ -397,7 +397,7 @@ class _TileEditScreenState extends State<TileEditScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
-              t('Thiết bị chưa gửi được danh sách ứng dụng. Bấm nút làm mới bên phải, hoặc xem cửa sổ agent có báo lỗi không.'),
+              t('Máy tính chưa gửi được danh sách ứng dụng. Bấm nút làm mới bên phải, hoặc xem cửa sổ HeDeck trên máy tính có báo lỗi không.'),
               style:
                   TextStyle(color: DeckColors.muted, fontSize: 13, height: 1.4),
             ),

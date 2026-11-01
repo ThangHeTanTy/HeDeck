@@ -93,6 +93,13 @@ nhà, theo đúng cách trên.
 
 ---
 
+## Dùng từ xa
+
+Muốn điều khiển máy ở nhà khi đang ở ngoài, xem màn hình máy tính trong
+touchpad, hay bật máy đang tắt từ xa: xem [TU_XA.md](TU_XA.md).
+
+---
+
 ## Cập nhật
 
 Không có gì tự cài sau lưng bạn — cả hai đều hỏi trước.

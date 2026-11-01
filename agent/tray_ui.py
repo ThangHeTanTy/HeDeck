@@ -26,6 +26,7 @@ from PIL import Image, ImageDraw
 import catalog
 import instance
 import power
+import remote
 import updater
 import web_ui
 
@@ -226,8 +227,9 @@ class AgentWindow:
         info = tk.Frame(root, bg=BG, padx=18, pady=10)
         info.pack(fill="x")
         self.info = {}
-        for row, key in enumerate(("Địa chỉ", "Bản web", "Ứng dụng",
-                                   "Điện thoại", "Bật từ xa", "Phiên bản")):
+        for row, key in enumerate(("Địa chỉ", "Bản web", "Từ xa", "Ứng dụng",
+                                   "Điện thoại", "Bật từ xa", "Trạm bật máy",
+                                   "Phiên bản")):
             self._label(info, key, 9, MUTED).grid(row=row, column=0,
                                                   sticky="w", padx=(0, 14))
             self.info[key] = self._label(info, "", 9)
@@ -442,7 +444,9 @@ class AgentWindow:
                 "Ứng dụng": apps,
                 "Điện thoại": f"{len(agent.state['devices'])} đã ghép cặp"
                               f" · {st['banned']} IP bị chặn",
+                "Từ xa": remote.describe(),
                 "Bật từ xa": power.describe(agent.wol),
+                "Trạm bật máy": agent.relay_status(),
                 "Phiên bản": version,
             }.items():
                 self.info[key].configure(text=value)

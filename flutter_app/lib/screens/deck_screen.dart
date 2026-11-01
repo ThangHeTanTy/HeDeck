@@ -12,6 +12,7 @@ import '../models/deck.dart';
 import '../services/deck_connection.dart';
 import '../services/store.dart';
 import '../services/wake_on_lan.dart';
+import '../services/wake_relay.dart';
 import '../theme.dart';
 import '../widgets/clown_logo.dart';
 import '../widgets/deck_tile_view.dart';
@@ -131,6 +132,8 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
 
     // Thiết bị đổi IP thì tự dò lại và lưu địa chỉ mới, khỏi ghép cặp lại.
     conn.onHostChanged = store.updateHost;
+    // Ra khỏi mạng nhà thì đi đường Tailscale (nếu máy tính có).
+    conn.remoteHost = store.remoteHost;
 
     await conn.start(
       host: store.host,
@@ -469,18 +472,38 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
       return;
     }
     HapticFeedback.mediumImpact();
+    // Gửi cả hai đường: trong mạng đang nối (có tác dụng khi đang ở nhà), và
+    // nhờ trạm bật máy ở nhà qua Tailscale (có tác dụng cả khi ở xa).
+    var local = 0;
     try {
-      final sent =
-          await sendWakeOnLan(store.wolMacs, broadcast: store.wolBroadcast);
-      if (sent == 0) {
-        _snack(t('Không gửi được — điện thoại có đang nối Wi-Fi nhà không?'));
-        return;
-      }
-    } catch (e) {
-      _snack(t('Gửi tín hiệu bật máy lỗi: {0}', [e]));
-      return;
+      local = await sendWakeOnLan(store.wolMacs, broadcast: store.wolBroadcast);
+    } catch (_) {}
+    var relayed = false;
+    var relayTried = false;
+    if (store.canWakeRemotely) {
+      relayTried = true;
+      if (local == 0) _snack(t('Đang nhờ trạm bật máy ở nhà…'));
+      try {
+        await wakeViaRelay(store.relayHost, store.relayPort, store.wakeKey);
+        relayed = true;
+      } catch (_) {}
     }
-    _snack(t('Đã gửi tín hiệu bật máy. Windows cần khoảng 20–60 giây để lên.'));
+    if (!mounted) return;
+    if (relayed) {
+      _snack(t('Trạm ở nhà đã gửi tín hiệu bật máy. Windows cần khoảng '
+          '20–60 giây để lên.'));
+    } else if (local == 0) {
+      _snack(relayTried
+          ? t('Không liên lạc được trạm bật máy — điện thoại deck ở nhà có '
+              'đang mở HeDeck và bật Tailscale không?')
+          : t('Không gửi được — điện thoại có đang nối Wi-Fi nhà không?'));
+      return;
+    } else {
+      _snack(relayTried
+          ? t('Đã gửi tín hiệu trong mạng này, nhưng trạm ở nhà không trả '
+              'lời. Nếu đang ở xa, máy sẽ không bật.')
+          : t('Đã gửi tín hiệu bật máy. Windows cần khoảng 20–60 giây để lên.'));
+    }
 
     // Đừng để vòng thử lại đang lùi tới 20 giây làm chậm thêm: chủ động gõ
     // cửa vài lần quanh lúc Windows thường khởi động xong.
@@ -568,7 +591,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 10),
             Text(
-              t('Agent tự gửi MAC mỗi lần kết nối. Chỉ cần nhập tay nếu cửa sổ agent báo không đọc được. Xem bằng lệnh: getmac /v'),
+              t('Máy tính tự gửi MAC mỗi lần kết nối. Chỉ cần nhập tay nếu cửa sổ HeDeck trên máy tính báo không đọc được. Xem bằng lệnh: getmac /v'),
               style:
                   TextStyle(color: DeckColors.muted, fontSize: 11, height: 1.4),
             ),
@@ -643,6 +666,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                 ),
                 Divider(height: 1, color: DeckColors.line),
                 _autoSwitchRow(store),
+                if (canRunRelay) _relayRow(store, conn),
                 _sheetItem(Icons.bolt_rounded, t('Tự mở trang này khi…'), 'auto'),
                 Divider(height: 1, color: DeckColors.line),
                 _sheetItem(Icons.refresh_rounded,
@@ -707,6 +731,51 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
         await store.forgetHost();
         break;
     }
+  }
+
+  /// Điện thoại deck để ở nhà làm trạm: điện thoại khác ở xa nhờ nó phát tín
+  /// hiệu bật máy trong mạng nhà.
+  Widget _relayRow(Store store, DeckConnection conn) {
+    String ip = '';
+    var checked = false;
+    return StatefulBuilder(builder: (context, setSheetState) {
+      if (store.relayEnabled && !checked) {
+        checked = true;
+        tailscaleAddress().then((v) {
+          if (context.mounted) setSheetState(() => ip = v);
+        });
+      }
+      return SwitchListTile(
+        secondary: Icon(Icons.cell_tower_rounded,
+            size: 20, color: DeckColors.muted),
+        title: Text(t('Trạm bật máy (điện thoại này để ở nhà)'),
+            style: TextStyle(color: DeckColors.text, fontSize: 14)),
+        subtitle: Text(
+            !store.relayEnabled
+                ? t('Bật trên điện thoại deck luôn ở nhà, cắm sạc: điện thoại '
+                    'khác ở xa nhờ nó bật máy tính qua Tailscale')
+                : ip.isNotEmpty
+                    ? t('Đang chạy · Tailscale {0}', [ip])
+                    : t('Đang chạy, nhưng điện thoại này chưa bật Tailscale — '
+                        'điện thoại ở xa chưa gọi tới được'),
+            style: TextStyle(
+                color: store.relayEnabled && ip.isEmpty && checked
+                    ? DeckColors.warn
+                    : DeckColors.muted,
+                fontSize: 11)),
+        value: store.relayEnabled,
+        onChanged: (v) async {
+          await store.setRelayEnabled(v);
+          final got = await applyRelay(store, conn);
+          if (context.mounted) {
+            setSheetState(() {
+              ip = got;
+              checked = v;
+            });
+          }
+        },
+      );
+    });
   }
 
   Widget _autoSwitchRow(Store store) {
@@ -950,23 +1019,24 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                   height: 1.2,
                 ),
               ),
-              if (context.read<DeckConnection>().isOnline) ...[
-                const SizedBox(height: 6),
-                Builder(builder: (_) {
-                  final conn = context.read<DeckConnection>();
-                  final old = conn.agentOutdated;
-                  return Text(
-                    old
-                        ? t('Agent v{0} — cần v{1}, hãy chạy lại agent', [conn.agentVersion, DeckConnection.minAgentVersion])
-                        : 'Agent v${conn.agentVersion}',
-                    style: TextStyle(
-                      color: old ? DeckColors.warn : DeckColors.muted,
-                      fontSize: 11,
-                      height: 1.2,
-                    ),
-                  );
-                }),
-              ],
+              const SizedBox(height: 6),
+              Builder(builder: (_) {
+                // Phiên bản app; chỉ nhắc tới máy tính khi bên đó cần cập nhật.
+                final old = context.read<DeckConnection>().agentOutdated;
+                const version = String.fromEnvironment('HEDECK_VERSION');
+                return Text(
+                  old
+                      ? t('HeDeck trên máy tính là bản cũ — hãy cập nhật')
+                      : version.isEmpty
+                          ? t('Bản tự build')
+                          : t('Phiên bản {0}', [version]),
+                  style: TextStyle(
+                    color: old ? DeckColors.warn : DeckColors.muted,
+                    fontSize: 11,
+                    height: 1.2,
+                  ),
+                );
+              }),
               if (store.fingerprint.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Row(
@@ -1073,12 +1143,12 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     final (color, label) = switch (conn.state) {
       ConnState.online when conn.agentOutdated => (
           DeckColors.warn,
-          t('Agent trên thiết bị là bản cũ — gõ C trong cửa sổ agent để cập nhật, hoặc tắt rồi mở lại agent')
+          t('HeDeck trên máy tính là bản cũ — mở cửa sổ HeDeck trên máy tính, bấm "Xem và cập nhật"')
         ),
       ConnState.online => (
           conn.catalogStuck ? DeckColors.warn : DeckColors.live,
           conn.catalogStuck
-              ? t('Thiết bị chưa quét xong — xem cửa sổ agent')
+              ? t('Máy tính chưa quét xong — xem cửa sổ HeDeck trên máy tính')
               : (conn.catalogLoading && conn.catalog.isEmpty
                   ? t('Đang lấy danh sách ứng dụng…')
                   : (conn.hostName.isEmpty ? store.hostName : conn.hostName))
@@ -1131,7 +1201,8 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                         : DeckColors.live.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text('Wi-Fi · ${conn.latencyMs} ms',
+                  child: Text(
+                      '${conn.viaRemote ? t('Từ xa') : 'Wi-Fi'} · ${conn.latencyMs} ms',
                       style: TextStyle(
                           color: DeckColors.isDark
                               ? const Color(0xFF9FE1CB)

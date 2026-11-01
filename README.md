@@ -34,6 +34,7 @@ nhạc, âm lượng riêng từng ứng dụng, và các ô macro gõ tổ hợ
 | **Tự đổi trang** | Như Stream Deck: vào Liên Minh thì deck tự sang trang Game, về desktop thì về trang Làm việc. |
 | **Touchpad và bàn phím** | Điều khiển chuột, cuộn, kéo thả và gõ chữ tiếng Việt từ xa. |
 | **Sáng / tối** | Nút trượt mặt trời / mặt trăng trong bánh răng. Chủ đề sáng có bộ màu ô riêng, đủ tương phản trên nền trắng. |
+| **Dùng từ xa qua Internet** | Ở ngoài vẫn điều khiển được máy ở nhà qua Tailscale (mã hoá, không mở cổng router), xem màn hình máy tính ngay trong touchpad, và bật máy đang tắt nhờ điện thoại deck ở nhà làm trạm. Xem [TU_XA.md](docs/TU_XA.md). |
 | **iPhone, iPad, trình duyệt** | Agent phục vụ sẵn bản web: quét mã QR trên cửa sổ agent là dùng được trên iPhone/iPad, không cần cài, không cần tài khoản Apple. Xem [CAI_DAT.md](docs/CAI_DAT.md#iphone-ipad--bản-web). |
 | **Tiếng Việt / English** | Đổi ngôn ngữ trong bánh răng (hoặc nút 🌐 ở màn hình ghép cặp). Lần đầu tự theo ngôn ngữ của điện thoại. |
 | **Đo hiệu năng** | FPS, 1% low, nhiệt độ và tải CPU/GPU, VRAM, RAM, mạng — như màn hình test máy ở cửa hàng. |
@@ -501,6 +502,8 @@ hedeck/
 │   ├── updater.py         kiểm tra và cài bản agent mới từ GitHub
 │   ├── tray_ui.py         cửa sổ agent và icon ở khay hệ thống
 │   ├── web_ui.py          phục vụ bản web (iPhone, iPad) trên cổng 8787
+│   ├── remote.py          dùng từ xa qua Tailscale
+│   ├── screen.py          chụp màn hình gửi về touchpad
 │   ├── instance.py        chỉ cho một agent chạy mỗi lúc
 │   ├── CAI_BAT_MAY_TU_XA.bat   cấu hình Windows cho Wake-on-LAN
 │   ├── TU_CHAY_CUNG_WINDOWS.bat agent tự chạy khi đăng nhập
@@ -522,6 +525,8 @@ Các tài liệu đi kèm:
   dành cho người chưa từng dùng Flutter
 - [`docs/KY_THUAT.md`](docs/KY_THUAT.md) — giao thức, kiến trúc, quyết định
   thiết kế và lý do đằng sau từng lựa chọn
+- [`docs/TU_XA.md`](docs/TU_XA.md) — dùng từ xa qua Internet: Tailscale, trạm
+  bật máy, xem màn hình trong touchpad
 - [`docs/PHAT_HANH.md`](docs/PHAT_HANH.md) — phát hành bản mới lên GitHub,
   khoá ký APK, cách cập nhật tự động hoạt động
 

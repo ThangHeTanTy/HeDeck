@@ -10,6 +10,7 @@ import 'screens/splash_screen.dart';
 import 'services/deck_connection.dart';
 import 'services/device_identity.dart';
 import 'services/store.dart';
+import 'services/wake_relay.dart';
 import 'theme.dart';
 import 'widgets/clown_logo.dart';
 
@@ -275,6 +276,10 @@ class DeckApp extends StatelessWidget {
             // Gán ngay từ lúc dựng, không phụ thuộc màn hình nào chạy trước.
             conn.onHostChanged = store.updateHost;
             conn.onWolInfo = (w) => store.saveWol(w.macs, w.broadcast);
+            conn.onSession = store.saveSession;
+            conn.remoteHost = store.remoteHost;
+            // Điện thoại deck để ở nhà làm trạm bật máy: mở lại khi app mở.
+            if (store.relayEnabled) applyRelay(store, conn);
             return conn;
           },
         ),

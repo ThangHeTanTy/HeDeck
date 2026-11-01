@@ -16,9 +16,7 @@ Future<void> showUpdateDialog(BuildContext context) => showDialog<void>(
               style: TextStyle(color: DeckColors.text, fontSize: 17)),
         ]),
         content: Text(
-          t('Bản web luôn cùng phiên bản với agent trên máy tính. Khi cửa sổ '
-              'agent báo có bản mới, bấm "Xem và cập nhật" ở đó rồi tải lại '
-              'trang này.'),
+          t('Bản web luôn cùng phiên bản với HeDeck trên máy tính. Khi cửa sổ HeDeck trên máy tính báo có bản mới, bấm "Xem và cập nhật" ở đó rồi tải lại trang này.'),
           style: TextStyle(color: DeckColors.muted, fontSize: 13, height: 1.4),
         ),
         actions: [

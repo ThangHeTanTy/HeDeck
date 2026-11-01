@@ -125,8 +125,8 @@ const en = <String, String>{
       'Cancel',
   'Địa chỉ MAC':
       'MAC address',
-  'Agent tự gửi MAC mỗi lần kết nối. Chỉ cần nhập tay nếu cửa sổ agent báo không đọc được. Xem bằng lệnh: getmac /v':
-      'The agent sends the MAC on every connection. Only enter it by hand if the agent window says it could not read it. See it with: getmac /v',
+  'Máy tính tự gửi MAC mỗi lần kết nối. Chỉ cần nhập tay nếu cửa sổ HeDeck trên máy tính báo không đọc được. Xem bằng lệnh: getmac /v':
+      'The PC sends its MAC every time it connects. Only type it in if the HeDeck window on the PC says it could not read it. To look it up: getmac /v',
   'Lưu':
       'Save',
   'MAC không hợp lệ — cần 12 chữ số hex':
@@ -183,16 +183,14 @@ const en = <String, String>{
       '5 × 3',
   'Hề IT':
       'Hề IT',
-  'Agent v{0} — cần v{1}, hãy chạy lại agent':
-      'Agent v{0} — needs v{1}, please restart the agent',
   'Vân tay {0}':
       'Fingerprint {0}',
   'Tên trang':
       'Page name',
-  'Agent trên thiết bị là bản cũ — gõ C trong cửa sổ agent để cập nhật, hoặc tắt rồi mở lại agent':
-      'The agent on the device is outdated — type C in the agent window to update, or close and reopen the agent',
-  'Thiết bị chưa quét xong — xem cửa sổ agent':
-      'The device has not finished scanning — check the agent window',
+  'HeDeck trên máy tính là bản cũ — mở cửa sổ HeDeck trên máy tính, bấm "Xem và cập nhật"':
+      'HeDeck on your PC is outdated — open the HeDeck window on the PC and click "Xem và cập nhật" (view and update)',
+  'Máy tính chưa quét xong — xem cửa sổ HeDeck trên máy tính':
+      'The PC has not finished scanning — check the HeDeck window on the PC',
   'Đang lấy danh sách ứng dụng…':
       'Getting the app list…',
   'Đang tìm thiết bị…':
@@ -223,8 +221,8 @@ const en = <String, String>{
       'Options',
   'Tuỳ chọn HeDeck':
       'HeDeck options',
-  'Nhập địa chỉ IP hiện trên cửa sổ agent':
-      'Enter the IP address shown in the agent window',
+  'Nhập địa chỉ IP hiện trên cửa sổ HeDeck ở máy tính':
+      'Enter the IP address shown in the HeDeck window on your PC',
   'Mã ghép cặp gồm 6 chữ số':
       'The pairing code has 6 digits',
   'Điện thoại Android':
@@ -233,8 +231,8 @@ const en = <String, String>{
       'Pairing failed. Check the IP and code.',
   'Kết nối tới thiết bị':
       'Connect to the device',
-  'Chạy agent trên máy Windows, rồi nhập địa chỉ và mã 6 số hiện trên cửa sổ đó.':
-      'Run the agent on the Windows computer, then enter the address and 6-digit code shown in its window.',
+  'Mở HeDeck trên máy tính Windows, rồi nhập địa chỉ và mã 6 số hiện trên cửa sổ đó.':
+      'Open HeDeck on your Windows PC, then enter the address and the 6-digit code shown in its window.',
   'Dùng máy ảo Android? Chạy adb reverse tcp:8787 tcp:8787 rồi nhập 127.0.0.1.':
       'Using an Android emulator? Run adb reverse tcp:8787 tcp:8787 then enter 127.0.0.1.',
   'Địa chỉ IP':
@@ -353,8 +351,8 @@ const en = <String, String>{
       'Not connected to the device, so the list is unavailable.',
   'Đang lấy danh sách từ thiết bị…':
       'Getting the list from the device…',
-  'Thiết bị chưa gửi được danh sách ứng dụng. Bấm nút làm mới bên phải, hoặc xem cửa sổ agent có báo lỗi không.':
-      'The device has not sent the app list yet. Tap the refresh button on the right, or check the agent window for errors.',
+  'Máy tính chưa gửi được danh sách ứng dụng. Bấm nút làm mới bên phải, hoặc xem cửa sổ HeDeck trên máy tính có báo lỗi không.':
+      'The PC has not sent its app list yet. Tap refresh on the right, or check the HeDeck window on the PC for errors.',
   'Không có ứng dụng nào khớp.':
       'No matching apps.',
   'Ô này làm gì với âm lượng của app đó':
@@ -431,10 +429,10 @@ const en = <String, String>{
       'The device did not answer',
   'Lỗi không rõ':
       'Unknown error',
-  'Thiết bị từ chối kết nối — agent chưa chạy?':
-      'The device refused the connection — is the agent running?',
-  'Agent chỉ nhận kết nối từ mạng nội bộ':
-      'The agent only accepts connections from the local network',
+  'Máy tính từ chối kết nối — HeDeck trên máy tính đã mở chưa?':
+      'The PC refused the connection — is HeDeck open on the PC?',
+  'Máy tính chỉ nhận kết nối từ mạng nhà hoặc Tailscale':
+      'The PC only accepts connections from your home network or Tailscale',
   'Hết thời gian chờ — kiểm tra Wi-Fi và tường lửa':
       'Timed out — check Wi-Fi and the firewall',
   'Không tới được máy — hai thiết bị có cùng Wi-Fi không?':
@@ -727,8 +725,8 @@ const en = <String, String>{
       'Open installer again',
   'Cập nhật HeDeck':
       'Update HeDeck',
-  'Bản web luôn cùng phiên bản với agent trên máy tính. Khi cửa sổ agent báo có bản mới, bấm "Xem và cập nhật" ở đó rồi tải lại trang này.':
-      'The web version always matches the agent on your PC. When the agent window says a new version is out, click "Xem và cập nhật" (view and update) there, then reload this page.',
+  'Bản web luôn cùng phiên bản với HeDeck trên máy tính. Khi cửa sổ HeDeck trên máy tính báo có bản mới, bấm "Xem và cập nhật" ở đó rồi tải lại trang này.':
+      'The web version always matches HeDeck on your PC. When the HeDeck window on the PC says a new version is out, click "Xem và cập nhật" (view and update) there, then reload this page.',
   'Bản web không bật được máy đang tắt — trình duyệt không gửi được tín hiệu bật máy. Dùng app Android, hoặc bật máy bằng tay.':
       'The web version cannot wake a PC that is off — browsers cannot send the wake-up signal. Use the Android app, or turn the PC on by hand.',
   'iPhone / iPad (web)':
@@ -737,6 +735,58 @@ const en = <String, String>{
       'Android (web)',
   'Trình duyệt web':
       'Web browser',
-  'Quét mã QR trên cửa sổ agent là ghép cặp luôn, khỏi phải gõ mã.':
-      'Scan the QR code in the agent window to pair instantly, no code to type.',
+  'Quét mã QR trên cửa sổ HeDeck ở máy tính là ghép cặp luôn, khỏi phải gõ mã.':
+      'Scan the QR code in the HeDeck window on your PC to pair instantly, no code to type.',
+  'Từ xa':
+      'Remote',
+  'Đang nhờ trạm bật máy ở nhà…':
+      'Asking the home wake station…',
+  'Trạm ở nhà đã gửi tín hiệu bật máy. Windows cần khoảng 20–60 giây để lên.':
+      'The home station sent the wake signal. Windows needs about 20–60 seconds to start.',
+  'Không liên lạc được trạm bật máy — điện thoại deck ở nhà có đang mở HeDeck và bật Tailscale không?':
+      'Could not reach the wake station — is the deck phone at home running HeDeck with Tailscale on?',
+  'Đã gửi tín hiệu trong mạng này, nhưng trạm ở nhà không trả lời. Nếu đang ở xa, máy sẽ không bật.':
+      'Sent the signal on this network, but the home station did not answer. If you are away, the PC will not turn on.',
+  'Trạm bật máy (điện thoại này để ở nhà)':
+      'Wake station (this phone stays at home)',
+  'Bật trên điện thoại deck luôn ở nhà, cắm sạc: điện thoại khác ở xa nhờ nó bật máy tính qua Tailscale':
+      'Turn on for the deck phone that stays at home, plugged in: other phones away from home ask it to wake the PC over Tailscale',
+  'Đang chạy · Tailscale {0}':
+      'Running · Tailscale {0}',
+  'Đang chạy, nhưng điện thoại này chưa bật Tailscale — điện thoại ở xa chưa gọi tới được':
+      'Running, but Tailscale is not on for this phone — phones away from home cannot reach it yet',
+  'Ẩn màn hình máy tính':
+      'Hide PC screen',
+  'Hiện màn hình máy tính':
+      'Show PC screen',
+  'Chất lượng hình':
+      'Picture quality',
+  'Tự động (vừa ở nhà, tiết kiệm khi ở xa)':
+      'Automatic (medium at home, data saver away)',
+  'Tiết kiệm dữ liệu':
+      'Data saver',
+  'Vừa':
+      'Medium',
+  'Nét':
+      'Sharp',
+  'Cập nhật HeDeck trên máy tính để xem màn hình tại đây.':
+      'Update HeDeck on your PC to see its screen here.',
+  'Đang tải màn hình máy tính…':
+      'Loading PC screen…',
+  'HeDeck trên máy tính là bản cũ — hãy cập nhật':
+      'HeDeck on your PC is outdated — please update it',
+  'Phiên bản {0}':
+      'Version {0}',
+  'Bản tự build':
+      'Self-built',
+  'Máy tính đã tắt chế độ xem màn hình':
+      'The PC has screen viewing turned off',
+  'Máy tính đang tắt lệnh nguồn (khoá, ngủ, tắt máy)':
+      'The PC has power commands (lock, sleep, shut down) turned off',
+  'Máy tính đang tắt macro':
+      'The PC has macros turned off',
+  'Máy tính đang tắt điều khiển chuột và bàn phím':
+      'The PC has mouse and keyboard control turned off',
+  'Mã đã hết hạn. Bấm "Mã mới" trên cửa sổ HeDeck ở máy tính để lấy mã mới.':
+      'The code has expired. Click "Mã mới" (new code) in the HeDeck window on your PC to get a new one.',
 };

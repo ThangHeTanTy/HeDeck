@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -30,6 +31,63 @@ class PairResult {
   final String hostName;
   final String fingerprint;
   PairResult(this.deviceId, this.hostName, this.fingerprint);
+}
+
+/// Thông tin agent gửi để điện thoại dùng khi ra khỏi mạng nhà.
+class SessionInfo {
+  /// Địa chỉ Tailscale của máy tính, rỗng nếu máy chưa cài Tailscale.
+  final String remoteHost;
+  final String relayHost;
+  final int relayPort;
+  final String relayDevice;
+  final String wakeKey;
+
+  const SessionInfo({
+    this.remoteHost = '',
+    this.relayHost = '',
+    this.relayPort = 8788,
+    this.relayDevice = '',
+    this.wakeKey = '',
+  });
+
+  factory SessionInfo.fromJson(Map<String, dynamic> j) {
+    final remote = (j['remote'] as Map?) ?? const {};
+    final relay = (j['relay'] as Map?) ?? const {};
+    return SessionInfo(
+      remoteHost: '${remote['ip'] ?? ''}',
+      relayHost: '${relay['ip'] ?? ''}',
+      relayPort: (relay['port'] as num?)?.toInt() ?? 8788,
+      relayDevice: '${relay['device'] ?? ''}',
+      wakeKey: '${j['wake_key'] ?? ''}',
+    );
+  }
+}
+
+/// Một khung hình màn hình máy tính. [jpeg] null nghĩa là màn hình không đổi
+/// so với khung trước, chỉ có toạ độ con trỏ mới.
+class ScreenFrame {
+  final Uint8List? jpeg;
+  final int screenW, screenH;
+  final int cursorX, cursorY;
+  const ScreenFrame(
+      this.jpeg, this.screenW, this.screenH, this.cursorX, this.cursorY);
+
+  /// Đọc gói nhị phân agent gửi (xem agent/screen.py).
+  static ScreenFrame? parse(Uint8List b) {
+    if (b.length < 16 || String.fromCharCodes(b.sublist(0, 4)) != 'HDS1') {
+      return null;
+    }
+    final d = ByteData.sublistView(b);
+    return ScreenFrame(
+      // Chép ra mảng riêng: bộ giải mã ảnh của bản web đọc sai khi ảnh chỉ
+      // là một đoạn giữa của gói tin.
+      b.length > 16 ? b.sublist(16) : null,
+      d.getUint16(8),
+      d.getUint16(10),
+      d.getInt16(12),
+      d.getInt16(14),
+    );
+  }
 }
 
 /// Kênh liên lạc duy nhất tới agent trên thiết bị.
@@ -105,6 +163,30 @@ class DeckConnection extends ChangeNotifier {
 
   /// Gọi mỗi khi agent gửi thông tin bật máy, để lưu lại dùng lúc máy tắt.
   void Function(WolInfo info)? onWolInfo;
+
+  /// Địa chỉ Tailscale của máy tính: không tới được địa chỉ trong mạng nhà
+  /// thì thử đường này — tức là đang ở ngoài, đi qua Internet.
+  String remoteHost = '';
+
+  /// Kết nối hiện tại đi qua Tailscale (đang ở xa) chứ không qua Wi-Fi nhà.
+  bool viaRemote = false;
+
+  /// Lần trước vào được bằng đường nào thì lần sau thử đường đó trước, đỡ
+  /// phải chờ đường kia hết giờ.
+  bool _preferRemote = false;
+
+  void Function(SessionInfo info)? onSession;
+
+  /// Khung hình màn hình máy tính mới nhất. Tách khỏi notifyListeners để
+  /// mỗi khung hình chỉ vẽ lại ảnh, không dựng lại cả app.
+  final screen = ValueNotifier<ScreenFrame?>(null);
+
+  /// Agent từ bản này mới gửi được màn hình và nhận trạm bật máy.
+  static const screenAgentVersion = 7;
+
+  /// Điện thoại này đang làm trạm bật máy: báo agent địa chỉ của trạm mỗi
+  /// lần kết nối. Null nếu không làm trạm.
+  Map<String, dynamic>? _relayAnnounce;
 
   /// Số lần thử liên tiếp không thành. Đủ nhiều thì đi dò lại địa chỉ.
   int _misses = 0;
@@ -187,9 +269,11 @@ class DeckConnection extends ChangeNotifier {
       _misses = 0;
       retryAt = null;
       lastError = null;
+      viaRemote = false;
       _setState(ConnState.online);
       _startPing();
       requestCatalog();
+      _announceRelay();
       return result;
     } finally {
       _pairing = null;
@@ -235,16 +319,31 @@ class DeckConnection extends ChangeNotifier {
   Future<void> _connectOnce() async {
     if (_stopped) return;
     _setState(ConnState.connecting);
-    try {
-      final ch = await _open(_host, _port);
-      _bind(ch);
-      await _sendAuth();
-      _startPing();
-    } catch (e) {
-      lastError = _friendly(e);
-      _setState(ConnState.failed);
-      _scheduleRetry();
+    // Đường trong mạng nhà, rồi đường Tailscale nếu máy tính có. Ở ngoài thì
+    // đường thứ nhất hỏng (hết giờ) và đường thứ hai vào được.
+    var routes = [
+      (_host, false),
+      if (remoteHost.isNotEmpty && remoteHost != _host) (remoteHost, true),
+    ];
+    if (_preferRemote) routes = routes.reversed.toList();
+    Object? error;
+    for (final (host, remote) in routes) {
+      if (_stopped) return;
+      try {
+        final ch = await _open(host, _port);
+        viaRemote = remote;
+        _preferRemote = remote;
+        _bind(ch);
+        await _sendAuth();
+        _startPing();
+        return;
+      } catch (e) {
+        error = e;
+      }
     }
+    lastError = _friendly(error ?? 'Network');
+    _setState(ConnState.failed);
+    _scheduleRetry();
   }
 
   Future<WebSocketChannel> _open(String host, int port) =>
@@ -289,6 +388,35 @@ class DeckConnection extends ChangeNotifier {
   }
 
   void requestCatalog() => _send({'t': 'catalog'});
+
+  /// Xin một khung hình màn hình. Gọi lại sau khi nhận được khung trước.
+  void requestScreen(String level) => _send({'t': 'screen', 'level': level});
+
+  void stopScreen() {
+    _send({'t': 'screen', 'off': true});
+    screen.value = null;
+  }
+
+  /// Bật/tắt vai trò trạm bật máy của điện thoại này. [ip] là địa chỉ
+  /// Tailscale của điện thoại; null để thôi làm trạm.
+  void setRelay({String? ip, int port = 8788}) {
+    _relayAnnounce = ip == null || ip.isEmpty
+        ? {'t': 'relay', 'on': false}
+        : {'t': 'relay', 'on': true, 'ip': ip, 'port': port};
+    _announceRelay();
+  }
+
+  void _announceRelay() {
+    final msg = _relayAnnounce;
+    if (msg != null && isOnline) _send(msg);
+  }
+
+  void _readSession(Map<String, dynamic> msg) {
+    if (!msg.containsKey('wake_key')) return; // agent cũ
+    final info = SessionInfo.fromJson(msg);
+    if (info.remoteHost.isNotEmpty) remoteHost = info.remoteHost;
+    onSession?.call(info);
+  }
 
   /// Agent báo đang quét thì cứ vài giây hỏi lại một lần. Nếu gói tin thông
   /// báo hoàn tất bị lạc vì lý do nào đó, app vẫn tự thoát khỏi cảnh chờ.
@@ -409,9 +537,29 @@ class DeckConnection extends ChangeNotifier {
   // -------------------------------------------------------------- nhận tin
 
   void _onMessage(dynamic raw) {
+    // Gói nhị phân duy nhất là khung hình màn hình.
+    if (raw is! String) {
+      final bytes = raw is ByteBuffer
+          ? raw.asUint8List()
+          : raw is Uint8List
+              ? raw
+              : raw is List<int>
+                  ? Uint8List.fromList(raw)
+                  : null;
+      final frame = bytes == null ? null : ScreenFrame.parse(bytes);
+      if (frame != null) {
+        final old = screen.value;
+        // Màn hình không đổi: giữ ảnh cũ, chỉ cập nhật con trỏ.
+        screen.value = frame.jpeg != null || old == null
+            ? frame
+            : ScreenFrame(old.jpeg, frame.screenW, frame.screenH,
+                frame.cursorX, frame.cursorY);
+      }
+      return;
+    }
     late final Map<String, dynamic> msg;
     try {
-      msg = jsonDecode(raw as String) as Map<String, dynamic>;
+      msg = jsonDecode(raw) as Map<String, dynamic>;
     } catch (_) {
       return;
     }
@@ -426,6 +574,11 @@ class DeckConnection extends ChangeNotifier {
         hostName = msg['host_name'] as String? ?? '';
         agentVersion = (msg['v'] as num?)?.toInt() ?? 0;
         _readWol(msg['wol']);
+        _readSession(msg);
+        break;
+
+      case 'session':
+        _readSession(msg);
         break;
 
       case 'auth_ok':
@@ -436,6 +589,7 @@ class DeckConnection extends ChangeNotifier {
               '— cần chạy lại run_agent.bat');
         }
         _readWol(msg['wol']);
+        _readSession(msg);
         lastError = null;
         _backoff = 1;
         _misses = 0;
@@ -443,6 +597,7 @@ class DeckConnection extends ChangeNotifier {
         _setState(ConnState.online);
         requestCatalog();
         if (_perfWanted) _send({'t': 'perf_watch', 'on': true});
+        _announceRelay();
         break;
 
       case 'catalog_pending':
@@ -536,7 +691,8 @@ class DeckConnection extends ChangeNotifier {
         break;
 
       case 'error':
-        lastError = msg['msg'] as String? ?? t('Lỗi không rõ');
+        // Máy tính gửi câu tiếng Việt; t() đổi sang tiếng Anh nếu có bản dịch.
+        lastError = t(msg['msg'] as String? ?? 'Lỗi không rõ');
         if (_pairing != null && !_pairing!.isCompleted) {
           _pairing!.completeError(StateError(lastError!));
         }
@@ -584,6 +740,7 @@ class DeckConnection extends ChangeNotifier {
     _ping?.cancel();
     _ch = null;
     latencyMs = null;
+    screen.value = null;
     statuses = {};
     for (final timer in _pending.values) {
       timer.cancel();
@@ -702,8 +859,8 @@ class DeckConnection extends ChangeNotifier {
       // ở ngôn ngữ nào cũng vậy, nên so cả hai.
       return s.replaceFirst(RegExp(r'^\w+Error: '), '');
     }
-    if (s.contains('refused')) return t('Thiết bị từ chối kết nối — agent chưa chạy?');
-    if (s.contains('mạng nội bộ')) return t('Agent chỉ nhận kết nối từ mạng nội bộ');
+    if (s.contains('refused')) return t('Máy tính từ chối kết nối — HeDeck trên máy tính đã mở chưa?');
+    if (s.contains('mạng nội bộ')) return t('Máy tính chỉ nhận kết nối từ mạng nhà hoặc Tailscale');
     if (s.contains('timed out') || s.contains('timeout')) {
       return t('Hết thời gian chờ — kiểm tra Wi-Fi và tường lửa');
     }

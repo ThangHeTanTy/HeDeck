@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/l10n.dart';
 import '../models/deck.dart';
+import 'deck_connection.dart' show SessionInfo;
 import '../theme.dart';
 
 /// Cấu hình lưu trên máy: thông tin ghép cặp và bố cục các trang.
@@ -25,6 +26,11 @@ class Store extends ChangeNotifier {
   static const _kDark = 'deck.dark';
   static const _kMouseSpeed = 'deck.mouseSpeed';
   static const _kWolBroadcast = 'deck.wolBroadcast';
+  static const _kRemoteHost = 'deck.remoteHost';
+  static const _kRelay = 'deck.relay';
+  static const _kWakeKey = 'deck.wakeKey';
+  static const _kRelayOn = 'deck.relayOn';
+  static const _kScreenLevel = 'deck.screenLevel';
 
   late SharedPreferences _prefs;
 
@@ -41,6 +47,29 @@ class Store extends ChangeNotifier {
   String wolBroadcast = '';
 
   bool get canWake => wolMacs.isNotEmpty;
+
+  /// Địa chỉ Tailscale của máy tính (100.x.y.z): dùng khi ra khỏi mạng nhà.
+  /// Rỗng nếu máy tính chưa cài Tailscale.
+  String remoteHost = '';
+
+  /// Trạm bật máy: điện thoại deck để ở nhà, nhận lệnh qua Tailscale rồi phát
+  /// tín hiệu bật máy trong mạng nhà. Rỗng nếu chưa có trạm.
+  String relayHost = '';
+  int relayPort = 8788;
+  String relayDevice = '';
+
+  /// Khoá agent cấp để ký lệnh bật máy gửi tới trạm.
+  String wakeKey = '';
+
+  bool get canWakeRemotely =>
+      relayHost.isNotEmpty && wakeKey.isNotEmpty && relayDevice != deviceId;
+
+  /// Điện thoại này làm trạm bật máy (luôn để ở nhà, cắm sạc).
+  bool relayEnabled = false;
+
+  /// Chất lượng hình màn hình máy tính trong touchpad: low, mid, high.
+  /// Rỗng: tự chọn (mid trong mạng nhà, low khi ở xa).
+  String screenLevel = '';
 
   /// Ngôn ngữ giao diện.
   AppLang lang = AppLang.vi;
@@ -93,6 +122,14 @@ class Store extends ChangeNotifier {
     mouseSpeed = _prefs.getDouble(_kMouseSpeed) ?? 1.4;
     wolMacs = _prefs.getStringList(_kWolMacs) ?? [];
     wolBroadcast = _prefs.getString(_kWolBroadcast) ?? '';
+    remoteHost = _prefs.getString(_kRemoteHost) ?? '';
+    final relay = (_prefs.getString(_kRelay) ?? '').split('|');
+    relayHost = relay.isNotEmpty ? relay[0] : '';
+    relayPort = relay.length > 1 ? int.tryParse(relay[1]) ?? 8788 : 8788;
+    relayDevice = relay.length > 2 ? relay[2] : '';
+    wakeKey = _prefs.getString(_kWakeKey) ?? '';
+    relayEnabled = _prefs.getBool(_kRelayOn) ?? false;
+    screenLevel = _prefs.getString(_kScreenLevel) ?? '';
     deviceId = _prefs.getString(_kDeviceId) ?? _newDeviceId();
     await _prefs.setString(_kDeviceId, deviceId);
 
@@ -176,6 +213,48 @@ class Store extends ChangeNotifier {
     await _prefs.remove(_kHostName);
     await _prefs.remove(_kWolMacs);
     await _prefs.remove(_kWolBroadcast);
+    remoteHost = relayHost = relayDevice = wakeKey = '';
+    await _prefs.remove(_kRemoteHost);
+    await _prefs.remove(_kRelay);
+    await _prefs.remove(_kWakeKey);
+    notifyListeners();
+  }
+
+  /// Lưu thông tin agent gửi để dùng khi ở xa: lúc cần thì máy tính có thể
+  /// đang tắt, không còn ai trả lời.
+  Future<void> saveSession(SessionInfo info) async {
+    var changed = false;
+    if (info.remoteHost.isNotEmpty && info.remoteHost != remoteHost) {
+      remoteHost = info.remoteHost;
+      await _prefs.setString(_kRemoteHost, remoteHost);
+      changed = true;
+    }
+    if (info.relayHost != relayHost ||
+        info.relayPort != relayPort ||
+        info.relayDevice != relayDevice) {
+      relayHost = info.relayHost;
+      relayPort = info.relayPort;
+      relayDevice = info.relayDevice;
+      await _prefs.setString(_kRelay, '$relayHost|$relayPort|$relayDevice');
+      changed = true;
+    }
+    if (info.wakeKey.isNotEmpty && info.wakeKey != wakeKey) {
+      wakeKey = info.wakeKey;
+      await _prefs.setString(_kWakeKey, wakeKey);
+      changed = true;
+    }
+    if (changed) notifyListeners();
+  }
+
+  Future<void> setRelayEnabled(bool value) async {
+    relayEnabled = value;
+    await _prefs.setBool(_kRelayOn, value);
+    notifyListeners();
+  }
+
+  Future<void> setScreenLevel(String value) async {
+    screenLevel = value;
+    await _prefs.setString(_kScreenLevel, value);
     notifyListeners();
   }
 

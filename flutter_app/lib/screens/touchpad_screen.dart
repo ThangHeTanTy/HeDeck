@@ -18,6 +18,9 @@ import '../theme.dart';
 /// - hai ngón chạm: chuột phải; ba ngón chạm: chuột giữa
 /// - hai ngón kéo: cuộn (dọc và ngang)
 /// - giữ yên một ngón ~0,45 giây rồi kéo: kéo thả (giữ chuột trái)
+///
+/// Phía sau vùng touchpad là hình màn hình máy tính (bật/tắt ở thanh trên),
+/// để điều khiển được cả khi không ngồi trước máy — kể cả ở xa qua Tailscale.
 class TouchpadScreen extends StatefulWidget {
   const TouchpadScreen({super.key});
 
@@ -168,10 +171,106 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
     super.initState();
     _conn = context.read<DeckConnection>();
     _text.addListener(_onText);
+    _conn.screen.addListener(_onFrame);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _askFrame());
+  }
+
+  // ------------------------------------------------------- màn hình máy tính
+
+  /// Đang hiện hình màn hình máy tính sau touchpad. Nhớ trong phiên chạy app.
+  static bool _showScreen = true;
+  Timer? _frameTimer;
+  Timer? _stallTimer;
+  DateTime _askedAt = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// Tối đa ~10 khung mỗi giây; mạng chậm thì tự thưa hơn vì nhận xong khung
+  /// này mới xin khung sau. Màn hình đứng yên thì hỏi thưa lại (~4 lần mỗi
+  /// giây, đủ để chấm con trỏ vẫn theo kịp), đỡ cho máy tính phải chụp liên tục.
+  static const _minGap = Duration(milliseconds: 100);
+  static const _idleGap = Duration(milliseconds: 250);
+  Uint8List? _lastJpeg;
+
+  bool get _screenSupported =>
+      _conn.agentVersion >= DeckConnection.screenAgentVersion;
+
+  String _level() {
+    final chosen = context.read<Store>().screenLevel;
+    if (chosen.isNotEmpty) return chosen;
+    return _conn.viaRemote ? 'low' : 'mid';
+  }
+
+  void _askFrame() {
+    _frameTimer?.cancel();
+    if (!mounted || !_showScreen || !_conn.isOnline || !_screenSupported) {
+      return;
+    }
+    _askedAt = DateTime.now();
+    _conn.requestScreen(_level());
+    // Khung bị lạc (mất mạng chốc lát) thì xin lại, đừng đứng hình mãi.
+    _stallTimer?.cancel();
+    _stallTimer = Timer(const Duration(seconds: 4), _askFrame);
+  }
+
+  void _onFrame() {
+    final frame = _conn.screen.value;
+    if (frame == null) return;
+    _stallTimer?.cancel();
+    final idle = identical(frame.jpeg, _lastJpeg);
+    _lastJpeg = frame.jpeg;
+    final wait =
+        (idle ? _idleGap : _minGap) - DateTime.now().difference(_askedAt);
+    _frameTimer?.cancel();
+    _frameTimer = Timer(wait.isNegative ? Duration.zero : wait, _askFrame);
+  }
+
+  void _toggleScreen() {
+    setState(() => _showScreen = !_showScreen);
+    if (_showScreen) {
+      _askFrame();
+    } else {
+      _frameTimer?.cancel();
+      _stallTimer?.cancel();
+      _conn.stopScreen();
+    }
+  }
+
+  Future<void> _qualityMenu() async {
+    final store = context.read<Store>();
+    final options = {
+      '': t('Tự động (vừa ở nhà, tiết kiệm khi ở xa)'),
+      'low': t('Tiết kiệm dữ liệu'),
+      'mid': t('Vừa'),
+      'high': t('Nét'),
+    };
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: DeckColors.surface,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          for (final e in options.entries)
+            ListTile(
+              leading: Icon(
+                  store.screenLevel == e.key
+                      ? Icons.radio_button_checked_rounded
+                      : Icons.radio_button_off_rounded,
+                  color: DeckColors.accent,
+                  size: 20),
+              title: Text(e.value,
+                  style: TextStyle(color: DeckColors.text, fontSize: 14)),
+              onTap: () => Navigator.pop(ctx, e.key),
+            ),
+        ]),
+      ),
+    );
+    if (picked != null) await store.setScreenLevel(picked);
   }
 
   @override
   void dispose() {
+    _conn.screen.removeListener(_onFrame);
+    _frameTimer?.cancel();
+    _stallTimer?.cancel();
+    if (_showScreen) _conn.stopScreen();
     _holdTimer?.cancel();
     _flushTimer?.cancel();
     if (_dragging) _conn.mouseButton('left', 'up');
@@ -246,6 +345,20 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
         title: const Text('Touchpad', style: TextStyle(fontSize: 17)),
         actions: [
           IconButton(
+            tooltip: _showScreen ? t('Ẩn màn hình máy tính') : t('Hiện màn hình máy tính'),
+            icon: Icon(_showScreen
+                ? Icons.desktop_windows_rounded
+                : Icons.desktop_access_disabled_rounded),
+            color: _showScreen ? DeckColors.accent : null,
+            onPressed: _toggleScreen,
+          ),
+          if (_showScreen)
+            IconButton(
+              tooltip: t('Chất lượng hình'),
+              icon: const Icon(Icons.high_quality_rounded),
+              onPressed: _qualityMenu,
+            ),
+          IconButton(
             tooltip: t('Tốc độ con trỏ'),
             icon: const Icon(Icons.speed_rounded),
             onPressed: _speedDialog,
@@ -294,10 +407,15 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
           ),
         ),
         alignment: Alignment.center,
-        child: Padding(
+        clipBehavior: Clip.antiAlias,
+        child: _showScreen && conn.isOnline && _screenSupported
+            ? _screenView()
+            : Padding(
           padding: const EdgeInsets.all(20),
           child: Text(
-            !conn.isOnline
+            _showScreen && conn.isOnline && !_screenSupported
+                ? t('Cập nhật HeDeck trên máy tính để xem màn hình tại đây.')
+                : !conn.isOnline
                 ? t('Chưa kết nối tới thiết bị')
                 : _dragging
                     ? t('Đang giữ chuột trái — kéo rồi thả tay')
@@ -311,6 +429,86 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Hình màn hình máy tính, giữ đúng tỉ lệ, có chấm đánh dấu con trỏ.
+  /// Chỉ khung hình này dựng lại mỗi lần có ảnh mới.
+  Widget _screenView() {
+    return ValueListenableBuilder<ScreenFrame?>(
+      valueListenable: _conn.screen,
+      builder: (context, frame, _) {
+        final jpeg = frame?.jpeg;
+        if (frame == null || jpeg == null || frame.screenW <= 0) {
+          return Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2)),
+              const SizedBox(height: 10),
+              Text(t('Đang tải màn hình máy tính…'),
+                  style: TextStyle(color: DeckColors.muted, fontSize: 12)),
+            ]),
+          );
+        }
+        return LayoutBuilder(builder: (context, box) {
+          final sw = frame.screenW.toDouble(), sh = frame.screenH.toDouble();
+          final scale = math.min(box.maxWidth / sw, box.maxHeight / sh);
+          final w = sw * scale, h = sh * scale;
+          final left = (box.maxWidth - w) / 2, top = (box.maxHeight - h) / 2;
+          return Stack(children: [
+            Positioned(
+              left: left,
+              top: top,
+              width: w,
+              height: h,
+              child: Image.memory(jpeg,
+                  gaplessPlayback: true,
+                  fit: BoxFit.fill,
+                  filterQuality: FilterQuality.medium),
+            ),
+            if (frame.cursorX >= 0 && frame.cursorY >= 0)
+              Positioned(
+                left: left + frame.cursorX * scale - 7,
+                top: top + frame.cursorY * scale - 7,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: DeckColors.accent.withValues(alpha: 0.35),
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black54, blurRadius: 3)
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            if (_dragging)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 10,
+                child: Center(
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(t('Đang giữ chuột trái — kéo rồi thả tay'),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 12)),
+                  ),
+                ),
+              ),
+          ]);
+        });
+      },
     );
   }
 
