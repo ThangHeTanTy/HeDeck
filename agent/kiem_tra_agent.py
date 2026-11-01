@@ -229,6 +229,22 @@ def main():
     check("hỗ trợ tải từng đoạn (Safari cần để phát video giữ màn hình sáng)",
           '"Partial Content"' in web_src)
 
+    # --- Từ xa: Tailscale, trạm bật máy, xem màn hình ---------------------
+    print("\n[Dùng từ xa]")
+    scr_src = (HERE / "screen.py").read_text(encoding="utf-8")
+    sec_src = (HERE / "security.py").read_text(encoding="utf-8")
+    check("nhận kết nối qua Tailscale nhưng vẫn chặn Internet trực tiếp",
+          "100.64.0.0/10" in sec_src and "is_tailscale_ip(str(ip))" in sec_src)
+    check("gửi địa chỉ Tailscale, trạm bật máy và khoá lệnh lúc kết nối",
+          source.count("**self.session_info()") >= 2)
+    check("chỉ xem màn hình khi đã xác thực, có công tắc tắt",
+          "ALLOW_SCREEN_VIEW" in source
+          and source.index('if kind == "screen"') > source.index("async def handle_command"))
+    check("báo trong log khi có điện thoại đang xem màn hình",
+          "đang xem màn hình máy này" in source)
+    check("màn hình đứng yên thì không gửi lại ảnh",
+          "if digest == last_digest" in scr_src)
+
     # --- Bảo mật ----------------------------------------------------------
     print("\n[Bảo mật]")
     sec_src = (HERE / "security.py").read_text(encoding="utf-8")

@@ -41,6 +41,7 @@ overlay — no dedicated hardware to buy.
 | **Two-state tiles** | Tap on, tap off. Each side has its own icon and colour, so you can see from across the room whether the mic is muted. |
 | **Media controls** | A fixed bar at the bottom of the screen, using no tiles. |
 | **Remote power** | Wake the PC even after a full shutdown (Wake-on-LAN). While it runs: lock, sleep, restart, shut down. |
+| **Remote use over the Internet** | Control your home PC from anywhere through Tailscale (encrypted, no router ports opened), see its screen right in the touchpad, and wake it while it is off — the deck phone at home acts as the wake station. Guide: [docs/TU_XA.md](docs/TU_XA.md) (Vietnamese). |
 | **iPhone, iPad, any browser** | The agent serves a web version: scan the QR code in the agent window and HeDeck opens in Safari, already paired. No install, no Apple account. |
 | **Light / dark, Vietnamese / English** | Switch in the gear menu. The first launch follows the phone's language. |
 | **Self-updating** | The app and the agent tell you when a new version is out. Updating keeps all your pages, tiles and settings. |

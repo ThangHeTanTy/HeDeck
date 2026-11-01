@@ -34,13 +34,35 @@ CLOCK_SKEW = 120           # cho phép lệch giờ 2 phút
 NONCE_MEMORY = 4096        # số nonce gần nhất được nhớ để chặn phát lại
 
 
-def is_private_ip(addr: str) -> bool:
-    """Địa chỉ có thuộc mạng nội bộ hoặc chính máy này không."""
+# Mạng riêng ảo của Tailscale: điện thoại ở ngoài Internet vào tới đây qua
+# đường hầm có mã hoá, nên coi như mạng nội bộ. Python không xếp dải 100.64/10
+# vào "private" nên phải khai báo riêng.
+TAILSCALE_NETS = (
+    ipaddress.ip_network("100.64.0.0/10"),
+    ipaddress.ip_network("fd7a:115c:a1e0::/48"),
+)
+
+
+def is_tailscale_ip(addr: str) -> bool:
     try:
         ip = ipaddress.ip_address(addr)
     except ValueError:
         return False
-    return ip.is_private or ip.is_loopback or ip.is_link_local
+    if getattr(ip, "ipv4_mapped", None):
+        ip = ip.ipv4_mapped
+    return any(ip in net for net in TAILSCALE_NETS if ip.version == net.version)
+
+
+def is_private_ip(addr: str) -> bool:
+    """Địa chỉ có thuộc mạng nội bộ, mạng Tailscale hoặc chính máy này không."""
+    try:
+        ip = ipaddress.ip_address(addr)
+    except ValueError:
+        return False
+    if getattr(ip, "ipv4_mapped", None):
+        ip = ip.ipv4_mapped
+    return (ip.is_private or ip.is_loopback or ip.is_link_local
+            or is_tailscale_ip(str(ip)))
 
 
 class Guard:

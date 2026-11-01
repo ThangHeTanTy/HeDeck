@@ -739,4 +739,40 @@ const en = <String, String>{
       'Web browser',
   'Quét mã QR trên cửa sổ agent là ghép cặp luôn, khỏi phải gõ mã.':
       'Scan the QR code in the agent window to pair instantly, no code to type.',
+  'Từ xa':
+      'Remote',
+  'Đang nhờ trạm bật máy ở nhà…':
+      'Asking the home wake station…',
+  'Trạm ở nhà đã gửi tín hiệu bật máy. Windows cần khoảng 20–60 giây để lên.':
+      'The home station sent the wake signal. Windows needs about 20–60 seconds to start.',
+  'Không liên lạc được trạm bật máy — điện thoại deck ở nhà có đang mở HeDeck và bật Tailscale không?':
+      'Could not reach the wake station — is the deck phone at home running HeDeck with Tailscale on?',
+  'Đã gửi tín hiệu trong mạng này, nhưng trạm ở nhà không trả lời. Nếu đang ở xa, máy sẽ không bật.':
+      'Sent the signal on this network, but the home station did not answer. If you are away, the PC will not turn on.',
+  'Trạm bật máy (điện thoại này để ở nhà)':
+      'Wake station (this phone stays at home)',
+  'Bật trên điện thoại deck luôn ở nhà, cắm sạc: điện thoại khác ở xa nhờ nó bật máy tính qua Tailscale':
+      'Turn on for the deck phone that stays at home, plugged in: other phones away from home ask it to wake the PC over Tailscale',
+  'Đang chạy · Tailscale {0}':
+      'Running · Tailscale {0}',
+  'Đang chạy, nhưng điện thoại này chưa bật Tailscale — điện thoại ở xa chưa gọi tới được':
+      'Running, but Tailscale is not on for this phone — phones away from home cannot reach it yet',
+  'Ẩn màn hình máy tính':
+      'Hide PC screen',
+  'Hiện màn hình máy tính':
+      'Show PC screen',
+  'Chất lượng hình':
+      'Picture quality',
+  'Tự động (vừa ở nhà, tiết kiệm khi ở xa)':
+      'Automatic (medium at home, data saver away)',
+  'Tiết kiệm dữ liệu':
+      'Data saver',
+  'Vừa':
+      'Medium',
+  'Nét':
+      'Sharp',
+  'Cập nhật agent trên máy tính để xem màn hình tại đây.':
+      'Update the agent on your PC to see its screen here.',
+  'Đang tải màn hình máy tính…':
+      'Loading PC screen…',
 };

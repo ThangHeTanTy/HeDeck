@@ -6,6 +6,7 @@ Quét lại danh sách app:  python agent.py --rescan
 
 import argparse
 import asyncio
+import base64
 import hashlib
 import hmac
 import json
@@ -25,7 +26,9 @@ import catalog
 import perf
 import instance
 import power
+import remote
 import remote_input
+import screen
 import security
 import updater
 import web_ui
@@ -41,10 +44,12 @@ ALLOW_MACROS = True        # đặt False nếu không muốn điện thoại g�
 # Tăng mỗi khi giao thức với app thay đổi. App so số này để báo người dùng
 # chạy lại agent sau khi cập nhật code — pull code xong mà quên tắt cửa sổ
 # agent cũ thì nó vẫn chạy bản cũ, mọi tính năng mới im lặng không hoạt động.
-AGENT_VERSION = 6
+AGENT_VERSION = 7
 # đặt False nếu không muốn điện thoại điều khiển chuột và gõ phím từ xa
 ALLOW_REMOTE_INPUT = True
 ALLOW_POWER = True         # đặt False nếu không muốn điện thoại tắt/ngủ máy
+# đặt False nếu không muốn điện thoại xem màn hình (hiện sau touchpad)
+ALLOW_SCREEN_VIEW = True
 
 log = lambda *a: print(time.strftime("[%H:%M:%S]"), *a, flush=True)
 
@@ -115,6 +120,20 @@ class Agent:
         self.gui = False
         # Bản web cho iPhone/iPad/trình duyệt, phục vụ trên cùng cổng.
         self.web = web_ui.WebFiles(log=log)
+        # Điện thoại nào đang nói chuyện qua kết nối nào (để biết ai là trạm
+        # bật máy, ai đang xem màn hình).
+        self._ws_device = {}
+        # Xem màn hình: dấu vân tay khung trước của từng kết nối, để không gửi
+        # lại ảnh giống hệt; và ai đang xem, để báo trong log một lần.
+        self._screen_last = {}
+        self._screen_busy = set()
+        # Khoá chung cho lệnh bật máy qua trạm (điện thoại deck ở nhà). Agent
+        # trao cho mọi điện thoại đã ghép; trạm chỉ làm theo lệnh ký bằng khoá
+        # này, nên người lạ trong mạng không bật máy hộ được.
+        if not self.state.get("wake_key"):
+            self.state["wake_key"] = base64.b64encode(
+                secrets.token_bytes(32)).decode()
+            save_state(self.state)
         self.loop = None
 
     # -- tiện ích ---------------------------------------------------------
@@ -263,6 +282,8 @@ class Agent:
             f"{st['banned']} IP bị chặn",
             f"Điện thoại: {len(self.state['devices'])} đã ghép cặp",
             f"Bật từ xa: {power.describe(self.wol)}",
+            f"Từ xa    : {remote.describe()}",
+            f"Trạm bật : {self.relay_status()}",
             "Bản web  : " + (web_ui.page_url(ip, port) if self.web.available
                               else "chưa build (chạy BUILD_WEB.bat)"),
         ]
@@ -329,6 +350,52 @@ class Agent:
         save_state(self.state)
         log(f"Đã xoá {count} điện thoại đã ghép cặp. "
             "Hãy ghép cặp lại từ điện thoại.")
+
+    def session_info(self):
+        """Thông tin cho điện thoại dùng khi ra khỏi mạng nhà: địa chỉ
+        Tailscale của máy này, trạm bật máy, và khoá ký lệnh bật máy."""
+        relay = self.state.get("wake_relay") or {}
+        return {
+            "remote": {"ip": remote.tailscale_ip()},
+            "relay": {k: relay[k] for k in ("ip", "port", "device", "name")
+                      if k in relay},
+            "wake_key": self.state["wake_key"],
+        }
+
+    def relay_status(self):
+        relay = self.state.get("wake_relay")
+        if not relay:
+            return "chưa có — bật trên điện thoại deck để ở nhà"
+        return f"{relay.get('name', 'điện thoại')} ({relay.get('ip')})"
+
+    async def push_session(self):
+        msg = json.dumps({"t": "session", **self.session_info()})
+        for ws in list(self.clients):
+            try:
+                await ws.send(msg)
+            except Exception:
+                pass
+
+    async def send_screen(self, ws, level):
+        """Gửi một khung màn hình. Điện thoại nhận xong mới xin khung sau."""
+        if ws in self._screen_busy:
+            return
+        self._screen_busy.add(ws)
+        try:
+            if ws not in self._screen_last:
+                name = self.state["devices"].get(
+                    self._ws_device.get(ws, ""), {}).get("name", "Điện thoại")
+                log(f"{name} đang xem màn hình máy này.")
+            packet, digest = await self.run_blocking(
+                screen.capture, level, self._screen_last.get(ws))
+            self._screen_last[ws] = digest
+            await ws.send(packet)
+        except websockets.ConnectionClosed:
+            pass
+        except Exception as exc:
+            log("Không chụp được màn hình:", exc)
+        finally:
+            self._screen_busy.discard(ws)
 
     async def update_loop(self):
         """Hỏi GitHub bản mới lúc khởi động rồi cứ 12 giờ một lần.
@@ -581,6 +648,39 @@ class Agent:
         if kind == "ping":
             return {"t": "pong", "ts": msg.get("ts")}
 
+        if kind == "screen":
+            if not ALLOW_SCREEN_VIEW:
+                return {"t": "error", "msg": "Agent đã tắt xem màn hình"}
+            if msg.get("off"):
+                if self._screen_last.pop(ws, None) is not None:
+                    log("Đã ngừng xem màn hình.")
+                return None
+            self._spawn(self.send_screen(ws, str(msg.get("level", "mid"))))
+            return None
+
+        if kind == "relay":
+            # Điện thoại deck để ở nhà nhận làm trạm bật máy (hoặc thôi làm).
+            device = self._ws_device.get(ws)
+            current = self.state.get("wake_relay") or {}
+            if msg.get("on") and msg.get("ip"):
+                relay = {
+                    "ip": str(msg["ip"]), "port": int(msg.get("port", 8788)),
+                    "device": device,
+                    "name": self.state["devices"].get(device, {}).get(
+                        "name", "Điện thoại"),
+                }
+                if relay != current:
+                    self.state["wake_relay"] = relay
+                    save_state(self.state)
+                    log(f"Trạm bật máy: {relay['name']} ({relay['ip']})")
+                    self._spawn(self.push_session())
+            elif current.get("device") == device and current:
+                self.state.pop("wake_relay", None)
+                save_state(self.state)
+                log("Đã tắt trạm bật máy.")
+                self._spawn(self.push_session())
+            return None
+
         if kind == "watch_volume":
             ids = msg.get("app_ids")
             self._volume_watch = set(ids) if isinstance(ids, list) else set()
@@ -816,6 +916,7 @@ class Agent:
                     self.guard.record_success(peer)
                     authed = True
                     self.clients.add(ws)
+                    self._ws_device[ws] = device_id
                     log(f"Đã ghép cặp: {msg.get('device_name')} ({peer}) "
                         f"vân tay {security.fingerprint(pubkey)}")
                     await ws.send(json.dumps({
@@ -824,6 +925,7 @@ class Agent:
                         "fingerprint": security.fingerprint(pubkey),
                         "wol": power.public_view(self.wol),
                         "v": AGENT_VERSION,
+                        **self.session_info(),
                     }))
                     self.new_pair_code()
                     continue
@@ -853,12 +955,14 @@ class Agent:
                     self.guard.record_success(peer)
                     authed = True
                     self.clients.add(ws)
+                    self._ws_device[ws] = msg["device_id"]
                     name = self.state["devices"][msg["device_id"]].get("name")
                     log(f"Đã kết nối: {name} ({peer})")
                     await ws.send(json.dumps({
                         "t": "auth_ok", "host_name": self.host_name,
                         "wol": power.public_view(self.wol),
-                        "v": AGENT_VERSION}))
+                        "v": AGENT_VERSION,
+                        **self.session_info()}))
                     continue
 
                 if not authed:
@@ -877,6 +981,8 @@ class Agent:
             log("Lỗi kết nối:", exc)
         finally:
             self.clients.discard(ws)
+            self._ws_device.pop(ws, None)
+            self._screen_last.pop(ws, None)
 
 
 def parse_args():
