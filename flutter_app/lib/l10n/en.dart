@@ -727,8 +727,6 @@ const en = <String, String>{
       'Update HeDeck',
   'Bản web luôn cùng phiên bản với HeDeck trên máy tính. Khi cửa sổ HeDeck trên máy tính báo có bản mới, bấm "Xem và cập nhật" ở đó rồi tải lại trang này.':
       'The web version always matches HeDeck on your PC. When the HeDeck window on the PC says a new version is out, click "Xem và cập nhật" (view and update) there, then reload this page.',
-  'Bản web không bật được máy đang tắt — trình duyệt không gửi được tín hiệu bật máy. Dùng app Android, hoặc bật máy bằng tay.':
-      'The web version cannot wake a PC that is off — browsers cannot send the wake-up signal. Use the Android app, or turn the PC on by hand.',
   'iPhone / iPad (web)':
       'iPhone / iPad (web)',
   'Android (web)':
@@ -789,4 +787,24 @@ const en = <String, String>{
       'The PC has mouse and keyboard control turned off',
   'Mã đã hết hạn. Bấm "Mã mới" trên cửa sổ HeDeck ở máy tính để lấy mã mới.':
       'The code has expired. Click "Mã mới" (new code) in the HeDeck window on your PC to get a new one.',
+  'Nút bật máy cho iPhone':
+      'iPhone wake button',
+  '1. Bấm "Mở trang Bật PC" bên dưới (mở bằng Safari).\n2. Trong Safari: Chia sẻ → Thêm vào Màn hình chính → Thêm.\n3. Khi ở ngoài: bật Tailscale trên iPhone, chạm biểu tượng "Bật PC".\n\nTrang này do điện thoại deck ở nhà phục vụ nên dùng được cả khi máy tính đang tắt. Đường link chứa khoá bật máy — đừng gửi cho người khác.':
+      '1. Tap "Open wake page" below (opens in Safari).\n2. In Safari: Share → Add to Home Screen → Add.\n3. When away: turn on Tailscale on the iPhone and tap the "Bật PC" icon.\n\nThe page is served by the deck phone at home, so it works even when the PC is off. The link contains the wake key — do not share it.',
+  'Chưa có trạm bật máy. Trên điện thoại deck để ở nhà (app Android), cài Tailscale rồi vào ⚙ → bật "Trạm bật máy". Sau đó mở lại trang này khi máy tính đang bật.':
+      'No wake station yet. On the deck phone that stays at home (Android app), install Tailscale, then go to ⚙ → turn on "Wake station". Then come back here while the PC is on.',
+  'Đã chép đường link — dán vào Safari':
+      'Link copied — paste it into Safari',
+  'Chép link':
+      'Copy link',
+  'Mở trang Bật PC':
+      'Open wake page',
+  'Rất nét (tốn dữ liệu)':
+      'Very sharp (uses more data)',
+  'chụm hai ngón để thu nhỏ':
+      'pinch to zoom out',
+  'Trạm bật máy (điện thoại deck) đang không ở nhà nên không bật được máy.':
+      'The wake station (deck phone) is not at home, so it cannot wake the PC.',
+  'Bạn đang ở ngoài mạng nhà. Muốn bật máy từ xa cần một trạm bật máy để ở nhà (xem hướng dẫn Dùng từ xa).':
+      'You are away from your home network. Waking the PC remotely needs a wake station that stays at home (see the remote-use guide).',
 };

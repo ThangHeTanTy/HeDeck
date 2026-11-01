@@ -4,6 +4,8 @@ const canRunRelay = false;
 
 Future<String> tailscaleAddress() async => '';
 
+Future<bool> onHomeNetwork(String broadcast) async => true;
+
 class WakeRelayServer {
   bool get running => false;
 
@@ -19,5 +21,9 @@ class WakeRelayServer {
 
 Future<int> wakeViaRelay(String host, int port, String keyB64) =>
     Future.error(UnsupportedError('web'));
+
+class RelayAwayException implements Exception {
+  const RelayAwayException();
+}
 
 final wakeRelay = WakeRelayServer();

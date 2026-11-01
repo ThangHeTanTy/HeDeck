@@ -4,8 +4,10 @@ import 'dart:io';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 import '../wake_on_lan.dart';
+import 'wake_page.dart';
 
 /// Điện thoại này chạy được trạm bật máy (bản web thì không).
 const canRunRelay = true;
@@ -22,6 +24,32 @@ Future<String> tailscaleAddress() async {
     }
   } catch (_) {}
   return '';
+}
+
+/// Điện thoại này có đang nối mạng nhà (cùng mạng với máy tính) không.
+/// [broadcast] là địa chỉ broadcast mạng nhà agent gửi, ví dụ 192.168.1.255.
+/// Chưa biết thì coi như có. Chỉ dùng để báo cho rõ, không chặn việc gửi:
+/// so theo phần đầu địa chỉ nên mạng chia lạ có thể đoán sai.
+Future<bool> onHomeNetwork(String broadcast) async {
+  final parts = broadcast.split('.');
+  if (parts.length != 4) return true;
+  final keep = parts.indexWhere((x) => x == '255');
+  final prefix = '${parts.take(keep < 1 ? 3 : keep).join('.')}.';
+  try {
+    final list = await NetworkInterface.list(type: InternetAddressType.IPv4);
+    for (final iface in list) {
+      for (final a in iface.addresses) {
+        if (!a.isLoopback &&
+            !_isTailscale(a.rawAddress) &&
+            a.address.startsWith(prefix)) {
+          return true;
+        }
+      }
+    }
+  } catch (_) {
+    return true;
+  }
+  return false;
 }
 
 bool _isTailscale(List<int> b) =>
@@ -53,6 +81,7 @@ Future<List<int>> _mac(String keyB64, int ts, String nonce) async {
 class WakeRelayServer {
   HttpServer? _server;
   final _seen = <String>[];
+  Uint8List? _icon;
   late String Function() _key;
   late List<String> Function() _macs;
   late String Function() _broadcast;
@@ -89,6 +118,22 @@ class WakeRelayServer {
       if (peer == null || !_trusted(peer)) {
         status = 403;
         body = {'ok': false, 'error': 'not_local'};
+      } else if (req.method == 'GET' &&
+          (req.uri.path == '/' || req.uri.path == '/index.html')) {
+        // Trang "Bật PC" cho iPhone/iPad (xem wake_page.dart).
+        res.headers.contentType = ContentType.html;
+        res.headers.set(HttpHeaders.cacheControlHeader, 'no-cache');
+        res.write(wakePageHtml);
+        await res.close();
+        return;
+      } else if (req.method == 'GET' && req.uri.path == '/icon.png') {
+        _icon ??= (await rootBundle.load('assets/icon/icon.png'))
+            .buffer
+            .asUint8List();
+        res.headers.contentType = ContentType('image', 'png');
+        res.add(_icon!);
+        await res.close();
+        return;
       } else if (req.method != 'POST' || req.uri.path != '/wake') {
         status = 404;
         body = {'ok': false};
@@ -113,7 +158,10 @@ class WakeRelayServer {
           _seen.add(nonce);
           if (_seen.length > 256) _seen.removeAt(0);
           final sent = await sendWakeOnLan(_macs(), broadcast: _broadcast());
-          body = {'ok': sent > 0, 'sent': sent};
+          // Trạm bị mang ra ngoài (deck đi theo người) thì tín hiệu phát vào
+          // mạng quán cà phê, máy ở nhà không nghe: báo thẳng cho người bấm.
+          final home = await onHomeNetwork(_broadcast());
+          body = {'ok': sent > 0 && home, 'sent': sent, if (!home) 'away': true};
         }
       }
     } catch (e) {
@@ -152,10 +200,17 @@ Future<int> wakeViaRelay(String host, int port, String keyB64) async {
     if (res.statusCode != 200) {
       throw HttpException('relay ${res.statusCode} ${body['error'] ?? ''}');
     }
+    // Trạm đang không ở nhà: gửi rồi cũng vô ích, báo riêng cho người dùng.
+    if (body['away'] == true) throw const RelayAwayException();
     return (body['sent'] as num?)?.toInt() ?? 0;
   } finally {
     client.close(force: true);
   }
+}
+
+/// Trạm bật máy trả lời rằng nó đang không ở mạng nhà.
+class RelayAwayException implements Exception {
+  const RelayAwayException();
 }
 
 final wakeRelay = WakeRelayServer();
