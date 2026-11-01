@@ -4,8 +4,10 @@ import 'dart:io';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 import '../wake_on_lan.dart';
+import 'wake_page.dart';
 
 /// Điện thoại này chạy được trạm bật máy (bản web thì không).
 const canRunRelay = true;
@@ -53,6 +55,7 @@ Future<List<int>> _mac(String keyB64, int ts, String nonce) async {
 class WakeRelayServer {
   HttpServer? _server;
   final _seen = <String>[];
+  Uint8List? _icon;
   late String Function() _key;
   late List<String> Function() _macs;
   late String Function() _broadcast;
@@ -89,6 +92,22 @@ class WakeRelayServer {
       if (peer == null || !_trusted(peer)) {
         status = 403;
         body = {'ok': false, 'error': 'not_local'};
+      } else if (req.method == 'GET' &&
+          (req.uri.path == '/' || req.uri.path == '/index.html')) {
+        // Trang "Bật PC" cho iPhone/iPad (xem wake_page.dart).
+        res.headers.contentType = ContentType.html;
+        res.headers.set(HttpHeaders.cacheControlHeader, 'no-cache');
+        res.write(wakePageHtml);
+        await res.close();
+        return;
+      } else if (req.method == 'GET' && req.uri.path == '/icon.png') {
+        _icon ??= (await rootBundle.load('assets/icon/icon.png'))
+            .buffer
+            .asUint8List();
+        res.headers.contentType = ContentType('image', 'png');
+        res.add(_icon!);
+        await res.close();
+        return;
       } else if (req.method != 'POST' || req.uri.path != '/wake') {
         status = 404;
         body = {'ok': false};

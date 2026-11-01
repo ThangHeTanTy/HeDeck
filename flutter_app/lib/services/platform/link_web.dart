@@ -10,3 +10,9 @@ String? pairCodeFromLink() {
   final code = _pairCode ?? '';
   return RegExp(r'^\d{6}$').hasMatch(code) ? code : null;
 }
+
+@JS('open')
+external void _windowOpen(String url, String target);
+
+/// Mở đường link ở thẻ mới (trên iPhone: mở bằng Safari).
+void openLink(String url) => _windowOpen(url, '_blank');

@@ -73,6 +73,26 @@ lệnh phải ký bằng khoá do agent cấp cho các điện thoại đã ghé
 2 phút, không dùng lại được. Người khác dù vào được Wi-Fi nhà cũng không bật máy
 hộ được.
 
+### Bật máy từ iPhone
+
+iPhone dùng bản web, mà bản web do máy tính phục vụ — máy tắt thì không mở
+được. Nên trạm bật máy (điện thoại deck) tự phục vụ một trang **"Bật PC"** riêng:
+
+1. Làm xong bước 1–3 ở trên (điện thoại deck đã bật **Trạm bật máy**).
+2. Cài **Tailscale** trên iPhone, đăng nhập cùng tài khoản.
+3. Lúc máy tính đang bật, mở HeDeck trên iPhone (bản web) → ⚙ → **Nút bật máy
+   cho iPhone** → **Mở trang Bật PC**. Safari mở trang có nút tròn lớn.
+4. Trong Safari: **Chia sẻ → Thêm vào Màn hình chính → Thêm**. Màn hình chính
+   có biểu tượng **Bật PC**.
+
+Khi ở ngoài và máy tính đang tắt: bật Tailscale trên iPhone → chạm **Bật PC** →
+bấm **Bật máy tính**. Trang do điện thoại deck ở nhà phục vụ nên mở được cả khi
+máy tính tắt.
+
+Đường link của trang chứa khoá bật máy (phần sau dấu `#`, không bao giờ gửi lên
+mạng) — đừng gửi link đó cho người khác. Nếu trang báo *Khoá không khớp*, làm
+lại bước 3–4.
+
 ## 3. Xem màn hình trong touchpad
 
 Mở **Touchpad** (biểu tượng chuột trên deck). Phía sau vùng touchpad là hình màn

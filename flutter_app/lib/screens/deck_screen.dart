@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -13,6 +14,8 @@ import '../services/deck_connection.dart';
 import '../services/store.dart';
 import '../services/wake_on_lan.dart';
 import '../services/wake_relay.dart';
+import '../services/platform/link_io.dart'
+    if (dart.library.js_interop) '../services/platform/link_web.dart';
 import '../theme.dart';
 import '../widgets/clown_logo.dart';
 import '../widgets/deck_tile_view.dart';
@@ -459,12 +462,67 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     }
   }
 
+  /// Bản web (iPhone): tạo nút "Bật PC" trên Màn hình chính. Trang đó do
+  /// điện thoại deck ở nhà phục vụ, nên bấm được cả khi máy tính đang tắt.
+  Future<void> _wakePageDialog() async {
+    final store = context.read<Store>();
+    final ready = store.relayHost.isNotEmpty && store.wakeKey.isNotEmpty;
+    final url = 'http://${store.relayHost}:${store.relayPort}/'
+        '#k=${Uri.encodeComponent(store.wakeKey)}';
+    final body = TextStyle(color: DeckColors.text, fontSize: 13, height: 1.5);
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: DeckColors.surface,
+        title: Text(t('Nút bật máy cho iPhone'),
+            style: TextStyle(color: DeckColors.text, fontSize: 17)),
+        content: SingleChildScrollView(
+          child: Text(
+            ready
+                ? t('1. Bấm "Mở trang Bật PC" bên dưới (mở bằng Safari).\n'
+                    '2. Trong Safari: Chia sẻ → Thêm vào Màn hình chính → Thêm.\n'
+                    '3. Khi ở ngoài: bật Tailscale trên iPhone, chạm biểu tượng '
+                    '"Bật PC".\n\n'
+                    'Trang này do điện thoại deck ở nhà phục vụ nên dùng được cả '
+                    'khi máy tính đang tắt. Đường link chứa khoá bật máy — đừng '
+                    'gửi cho người khác.')
+                : t('Chưa có trạm bật máy. Trên điện thoại deck để ở nhà (app '
+                    'Android), cài Tailscale rồi vào ⚙ → bật "Trạm bật máy". '
+                    'Sau đó mở lại trang này khi máy tính đang bật.'),
+            style: body,
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: Text(t('Đóng'))),
+          if (ready) ...[
+            TextButton(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: url));
+                if (ctx.mounted) Navigator.pop(ctx);
+                _snack(t('Đã chép đường link — dán vào Safari'));
+              },
+              child: Text(t('Chép link')),
+            ),
+            FilledButton(
+              onPressed: () {
+                openLink(url);
+                Navigator.pop(ctx);
+              },
+              child: Text(t('Mở trang Bật PC')),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Future<void> _wake() async {
     final store = context.read<Store>();
     final conn = context.read<DeckConnection>();
     if (!canSendWakeOnLan) {
-      _snack(t('Bản web không bật được máy đang tắt — trình duyệt không gửi '
-          'được tín hiệu bật máy. Dùng app Android, hoặc bật máy bằng tay.'));
+      // Bản web không tự gửi được; dẫn sang nút "Bật PC" do trạm phục vụ.
+      await _wakePageDialog();
       return;
     }
     if (!store.canWake) {
@@ -680,6 +738,9 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                 _sheetItem(
                     Icons.link_off_rounded, t('Quên thiết bị này'), 'forget'),
                 Divider(height: 1, color: DeckColors.line),
+                if (kIsWeb)
+                  _sheetItem(Icons.power_settings_new_rounded,
+                      t('Nút bật máy cho iPhone'), 'wakepage'),
                 _sheetItem(Icons.system_update_rounded,
                     t('Kiểm tra cập nhật'), 'update'),
                 _aboutBlock(),
@@ -725,6 +786,9 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
         break;
       case 'update':
         await showUpdateDialog(context);
+        break;
+      case 'wakepage':
+        await _wakePageDialog();
         break;
       case 'forget':
         await conn.stop();
