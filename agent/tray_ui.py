@@ -223,6 +223,14 @@ class AgentWindow:
         self.qr_caption.grid(row=3, column=2, sticky="e", padx=(16, 0),
                              pady=(4, 0))
         self._qr_url = None
+        # Mã QR trỏ tới địa chỉ mạng nhà, hay địa chỉ Tailscale (dùng được cả
+        # khi ở ngoài — iPhone thêm biểu tượng từ mã này là dùng mọi nơi).
+        self._qr_remote = False
+        self.qr_mode = tk.Label(card, text="", bg=card["bg"], fg=ACCENT,
+                                font=("Segoe UI", 8, "underline"),
+                                cursor="hand2")
+        self.qr_mode.grid(row=4, column=2, sticky="e", padx=(16, 0))
+        self.qr_mode.bind("<Button-1>", lambda _e: self._toggle_qr())
 
         info = tk.Frame(root, bg=BG, padx=18, pady=10)
         info.pack(fill="x")
@@ -458,13 +466,31 @@ class AgentWindow:
                     self.icon.title = tip[:127]
         self.root.after(1000, self._refresh)
 
+    def _toggle_qr(self):
+        self._qr_remote = not self._qr_remote
+        self._qr_url = None
+        if self.agent:
+            self._refresh_qr(self.agent)
+
     def _refresh_qr(self, agent):
         """Mã QR mở bản web, kèm mã ghép cặp khi mã còn hạn."""
         if qrcode is None or ImageTk is None or not agent.web.available:
             self.qr.grid_remove()
             self.qr_caption.grid_remove()
+            self.qr_mode.grid_remove()
             return
-        url = web_ui.page_url(self.ip, self.port,
+        ts_ip = remote.tailscale_ip()
+        use_ts = self._qr_remote and bool(ts_ip)
+        if ts_ip:
+            self.qr_mode.configure(text="Chuyển sang mã Trong nhà"
+                                   if use_ts else "Chuyển sang mã Mọi nơi")
+            self.qr_mode.grid()
+        else:
+            self.qr_mode.grid_remove()
+        self.qr_caption.configure(
+            text="iPhone / iPad · mọi nơi (cần Tailscale)" if use_ts
+            else "iPhone / iPad: quét để dùng")
+        url = web_ui.page_url(ts_ip if use_ts else self.ip, self.port,
                               None if agent.code_expired else agent.pair_code)
         if url == self._qr_url:
             return

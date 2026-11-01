@@ -137,7 +137,8 @@ const wakePageHtml = r'''<!DOCTYPE html>
       .then(function (r) { return r.json().then(function (j) { return [r.status, j]; }); })
       .then(function (res) {
         var j = res[1];
-        if (res[0] === 200 && j.ok) say("Đã gửi tín hiệu bật máy. Windows cần khoảng 20–60 giây để lên.", "ok");
+        if (res[0] === 200 && j.away) say("Điện thoại deck đang không ở nhà (nối mạng khác) nên không bật được máy. Để điện thoại deck ở nhà, nối Wi-Fi nhà.", "bad");
+        else if (res[0] === 200 && j.ok) say("Đã gửi tín hiệu bật máy. Windows cần khoảng 20–60 giây để lên.", "ok");
         else if (res[0] === 403 && j.error === "bad_signature")
           say("Khoá không khớp (có thể máy tính đã cấp khoá mới). Tạo lại nút từ HeDeck: ⚙ → Nút bật máy cho iPhone. Nếu giờ iPhone sai lệch nhiều, chỉnh lại giờ tự động.", "bad");
         else if (res[0] === 200) say("Điện thoại deck chưa có địa chỉ MAC của máy tính — mở HeDeck trên điện thoại deck khi máy tính đang bật một lần.", "bad");

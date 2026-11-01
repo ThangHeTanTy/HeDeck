@@ -376,7 +376,7 @@ class Agent:
             except Exception:
                 pass
 
-    async def send_screen(self, ws, level):
+    async def send_screen(self, ws, level, zoom=1.0):
         """Gửi một khung màn hình. Điện thoại nhận xong mới xin khung sau."""
         if ws in self._screen_busy:
             return
@@ -386,9 +386,12 @@ class Agent:
                 name = self.state["devices"].get(
                     self._ws_device.get(ws, ""), {}).get("name", "Điện thoại")
                 log(f"{name} đang xem màn hình máy này.")
-            packet, digest = await self.run_blocking(
-                screen.capture, level, self._screen_last.get(ws))
-            self._screen_last[ws] = digest
+            last = self._screen_last.get(ws) or (None, None)
+            packet, digest, crop = await self.run_blocking(
+                screen.capture, level, zoom, last[1], last[0])
+            # Nhớ vân tay và vùng cắt để lần sau khỏi gửi lại ảnh giống hệt,
+            # và vùng phóng to đứng yên khi con trỏ chưa tới mép.
+            self._screen_last[ws] = (digest, crop)
             await ws.send(packet)
         except websockets.ConnectionClosed:
             pass
@@ -655,7 +658,8 @@ class Agent:
                 if self._screen_last.pop(ws, None) is not None:
                     log("Đã ngừng xem màn hình.")
                 return None
-            self._spawn(self.send_screen(ws, str(msg.get("level", "mid"))))
+            self._spawn(self.send_screen(
+                ws, str(msg.get("level", "mid")), msg.get("zoom", 1.0)))
             return None
 
         if kind == "relay":

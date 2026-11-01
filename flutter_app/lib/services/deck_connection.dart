@@ -63,29 +63,61 @@ class SessionInfo {
   }
 }
 
-/// Một khung hình màn hình máy tính. [jpeg] null nghĩa là màn hình không đổi
-/// so với khung trước, chỉ có toạ độ con trỏ mới.
+/// Một khung hình màn hình máy tính. [jpeg] null nghĩa là vùng đang xem
+/// không đổi so với khung trước, chỉ có con trỏ mới.
 class ScreenFrame {
   final Uint8List? jpeg;
   final int screenW, screenH;
   final int cursorX, cursorY;
-  const ScreenFrame(
-      this.jpeg, this.screenW, this.screenH, this.cursorX, this.cursorY);
 
-  /// Đọc gói nhị phân agent gửi (xem agent/screen.py).
+  /// Vùng màn hình trong ảnh (pixel màn hình). Không phóng to thì là cả màn.
+  final int cropX, cropY, cropW, cropH;
+
+  /// Loại con trỏ Windows: 0 ẩn, 1 mũi tên, 2 chữ I, 3 bàn tay, 4 chờ,
+  /// 5 mũi tên + chờ, 6 chữ thập, 7 kéo 4 hướng, 8 ngang, 9 dọc,
+  /// 10 chéo ↘, 11 chéo ↗, 12 cấm.
+  final int cursorKind;
+
+  const ScreenFrame(
+      this.jpeg,
+      this.screenW,
+      this.screenH,
+      this.cursorX,
+      this.cursorY,
+      this.cropX,
+      this.cropY,
+      this.cropW,
+      this.cropH,
+      this.cursorKind);
+
+  ScreenFrame withImage(Uint8List? image) => ScreenFrame(image, screenW,
+      screenH, cursorX, cursorY, cropX, cropY, cropW, cropH, cursorKind);
+
+  /// Đọc gói nhị phân agent gửi (xem agent/screen.py). Hiểu cả bản cũ HDS1.
   static ScreenFrame? parse(Uint8List b) {
-    if (b.length < 16 || String.fromCharCodes(b.sublist(0, 4)) != 'HDS1') {
-      return null;
-    }
+    if (b.length < 16) return null;
+    final magic = String.fromCharCodes(b.sublist(0, 4));
     final d = ByteData.sublistView(b);
+    final sw = d.getUint16(8), sh = d.getUint16(10);
+    final cx = d.getInt16(12), cy = d.getInt16(14);
+    // Chép ra mảng riêng: bộ giải mã ảnh của bản web đọc sai khi ảnh chỉ
+    // là một đoạn giữa của gói tin.
+    if (magic == 'HDS1') {
+      return ScreenFrame(b.length > 16 ? b.sublist(16) : null, sw, sh, cx, cy,
+          0, 0, sw, sh, 1);
+    }
+    if (magic != 'HDS2' || b.length < 25) return null;
     return ScreenFrame(
-      // Chép ra mảng riêng: bộ giải mã ảnh của bản web đọc sai khi ảnh chỉ
-      // là một đoạn giữa của gói tin.
-      b.length > 16 ? b.sublist(16) : null,
-      d.getUint16(8),
-      d.getUint16(10),
-      d.getInt16(12),
-      d.getInt16(14),
+      b.length > 25 ? b.sublist(25) : null,
+      sw,
+      sh,
+      cx,
+      cy,
+      d.getUint16(16),
+      d.getUint16(18),
+      d.getUint16(20),
+      d.getUint16(22),
+      b[24],
     );
   }
 }
@@ -200,6 +232,7 @@ class DeckConnection extends ChangeNotifier {
     final left = at.difference(DateTime.now()).inSeconds;
     return left < 0 ? 0 : left;
   }
+
   bool _stopped = true;
   int _backoff = 1;
   Completer<PairResult>? _pairing;
@@ -208,8 +241,9 @@ class DeckConnection extends ChangeNotifier {
 
   bool get isOnline => state == ConnState.online;
 
-  AppStatus statusOf(String? appId) =>
-      appId == null ? const AppStatus() : (statuses[appId] ?? const AppStatus());
+  AppStatus statusOf(String? appId) => appId == null
+      ? const AppStatus()
+      : (statuses[appId] ?? const AppStatus());
 
   bool isPending(String? appId) => appId != null && _pending.containsKey(appId);
 
@@ -260,7 +294,8 @@ class DeckConnection extends ChangeNotifier {
         // Chỉ khoá công khai được gửi đi. Khoá bí mật ở lại trong máy.
         'pubkey': identity.publicKeyBase64,
       });
-      final result = await _pairing!.future.timeout(const Duration(seconds: 12));
+      final result =
+          await _pairing!.future.timeout(const Duration(seconds: 12));
       _host = host;
       _port = port;
       _deviceId = result.deviceId;
@@ -331,7 +366,7 @@ class DeckConnection extends ChangeNotifier {
       if (_stopped) return;
       try {
         final ch = await _open(host, _port);
-        viaRemote = remote;
+        viaRemote = remote || _isTailscaleHost(host);
         _preferRemote = remote;
         _bind(ch);
         await _sendAuth();
@@ -390,7 +425,9 @@ class DeckConnection extends ChangeNotifier {
   void requestCatalog() => _send({'t': 'catalog'});
 
   /// Xin một khung hình màn hình. Gọi lại sau khi nhận được khung trước.
-  void requestScreen(String level) => _send({'t': 'screen', 'level': level});
+  /// [zoom] 1..4: agent cắt vùng quanh con trỏ, gửi ở độ phân giải gốc.
+  void requestScreen(String level, {double zoom = 1}) =>
+      _send({'t': 'screen', 'level': level, 'zoom': zoom});
 
   void stopScreen() {
     _send({'t': 'screen', 'off': true});
@@ -552,8 +589,7 @@ class DeckConnection extends ChangeNotifier {
         // Màn hình không đổi: giữ ảnh cũ, chỉ cập nhật con trỏ.
         screen.value = frame.jpeg != null || old == null
             ? frame
-            : ScreenFrame(old.jpeg, frame.screenW, frame.screenH,
-                frame.cursorX, frame.cursorY);
+            : frame.withImage(old.jpeg);
       }
       return;
     }
@@ -777,7 +813,8 @@ class DeckConnection extends ChangeNotifier {
     notifyListeners();
     // Sau vài lần hụt, nhiều khả năng router đã cấp IP khác cho thiết bị.
     // Đi dò lại bằng mDNS thay vì kiên trì gọi vào địa chỉ đã chết.
-    _retry = Timer(wait, _misses % 3 == 0 ? _rediscoverThenConnect : _connectOnce);
+    _retry =
+        Timer(wait, _misses % 3 == 0 ? _rediscoverThenConnect : _connectOnce);
   }
 
   /// Địa chỉ vòng lặp nội bộ nghĩa là đang đi qua đường hầm `adb reverse`
@@ -859,8 +896,12 @@ class DeckConnection extends ChangeNotifier {
       // ở ngôn ngữ nào cũng vậy, nên so cả hai.
       return s.replaceFirst(RegExp(r'^\w+Error: '), '');
     }
-    if (s.contains('refused')) return t('Máy tính từ chối kết nối — HeDeck trên máy tính đã mở chưa?');
-    if (s.contains('mạng nội bộ')) return t('Máy tính chỉ nhận kết nối từ mạng nhà hoặc Tailscale');
+    if (s.contains('refused')) {
+      return t('Máy tính từ chối kết nối — HeDeck trên máy tính đã mở chưa?');
+    }
+    if (s.contains('mạng nội bộ')) {
+      return t('Máy tính chỉ nhận kết nối từ mạng nhà hoặc Tailscale');
+    }
     if (s.contains('timed out') || s.contains('timeout')) {
       return t('Hết thời gian chờ — kiểm tra Wi-Fi và tường lửa');
     }
@@ -868,6 +909,15 @@ class DeckConnection extends ChangeNotifier {
       return t('Không tới được máy — hai thiết bị có cùng Wi-Fi không?');
     }
     return t('Không kết nối được');
+  }
+
+  /// Địa chỉ Tailscale (100.64.0.0/10): bản web mở bằng địa chỉ này là đang
+  /// đi đường Tailscale, ở nhà hay ở ngoài đều vậy.
+  static bool _isTailscaleHost(String host) {
+    final p = host.split('.');
+    if (p.length != 4) return false;
+    final a = int.tryParse(p[0]), b = int.tryParse(p[1]);
+    return a == 100 && b != null && (b & 0xC0) == 64;
   }
 
   static String _randomHex(int bytes) {

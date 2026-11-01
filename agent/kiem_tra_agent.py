@@ -243,7 +243,7 @@ def main():
     check("báo trong log khi có điện thoại đang xem màn hình",
           "đang xem màn hình máy này" in source)
     check("màn hình đứng yên thì không gửi lại ảnh",
-          "if digest == last_digest" in scr_src)
+          "if digest == last_digest" in scr_src and "def _crop(" in scr_src)
 
     # --- Bảo mật ----------------------------------------------------------
     print("\n[Bảo mật]")

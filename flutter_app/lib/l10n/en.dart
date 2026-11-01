@@ -799,4 +799,12 @@ const en = <String, String>{
       'Copy link',
   'Mở trang Bật PC':
       'Open wake page',
+  'Rất nét (tốn dữ liệu)':
+      'Very sharp (uses more data)',
+  'chụm hai ngón để thu nhỏ':
+      'pinch to zoom out',
+  'Trạm bật máy (điện thoại deck) đang không ở nhà nên không bật được máy.':
+      'The wake station (deck phone) is not at home, so it cannot wake the PC.',
+  'Bạn đang ở ngoài mạng nhà. Muốn bật máy từ xa cần một trạm bật máy để ở nhà (xem hướng dẫn Dùng từ xa).':
+      'You are away from your home network. Waking the PC remotely needs a wake station that stays at home (see the remote-use guide).',
 };

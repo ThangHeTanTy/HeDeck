@@ -16,6 +16,20 @@ hình của nó ngay trong touchpad, và bật máy khi nó đang tắt.
                                                └──────────────────┘
 ```
 
+## Bạn dùng thế nào? (PC + iPhone + điện thoại deck Android)
+
+| Tình huống | Cần gì | Làm thế nào |
+|---|---|---|
+| **Trên đường về, bật PC bằng iPhone** | Điện thoại deck **ở nhà**, bật *Trạm bật máy*; Tailscale trên iPhone và deck | Chạm biểu tượng **Bật PC** trên iPhone (mục *Bật máy từ iPhone*) |
+| **Mang deck ra ngoài, điều khiển PC ở nhà** | PC **đang bật**; Tailscale trên PC và deck | Mở HeDeck trên deck như ở nhà: app tự đi đường Tailscale, touchpad có màn hình PC |
+| **iPhone ở bất cứ đâu dùng như deck** | PC đang bật; Tailscale trên iPhone | Quét mã QR **Mọi nơi** trên cửa sổ HeDeck ở PC, thêm vào Màn hình chính (mục *iPhone dùng như deck ở mọi nơi*) |
+
+> **Bật PC đang tắt luôn cần một thiết bị ở nhà phát tín hiệu.** Mang điện thoại
+> deck theo người thì ở nhà không còn trạm: iPhone không bật được PC (HeDeck sẽ
+> báo *trạm không ở nhà*). Khi đó hoặc để PC bật (hoặc ngủ) trước khi đi, hoặc
+> thêm một thiết bị luôn ở nhà: router có chức năng Wake-on-LAN qua app, hay
+> ổ cắm thông minh + BIOS *Restore on AC Power Loss = Power On*.
+
 HeDeck **không mở cổng nào trên router** và không đưa máy tính ra Internet.
 Đường đi từ xa là [Tailscale](https://tailscale.com): một mạng riêng ảo có mã
 hoá, miễn phí cho cá nhân, nối các máy cùng một tài khoản dù chúng ở đâu.
@@ -40,8 +54,21 @@ mạng nhà thì tự đi đường Tailscale. Nhãn cạnh tên máy đổi t�
 sang **Từ xa · 80 ms**. Mọi ô, macro, media, touchpad, đo hiệu năng, khoá/ngủ/
 tắt máy đều dùng như ở nhà.
 
-> Bản web (iPhone/iPad) dùng từ xa thì mở `http://100.x.y.z:8787/` — địa chỉ
-> Tailscale hiện trong cửa sổ agent — và ghép cặp một lần cho địa chỉ đó.
+### iPhone dùng như deck ở mọi nơi
+
+Bản web trên iPhone gắn với địa chỉ đã mở nó. Mở bằng địa chỉ **Tailscale** thì
+một biểu tượng dùng được cả ở nhà lẫn ở ngoài (miễn iPhone bật Tailscale):
+
+1. Trên cửa sổ HeDeck ở PC, dưới mã QR bấm **Chuyển sang mã Mọi nơi** (chỉ hiện
+   khi PC đã có Tailscale). Chú thích đổi thành *mọi nơi (cần Tailscale)*.
+2. Bật Tailscale trên iPhone, mở Camera quét mã → HeDeck mở trong Safari và tự
+   ghép cặp.
+3. **Chia sẻ → Thêm vào Màn hình chính**. Từ giờ dùng biểu tượng này ở mọi nơi:
+   deck, touchpad có màn hình PC, phóng to, đo hiệu năng. Nhãn trạng thái ghi
+   **Tailscale · … ms**.
+
+Biểu tượng tạo từ mã *Trong nhà* chỉ dùng được khi iPhone ở nhà; hai biểu tượng
+là hai lần ghép cặp riêng, giữ cả hai cũng được.
 
 ## 2. Bật máy từ xa (trạm bật máy)
 
@@ -96,13 +123,23 @@ lại bước 3–4.
 ## 3. Xem màn hình trong touchpad
 
 Mở **Touchpad** (biểu tượng chuột trên deck). Phía sau vùng touchpad là hình màn
-hình máy tính, có chấm tròn đánh dấu con trỏ. Kéo một ngón để di chuột như
-thường — giờ thì thấy mình đang làm gì.
+hình máy tính, với **con trỏ giống hệt trên Windows** — mũi tên, chữ I khi trỏ vào
+ô chữ, bàn tay khi trỏ vào đường link, vòng chờ khi máy bận. Kéo một ngón để di
+chuột như thường — con trỏ đi theo ngón tay ngay.
+
+**Phóng to để nhìn rõ:**
+
+- **Mở rộng / chụm hai ngón** trên vùng touchpad để phóng to / thu nhỏ (tới 4×).
+  Hai ngón cùng kéo mà không đổi khoảng cách thì vẫn là cuộn như cũ.
+- Hoặc bấm nút **1×** trên thanh trên cùng: 1× → 1,5× → 2× → 3× → 1×.
+- Vùng phóng to bám theo con trỏ (như kính lúp của Windows): đứng yên khi con
+  trỏ ở giữa, trượt theo khi con trỏ tới gần mép. Máy tính gửi đúng vùng đó ở
+  độ phân giải gốc nên phóng to vẫn nét, không vỡ hình.
 
 - Biểu tượng **màn hình** trên thanh trên cùng: bật/tắt hình (tắt khi không
   cần, cho máy tính và dữ liệu nhẹ hơn).
 - **HQ**: chất lượng hình — *Tự động* (vừa ở nhà, tiết kiệm khi ở xa), *Tiết
-  kiệm*, *Vừa*, *Nét*.
+  kiệm*, *Vừa*, *Nét*, *Rất nét* (độ phân giải gốc, tốn dữ liệu nhất).
 - Hình chỉ gửi khi màn hình thay đổi. Đứng yên thì gần như không tốn dữ liệu;
   xem video qua 4G thì tốn khoảng 5–15 MB mỗi phút ở mức *Tiết kiệm*.
 - Mỗi khi có điện thoại xem màn hình, cửa sổ agent ghi lại một dòng. Không muốn

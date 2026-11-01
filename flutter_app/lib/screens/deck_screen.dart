@@ -538,15 +538,31 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
     } catch (_) {}
     var relayed = false;
     var relayTried = false;
+    var relayAway = false;
     if (store.canWakeRemotely) {
       relayTried = true;
       if (local == 0) _snack(t('Đang nhờ trạm bật máy ở nhà…'));
       try {
         await wakeViaRelay(store.relayHost, store.relayPort, store.wakeKey);
         relayed = true;
+      } on RelayAwayException {
+        relayAway = true;
       } catch (_) {}
     }
+    // Không có trạm (hoặc chính máy này là trạm) mà đang ở ngoài mạng nhà:
+    // tín hiệu vừa phát vào mạng nơi khác, máy ở nhà không nghe thấy.
+    final atHome = await onHomeNetwork(store.wolBroadcast);
     if (!mounted) return;
+    if (relayAway) {
+      _snack(t('Trạm bật máy (điện thoại deck) đang không ở nhà nên không bật '
+          'được máy.'));
+      return;
+    }
+    if (!relayTried && !atHome) {
+      _snack(t('Bạn đang ở ngoài mạng nhà. Muốn bật máy từ xa cần một trạm '
+          'bật máy để ở nhà (xem hướng dẫn Dùng từ xa).'));
+      return;
+    }
     if (relayed) {
       _snack(t('Trạm ở nhà đã gửi tín hiệu bật máy. Windows cần khoảng '
           '20–60 giây để lên.'));
@@ -1266,7 +1282,7 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                      '${conn.viaRemote ? t('Từ xa') : 'Wi-Fi'} · ${conn.latencyMs} ms',
+                      '${conn.viaRemote ? 'Tailscale' : 'Wi-Fi'} · ${conn.latencyMs} ms',
                       style: TextStyle(
                           color: DeckColors.isDark
                               ? const Color(0xFF9FE1CB)

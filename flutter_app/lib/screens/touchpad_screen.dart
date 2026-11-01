@@ -9,6 +9,7 @@ import '../l10n/l10n.dart';
 import '../services/deck_connection.dart';
 import '../services/store.dart';
 import '../theme.dart';
+import '../widgets/pc_cursor.dart';
 
 /// Touchpad và bàn phím ảo, điều khiển chuột/phím của thiết bị từ xa.
 ///
@@ -76,6 +77,11 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
       });
     } else {
       _holdTimer?.cancel();
+      if (_points.length == 2) {
+        final pts = _points.values.toList();
+        _pinchStart = (pts[0] - pts[1]).distance;
+        _zoomAtPinch = _zoom;
+      }
     }
     _maxPoints = math.max(_maxPoints, _points.length);
   }
@@ -91,6 +97,18 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
     if (_points.length == 1) {
       _queueMove(d);
     } else if (_points.length == 2) {
+      // Hai ngón xa ra / chụm lại (khi đang xem màn hình): phóng to, thu nhỏ.
+      // Hai ngón cùng kéo, khoảng cách gần như giữ nguyên: cuộn như cũ.
+      final pts = _points.values.toList();
+      final ratio =
+          _pinchStart > 0 ? (pts[0] - pts[1]).distance / _pinchStart : 1.0;
+      if (!_pinching && _showScreen && (ratio - 1).abs() > 0.15) {
+        _pinching = true;
+      }
+      if (_pinching) {
+        _setZoom(_zoomAtPinch * ratio);
+        return;
+      }
       // Mỗi ngón góp một nửa, hai ngón cùng kéo thì đúng bằng quãng kéo.
       _scrollY += d.dy / 2;
       _scrollX += d.dx / 2;
@@ -111,6 +129,10 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
     if (_points.isNotEmpty) return;
     _holdTimer?.cancel();
     _flush();
+    if (_pinching) {
+      _pinching = false; // vừa phóng to/thu nhỏ: không tính là nhấp chuột
+      return;
+    }
 
     if (_dragging) {
       _conn.mouseButton('left', 'up');
@@ -149,6 +171,10 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
     _flushTimer = null;
     if (_pendingX == 0 && _pendingY == 0) return;
     _conn.mouseMove(_pendingX, _pendingY);
+    // Con trỏ trên hình đi theo ngón tay ngay, không đợi khung hình sau.
+    if (_showScreen) {
+      _pred.value += Offset(_pendingX.toDouble(), _pendingY.toDouble());
+    }
     _pendingX = _pendingY = 0;
   }
 
@@ -190,6 +216,27 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
   static const _idleGap = Duration(milliseconds: 250);
   Uint8List? _lastJpeg;
 
+  /// Mức phóng to 1..4. Agent cắt vùng quanh con trỏ ở độ phân giải gốc.
+  double _zoom = 1;
+  double _pinchStart = 0, _zoomAtPinch = 1;
+  bool _pinching = false;
+
+  /// Quãng con trỏ đã đi (pixel máy tính) kể từ khung hình gần nhất: vẽ con
+  /// trỏ ở đó cho tay cảm thấy tức thì, khung mới tới thì về số thật.
+  final _pred = ValueNotifier<Offset>(Offset.zero);
+
+  void _setZoom(double z) {
+    z = (z.clamp(1.0, 4.0) * 10).round() / 10;
+    if (z == _zoom) return;
+    setState(() => _zoom = z);
+  }
+
+  void _cycleZoom() {
+    const steps = [1.0, 1.5, 2.0, 3.0];
+    final next = steps.firstWhere((s) => s > _zoom + 0.05, orElse: () => 1.0);
+    _setZoom(next);
+  }
+
   bool get _screenSupported =>
       _conn.agentVersion >= DeckConnection.screenAgentVersion;
 
@@ -205,7 +252,7 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
       return;
     }
     _askedAt = DateTime.now();
-    _conn.requestScreen(_level());
+    _conn.requestScreen(_level(), zoom: _zoom);
     // Khung bị lạc (mất mạng chốc lát) thì xin lại, đừng đứng hình mãi.
     _stallTimer?.cancel();
     _stallTimer = Timer(const Duration(seconds: 4), _askFrame);
@@ -217,6 +264,7 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
     _stallTimer?.cancel();
     final idle = identical(frame.jpeg, _lastJpeg);
     _lastJpeg = frame.jpeg;
+    _pred.value = Offset.zero;
     final wait =
         (idle ? _idleGap : _minGap) - DateTime.now().difference(_askedAt);
     _frameTimer?.cancel();
@@ -241,6 +289,7 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
       'low': t('Tiết kiệm dữ liệu'),
       'mid': t('Vừa'),
       'high': t('Nét'),
+      'max': t('Rất nét (tốn dữ liệu)'),
     };
     final picked = await showModalBottomSheet<String>(
       context: context,
@@ -268,6 +317,7 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
   @override
   void dispose() {
     _conn.screen.removeListener(_onFrame);
+    _pred.dispose();
     _frameTimer?.cancel();
     _stallTimer?.cancel();
     if (_showScreen) _conn.stopScreen();
@@ -345,19 +395,32 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
         title: const Text('Touchpad', style: TextStyle(fontSize: 17)),
         actions: [
           IconButton(
-            tooltip: _showScreen ? t('Ẩn màn hình máy tính') : t('Hiện màn hình máy tính'),
+            tooltip: _showScreen
+                ? t('Ẩn màn hình máy tính')
+                : t('Hiện màn hình máy tính'),
             icon: Icon(_showScreen
                 ? Icons.desktop_windows_rounded
                 : Icons.desktop_access_disabled_rounded),
             color: _showScreen ? DeckColors.accent : null,
             onPressed: _toggleScreen,
           ),
-          if (_showScreen)
+          if (_showScreen) ...[
+            TextButton(
+              onPressed: _cycleZoom,
+              style: TextButton.styleFrom(
+                  foregroundColor:
+                      _zoom > 1 ? DeckColors.accent : DeckColors.text,
+                  minimumSize: const Size(44, 40)),
+              child: Text('${_zoom.toStringAsFixed(_zoom % 1 == 0 ? 0 : 1)}×',
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w600)),
+            ),
             IconButton(
               tooltip: t('Chất lượng hình'),
               icon: const Icon(Icons.high_quality_rounded),
               onPressed: _qualityMenu,
             ),
+          ],
           IconButton(
             tooltip: t('Tốc độ con trỏ'),
             icon: const Icon(Icons.speed_rounded),
@@ -411,23 +474,23 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
         child: _showScreen && conn.isOnline && _screenSupported
             ? _screenView()
             : Padding(
-          padding: const EdgeInsets.all(20),
-          child: Text(
-            _showScreen && conn.isOnline && !_screenSupported
-                ? t('Cập nhật HeDeck trên máy tính để xem màn hình tại đây.')
-                : !conn.isOnline
-                ? t('Chưa kết nối tới thiết bị')
-                : _dragging
-                    ? t('Đang giữ chuột trái — kéo rồi thả tay')
-                    : t('Một ngón: di chuột · chạm để nhấp\nHai ngón: cuộn · chạm để nhấp phải\nGiữ yên một ngón rồi kéo: kéo thả'),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: conn.isOnline ? DeckColors.muted : DeckColors.warn,
-              fontSize: 12,
-              height: 1.7,
-            ),
-          ),
-        ),
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  _showScreen && conn.isOnline && !_screenSupported
+                      ? t('Cập nhật HeDeck trên máy tính để xem màn hình tại đây.')
+                      : !conn.isOnline
+                          ? t('Chưa kết nối tới thiết bị')
+                          : _dragging
+                              ? t('Đang giữ chuột trái — kéo rồi thả tay')
+                              : t('Một ngón: di chuột · chạm để nhấp\nHai ngón: cuộn · chạm để nhấp phải\nGiữ yên một ngón rồi kéo: kéo thả'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: conn.isOnline ? DeckColors.muted : DeckColors.warn,
+                    fontSize: 12,
+                    height: 1.7,
+                  ),
+                ),
+              ),
       ),
     );
   }
@@ -453,11 +516,13 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
           );
         }
         return LayoutBuilder(builder: (context, box) {
-          final sw = frame.screenW.toDouble(), sh = frame.screenH.toDouble();
-          final scale = math.min(box.maxWidth / sw, box.maxHeight / sh);
-          final w = sw * scale, h = sh * scale;
+          // Ảnh là vùng cắt (cả màn hình khi không phóng to), giữ đúng tỉ lệ.
+          final cw = frame.cropW.toDouble(), ch = frame.cropH.toDouble();
+          final scale = math.min(box.maxWidth / cw, box.maxHeight / ch);
+          final w = cw * scale, h = ch * scale;
           final left = (box.maxWidth - w) / 2, top = (box.maxHeight - h) / 2;
-          return Stack(children: [
+          final hot = PcCursor.hotspot(frame.cursorKind);
+          return Stack(clipBehavior: Clip.hardEdge, children: [
             Positioned(
               left: left,
               top: top,
@@ -468,22 +533,50 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
                   fit: BoxFit.fill,
                   filterQuality: FilterQuality.medium),
             ),
-            if (frame.cursorX >= 0 && frame.cursorY >= 0)
+            if (frame.cursorX >= 0 && frame.cursorKind != 0)
+              Positioned.fill(
+                child: ValueListenableBuilder<Offset>(
+                  valueListenable: _pred,
+                  builder: (context, pred, _) {
+                    final sx = (frame.cursorX + pred.dx)
+                        .clamp(0, frame.screenW - 1)
+                        .toDouble();
+                    final sy = (frame.cursorY + pred.dy)
+                        .clamp(0, frame.screenH - 1)
+                        .toDouble();
+                    final px = left + (sx - frame.cropX) * scale;
+                    final py = top + (sy - frame.cropY) * scale;
+                    final inside = px >= left &&
+                        py >= top &&
+                        px <= left + w &&
+                        py <= top + h;
+                    return Stack(children: [
+                      if (inside)
+                        Positioned(
+                          left: px - hot.dx,
+                          top: py - hot.dy,
+                          child: PcCursor(kind: frame.cursorKind),
+                        ),
+                    ]);
+                  },
+                ),
+              ),
+            if (_zoom > 1)
               Positioned(
-                left: left + frame.cursorX * scale - 7,
-                top: top + frame.cursorY * scale - 7,
+                left: left + 8,
+                top: top + 8,
                 child: IgnorePointer(
                   child: Container(
-                    width: 14,
-                    height: 14,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: DeckColors.accent.withValues(alpha: 0.35),
-                      border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black54, blurRadius: 3)
-                      ],
+                      color: Colors.black.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    child: Text(
+                        '${_zoom.toStringAsFixed(1)}× · ${t('chụm hai ngón để thu nhỏ')}',
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 11)),
                   ),
                 ),
               ),
@@ -533,8 +626,7 @@ class _TouchpadScreenState extends State<TouchpadScreen> {
                   height: 48,
                   child: Center(
                     child: Text(label,
-                        style: TextStyle(
-                            color: DeckColors.text, fontSize: 13)),
+                        style: TextStyle(color: DeckColors.text, fontSize: 13)),
                   ),
                 ),
               ),
