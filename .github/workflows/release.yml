@@ -86,11 +86,20 @@ jobs:
             extra=(--build-name="$NAME" --build-number="$CODE"
                    --dart-define=HEDECK_VERSION="$NAME")
           fi
-          # Giống BUILD_APK.bat: tắt R8, làm rối mã Dart.
-          flutter build apk --release \
-            --android-project-arg=shrink=false \
-            --obfuscate --split-debug-info=../debug_symbols \
-            "${extra[@]}"
+          # Lần build đầu Gradle tự tải NDK (vài trăm MB). Tải hỏng giữa chừng
+          # ("Error on ZipFile unknown archive") thì dọn phần dở và thử lại,
+          # thay vì làm hỏng cả lần phát hành.
+          for attempt in 1 2 3; do
+            # Giống BUILD_APK.bat: tắt R8, làm rối mã Dart.
+            flutter build apk --release \
+              --android-project-arg=shrink=false \
+              --obfuscate --split-debug-info=../debug_symbols \
+              "${extra[@]}" && break
+            if [ "$attempt" = 3 ]; then exit 1; fi
+            echo "::warning::Build APK hỏng lần $attempt, thử lại"
+            rm -rf "$ANDROID_HOME/.temp" "$ANDROID_HOME/ndk/.temp"
+            sleep 15
+          done
 
       - name: Ký APK bằng khoá phát hành
         if: needs.version.outputs.release == 'true'
