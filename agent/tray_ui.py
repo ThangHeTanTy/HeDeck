@@ -24,6 +24,7 @@ from tkinter import messagebox, scrolledtext
 from PIL import Image, ImageDraw
 
 import catalog
+import firewall
 import instance
 import power
 import remote
@@ -250,6 +251,19 @@ class AgentWindow:
                                           self.ask_update, primary=True)
         self.update_button.pack(side="right")
 
+        # Tường lửa chặn Tailscale: iPhone/điện thoại ở ngoài báo "máy chủ
+        # không phản hồi". Hiện nút sửa một chạm.
+        self.fw_bar = tk.Frame(root, bg="#3A2A12", padx=14, pady=8)
+        self._label(
+            self.fw_bar, "Tường lửa Windows đang chặn kết nối qua Tailscale — "
+            "điện thoại ở ngoài sẽ không vào được.", 9, TEXT,
+            wraplength=360).pack(side="left", fill="x", expand=True)
+        self._button(self.fw_bar, "Cho phép qua Tailscale", self.allow_tailscale,
+                     primary=True).pack(side="right")
+        self._fw_ok = True
+        threading.Thread(target=self._watch_firewall, daemon=True,
+                         name="hedeck-firewall").start()
+
         tools = self.tools = tk.Frame(root, bg=BG, padx=14)
         tools.pack(fill="x")
         self._button(tools, "Gỡ chặn IP", self.unban).pack(side="left")
@@ -459,6 +473,11 @@ class AgentWindow:
             }.items():
                 self.info[key].configure(text=value)
             self._refresh_qr(agent)
+            if not self._fw_ok and not self.fw_bar.winfo_ismapped():
+                self.fw_bar.pack(fill="x", padx=14, pady=(0, 10),
+                                 before=self.tools)
+            elif self._fw_ok and self.fw_bar.winfo_ismapped():
+                self.fw_bar.pack_forget()
             self._refresh_update(agent.update)
             if self.icon:
                 tip = f"HeDeck Agent · {self.ip} · {clients} điện thoại"
@@ -471,6 +490,30 @@ class AgentWindow:
         self._qr_url = None
         if self.agent:
             self._refresh_qr(self.agent)
+
+    def _watch_firewall(self):
+        """Hỏi tường lửa ở luồng riêng (netsh mất vài trăm ms), mỗi 30 giây."""
+        import time
+        while True:
+            try:
+                self._fw_ok = (not remote.tailscale_ip()
+                               or firewall.rule_exists())
+            except Exception:
+                self._fw_ok = True
+            for _ in range(30):
+                if getattr(self, "_fw_recheck", False):
+                    self._fw_recheck = False
+                    break
+                time.sleep(1)
+
+    def allow_tailscale(self):
+        firewall.open_for_tailscale(self.port or 8787)
+        print("Đang mở tường lửa cho Tailscale — bấm Có (Yes) khi Windows hỏi.")
+        # Người dùng bấm Có trong vài giây: hỏi lại sớm để dải cảnh báo tắt.
+        def recheck():
+            self._fw_recheck = True
+        for delay in (5000, 12000, 25000):
+            self.root.after(delay, recheck)
 
     def _refresh_qr(self, agent):
         """Mã QR mở bản web, kèm mã ghép cặp khi mã còn hạn."""

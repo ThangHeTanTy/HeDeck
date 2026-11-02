@@ -25,6 +25,7 @@ import app_volume
 import catalog
 import perf
 import instance
+import firewall
 import power
 import remote
 import remote_input
@@ -296,6 +297,9 @@ class Agent:
         print("  └" + "─" * width + "┘")
         for warning in self.wol.get("warnings", []):
             print(f"  [!] {warning}")
+        if remote.tailscale_ip() and not firewall.rule_exists():
+            print("  [!] Tường lửa Windows đang chặn kết nối qua Tailscale. "
+                  "Chạy MO_TAILSCALE.bat (hoặc bấm nút trên cửa sổ HeDeck).")
         self.print_update()
         if not self.gui:
             print("  Enter: mã mới · U: gỡ chặn IP · D: xoá điện thoại đã ghép · "
