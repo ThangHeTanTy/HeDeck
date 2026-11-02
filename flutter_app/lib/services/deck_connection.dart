@@ -209,6 +209,10 @@ class DeckConnection extends ChangeNotifier {
 
   void Function(SessionInfo info)? onSession;
 
+  /// Gọi mỗi lần vào được agent, kèm bản sao lưu bố cục agent đang giữ cho
+  /// máy này (null nếu chưa có).
+  void Function(Map<String, dynamic>? backup)? onAuthed;
+
   /// Khung hình màn hình máy tính mới nhất. Tách khỏi notifyListeners để
   /// mỗi khung hình chỉ vẽ lại ảnh, không dựng lại cả app.
   final screen = ValueNotifier<ScreenFrame?>(null);
@@ -448,6 +452,15 @@ class DeckConnection extends ChangeNotifier {
     if (msg != null && isOnline) _send(msg);
   }
 
+  void _readBackup(Map<String, dynamic> msg) {
+    final b = msg['backup'];
+    onAuthed?.call(b is Map ? b.cast<String, dynamic>() : null);
+  }
+
+  /// Gửi bản sao lưu bố cục lên agent.
+  void sendBackup(Map<String, dynamic> data) =>
+      _send({'t': 'backup', 'data': data});
+
   void _readSession(Map<String, dynamic> msg) {
     if (!msg.containsKey('wake_key')) return; // agent cũ
     final info = SessionInfo.fromJson(msg);
@@ -611,6 +624,7 @@ class DeckConnection extends ChangeNotifier {
         agentVersion = (msg['v'] as num?)?.toInt() ?? 0;
         _readWol(msg['wol']);
         _readSession(msg);
+        _readBackup(msg);
         break;
 
       case 'session':
@@ -634,6 +648,7 @@ class DeckConnection extends ChangeNotifier {
         requestCatalog();
         if (_perfWanted) _send({'t': 'perf_watch', 'on': true});
         _announceRelay();
+        _readBackup(msg);
         break;
 
       case 'catalog_pending':

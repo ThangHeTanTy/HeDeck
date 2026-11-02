@@ -10,7 +10,9 @@ export 'platform/relay_io.dart'
 /// Bật hoặc tắt trạm bật máy theo thiết lập, và báo agent địa chỉ của trạm.
 /// Trả về địa chỉ Tailscale của điện thoại này (rỗng nếu chưa có Tailscale —
 /// khi đó trạm vẫn chạy nhưng điện thoại ở xa không gọi tới được).
-Future<String> applyRelay(Store store, DeckConnection conn) async {
+/// [ask]: người dùng vừa bật trạm — xin quyền thông báo và bỏ tối ưu pin.
+Future<String> applyRelay(Store store, DeckConnection conn,
+    {bool ask = false}) async {
   if (!store.relayEnabled || !canRunRelay) {
     await wakeRelay.stop();
     if (canRunRelay) conn.setRelay();
@@ -20,6 +22,7 @@ Future<String> applyRelay(Store store, DeckConnection conn) async {
     key: () => store.wakeKey,
     macs: () => store.wolMacs,
     broadcast: () => store.wolBroadcast,
+    ask: ask,
   );
   final ip = await tailscaleAddress();
   conn.setRelay(ip: ip);

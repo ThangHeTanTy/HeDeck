@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart';
 
 import '../wake_on_lan.dart';
 import 'wake_page.dart';
@@ -85,26 +85,79 @@ class WakeRelayServer {
   late String Function() _key;
   late List<String> Function() _macs;
   late String Function() _broadcast;
+  int _port = 8788;
 
-  bool get running => _server != null;
+  /// Trên Android, trạm là dịch vụ nền viết bằng Kotlin (WakeRelayService
+  /// trong android_patch/MainActivity.kt): chạy tiếp khi tắt màn hình, khi
+  /// app bị vuốt khỏi đa nhiệm, và tự mở lại khi điện thoại khởi động lại.
+  /// Máy chủ Dart bên dưới chỉ dùng khi không có dịch vụ đó (test, bản build
+  /// cũ chưa chạy lại setup_app.bat).
+  static const _native = MethodChannel('hedeck/relay');
+  bool _nativeOn = false;
+  String _sentConfig = '';
+
+  bool get running => _server != null || _nativeOn;
+
+  Map<String, Object> _config() => {
+        'key': _key(),
+        'macs': _macs(),
+        'broadcast': _broadcast(),
+        'port': _port,
+      };
 
   Future<void> start({
     required String Function() key,
     required List<String> Function() macs,
     required String Function() broadcast,
     int port = 8788,
+    bool ask = false,
   }) async {
     _key = key;
     _macs = macs;
     _broadcast = broadcast;
-    if (_server != null) return;
-    _server = await HttpServer.bind(InternetAddress.anyIPv4, port, shared: true);
+    _port = port;
+    if (Platform.isAndroid && !_nativeOn) {
+      try {
+        final icon = (await rootBundle.load('assets/icon/icon.png'))
+            .buffer
+            .asUint8List();
+        await _native.invokeMethod('start',
+            {..._config(), 'page': wakePageHtml, 'icon': icon, 'ask': ask});
+        _nativeOn = true;
+        _sentConfig = jsonEncode(_config());
+        return;
+      } on MissingPluginException {
+        debugPrint(
+            'HeDeck: bản build chưa có trạm chạy ngầm, dùng trạm trong app');
+      }
+    }
+    if (_nativeOn || _server != null) return;
+    _server =
+        await HttpServer.bind(InternetAddress.anyIPv4, port, shared: true);
     _server!.listen(_handle, onError: (Object e) {
       debugPrint('HeDeck: trạm bật máy lỗi ($e)');
     });
   }
 
+  /// Khoá, MAC hay địa chỉ broadcast vừa đổi (agent gửi bản mới): báo dịch vụ
+  /// nền đọc lại. Máy chủ Dart thì đọc trực tiếp nên không cần.
+  Future<void> refresh() async {
+    if (!_nativeOn) return;
+    final config = jsonEncode(_config());
+    if (config == _sentConfig) return;
+    _sentConfig = config;
+    try {
+      await _native.invokeMethod('configure', _config());
+    } catch (_) {}
+  }
+
   Future<void> stop() async {
+    if (_nativeOn) {
+      _nativeOn = false;
+      try {
+        await _native.invokeMethod('stop');
+      } catch (_) {}
+    }
     await _server?.close(force: true);
     _server = null;
   }
@@ -161,7 +214,11 @@ class WakeRelayServer {
           // Trạm bị mang ra ngoài (deck đi theo người) thì tín hiệu phát vào
           // mạng quán cà phê, máy ở nhà không nghe: báo thẳng cho người bấm.
           final home = await onHomeNetwork(_broadcast());
-          body = {'ok': sent > 0 && home, 'sent': sent, if (!home) 'away': true};
+          body = {
+            'ok': sent > 0 && home,
+            'sent': sent,
+            if (!home) 'away': true
+          };
         }
       }
     } catch (e) {

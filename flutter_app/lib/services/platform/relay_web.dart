@@ -14,7 +14,10 @@ class WakeRelayServer {
     required List<String> Function() macs,
     required String Function() broadcast,
     int port = 8788,
+    bool ask = false,
   }) async {}
+
+  Future<void> refresh() async {}
 
   Future<void> stop() async {}
 }

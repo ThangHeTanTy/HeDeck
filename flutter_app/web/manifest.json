@@ -2,8 +2,6 @@
   "name": "HeDeck",
   "short_name": "HeDeck",
   "description": "Bàn điều khiển cho PC Windows — Stream Deck từ điện thoại.",
-  "start_url": ".",
-  "scope": ".",
   "display": "standalone",
   "orientation": "landscape",
   "background_color": "#0F1218",

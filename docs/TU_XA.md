@@ -72,6 +72,18 @@ một biểu tượng dùng được cả ở nhà lẫn ở ngoài (miễn iPho
 Biểu tượng tạo từ mã *Trong nhà* chỉ dùng được khi iPhone ở nhà; hai biểu tượng
 là hai lần ghép cặp riêng, giữ cả hai cũng được.
 
+**Lâu không mở mà biểu tượng đòi ghép cặp lại?** Biểu tượng ngoài Màn hình chính
+có bộ nhớ riêng, và iOS xoá dữ liệu của trang lâu ngày không mở. Từ bản này,
+sau khi ghép cặp HeDeck ghi một "vé" vào đường link (`…/#hd=…`); biểu tượng
+thêm **sau khi đã ghép cặp xong** lưu vé đó, nên dù iOS xoá dữ liệu, mở lên vẫn
+tự vào lại, khỏi nhập mã. Biểu tượng tạo từ bản cũ không có vé: mở trong
+Safari, ghép cặp, rồi xoá biểu tượng cũ và **Thêm vào Màn hình chính** lại.
+
+- Vé chứa khoá của iPhone này: **đừng gửi đường link của biểu tượng cho người
+  khác**. Muốn thu hồi: cửa sổ agent → xoá điện thoại đã ghép.
+- Bố cục (trang, ô, thiết lập) được sao lưu lên máy tính. Ghép cặp lại trên máy
+  cùng tên thì bố cục tự trở về, khỏi dựng lại từ đầu.
+
 ## 2. Bật máy từ xa (trạm bật máy)
 
 Tín hiệu bật máy (Wake-on-LAN) chỉ đi được trong mạng nhà, và lúc máy tắt thì
@@ -85,7 +97,8 @@ Trước hết bật máy từ xa phải chạy được **trong mạng nhà** �
    Trong cài đặt Android → VPN → Tailscale, bật **VPN luôn bật** (*Always-on
    VPN*). Tắt **tối ưu pin** cho Tailscale và HeDeck.
 2. Mở HeDeck trên điện thoại deck → bánh răng ⚙ → bật **Trạm bật máy (điện
-   thoại này để ở nhà)**. Dòng dưới hiện **Đang chạy · Tailscale 100.y.y.y**.
+   thoại này để ở nhà)**. Cho phép **thông báo** và chọn **Cho phép** khi được
+   hỏi bỏ tối ưu pin. Dòng dưới hiện **Đang chạy ngầm · Tailscale 100.y.y.y**.
 3. Cửa sổ agent hiện **Trạm bật máy: <tên điện thoại deck>**.
 4. Mở HeDeck trên **điện thoại của bạn** một lần lúc máy tính đang chạy, để app
    nhận địa chỉ trạm.
@@ -94,8 +107,12 @@ Từ giờ: máy tính tắt, bạn ở ngoài, bấm nút nguồn trên HeDeck 
 nhờ trạm ở nhà phát tín hiệu; khoảng 20–60 giây sau Windows lên, agent tự chạy
 (nếu đã bật `TU_CHAY_CUNG_WINDOWS.bat`) và app tự kết nối lại.
 
-Điện thoại deck phải **giữ HeDeck đang mở** (vốn dĩ nó là deck, màn hình luôn
-sáng) và cắm sạc. Đóng app hay tắt màn hình thì trạm ngừng.
+Trạm **chạy ngầm**: tắt màn hình, chuyển app khác hay vuốt đóng HeDeck thì trạm
+vẫn chạy, thanh thông báo có dòng *HeDeck · Trạm bật máy đang chạy*. Khởi động
+lại điện thoại thì trạm tự chạy lại. Để chắc ăn: cắm sạc, giữ Wi-Fi, và trong
+cài đặt Android → Ứng dụng → HeDeck → Pin chọn **Không hạn chế** (một số máy
+Xiaomi, Oppo, Samsung còn có mục *Tự khởi chạy* / *Ứng dụng không bao giờ ngủ*
+— thêm HeDeck và Tailscale vào). Muốn tắt trạm: bỏ công tắc trong ⚙.
 
 **An toàn:** trạm chỉ nhận lệnh từ mạng nhà hoặc mạng Tailscale của bạn, và mỗi
 lệnh phải ký bằng khoá do agent cấp cho các điện thoại đã ghép cặp, hết hạn sau
@@ -159,6 +176,7 @@ không dành để xem phim hay chơi game từ xa.
 | Cửa sổ agent ghi *Từ xa: chưa có* | Tailscale trên máy tính chưa bật hoặc chưa đăng nhập. Mở Tailscale, đăng nhập, rồi mở lại agent. |
 | iPhone báo *Safari không thể mở trang vì máy chủ đã dừng phản hồi* (mã Mọi nơi), app cứ *Đang kết nối* qua Tailscale | **Tường lửa Windows chặn Tailscale** (card mạng Tailscale bị xếp vào loại Public). Bấm **Cho phép qua Tailscale** trên cửa sổ HeDeck ở PC, hoặc chạy `MO_TAILSCALE.bat`. Chỉ mở cổng 8787 cho mạng Tailscale của bạn. |
 | Ở ngoài, app cứ *Đang kết nối* | Tailscale trên điện thoại chưa bật, hoặc chưa mở HeDeck ở nhà lần nào kể từ khi cài Tailscale trên máy tính. |
-| *Không liên lạc được trạm bật máy* | Điện thoại deck đã tắt app, tắt màn hình, mất Wi-Fi, hoặc Tailscale trên nó bị Android tắt (bật *VPN luôn bật*, tắt tối ưu pin). |
+| *Không liên lạc được trạm bật máy* | Thanh thông báo của điện thoại deck không còn dòng *Trạm bật máy đang chạy* (mở HeDeck, bật lại công tắc trạm), điện thoại mất Wi-Fi, hoặc Tailscale trên nó bị Android tắt (bật *VPN luôn bật*, đặt pin *Không hạn chế* cho cả HeDeck và Tailscale). |
+| Biểu tượng HeDeck trên iPhone đòi mã ghép cặp | Biểu tượng tạo từ bản cũ, chưa có vé khôi phục. Mở trong Safari, ghép cặp, rồi Thêm vào Màn hình chính lại (xem *iPhone dùng như deck ở mọi nơi*). |
 | Trạm báo đã gửi nhưng máy không lên | Bật máy trong mạng nhà chưa chạy được — xem [BAT_MAY_TU_XA.md](BAT_MAY_TU_XA.md). |
 | Touchpad ghi *Cập nhật agent…* | Agent trên máy tính là bản cũ: cập nhật agent (cửa sổ agent → *Xem và cập nhật*). |

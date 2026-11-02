@@ -8,6 +8,7 @@ import '../services/deck_connection.dart';
 import '../services/discovery.dart';
 import '../services/platform/link_io.dart'
     if (dart.library.js_interop) '../services/platform/link_web.dart';
+import '../services/link_restore.dart';
 import '../services/store.dart';
 import '../theme.dart';
 import '../widgets/lang_picker.dart';
@@ -97,7 +98,8 @@ class _PairScreenState extends State<PairScreen> {
     final code = _code.text.trim();
 
     if (host.isEmpty) {
-      setState(() => _error = t('Nhập địa chỉ IP hiện trên cửa sổ HeDeck ở máy tính'));
+      setState(() =>
+          _error = t('Nhập địa chỉ IP hiện trên cửa sổ HeDeck ở máy tính'));
       return;
     }
     if (code.length != 6) {
@@ -127,6 +129,9 @@ class _PairScreenState extends State<PairScreen> {
         hostName: result.hostName,
         fingerprint: result.fingerprint,
       );
+      // Bản web: ghi vé khôi phục vào đường link, để biểu tượng ngoài Màn
+      // hình chính (bộ nhớ riêng) khỏi đòi ghép cặp lại.
+      await saveRestoreLink();
       if (!mounted) return;
       HapticFeedback.mediumImpact();
       // Không tự đẩy màn hình: gốc app theo dõi trạng thái ghép cặp và tự
@@ -173,7 +178,8 @@ class _PairScreenState extends State<PairScreen> {
                   const SizedBox(height: 6),
                   Text(
                     t('Mở HeDeck trên máy tính Windows, rồi nhập địa chỉ và mã 6 số hiện trên cửa sổ đó.'),
-                    style: TextStyle(color: DeckColors.muted, fontSize: 13, height: 1.5),
+                    style: TextStyle(
+                        color: DeckColors.muted, fontSize: 13, height: 1.5),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -311,7 +317,8 @@ class _PairScreenState extends State<PairScreen> {
                 onTap: _scanning ? null : _scan,
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: _scanning
                       ? SizedBox(
                           height: 13,
@@ -320,8 +327,8 @@ class _PairScreenState extends State<PairScreen> {
                               strokeWidth: 2, color: DeckColors.muted),
                         )
                       : Text(t('Quét lại'),
-                          style:
-                              TextStyle(color: DeckColors.accent, fontSize: 12)),
+                          style: TextStyle(
+                              color: DeckColors.accent, fontSize: 12)),
                 ),
               ),
             ],
@@ -341,7 +348,8 @@ class _PairScreenState extends State<PairScreen> {
                 }),
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                   child: Row(
                     children: [
                       Icon(Icons.desktop_windows_rounded,
@@ -353,8 +361,8 @@ class _PairScreenState extends State<PairScreen> {
                                 color: DeckColors.text, fontSize: 13)),
                       ),
                       Text('${h.ip}:${h.port}',
-                          style: TextStyle(
-                              color: DeckColors.muted, fontSize: 12)),
+                          style:
+                              TextStyle(color: DeckColors.muted, fontSize: 12)),
                     ],
                   ),
                 ),
