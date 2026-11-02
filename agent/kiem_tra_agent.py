@@ -242,6 +242,10 @@ def main():
           and source.index('if kind == "screen"') > source.index("async def handle_command"))
     check("báo trong log khi có điện thoại đang xem màn hình",
           "đang xem màn hình máy này" in source)
+    fw_src = (HERE / "firewall.py").read_text(encoding="utf-8")
+    check("mở tường lửa chỉ cho mạng Tailscale, không cho Internet",
+          "-RemoteAddress 100.64.0.0/10" in fw_src
+          and "-RemoteAddress 100.64.0.0/10" in (HERE / "MO_TAILSCALE.bat").read_text(encoding="utf-8"))
     check("màn hình đứng yên thì không gửi lại ảnh",
           "if digest == last_digest" in scr_src and "def _crop(" in scr_src)
 

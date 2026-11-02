@@ -44,6 +44,8 @@ hoá, miễn phí cho cá nhân, nối các máy cùng một tài khoản dù ch
    đăng nhập **cùng tài khoản**, bật lên.
    Trong Tailscale trên máy tính, bật **Run unattended** để nó chạy cả khi
    chưa đăng nhập Windows.
+   Nếu cửa sổ HeDeck hiện dải vàng *Tường lửa Windows đang chặn kết nối qua
+   Tailscale*, bấm **Cho phép qua Tailscale** rồi bấm **Có** khi Windows hỏi.
 3. Mở lại HeDeck Agent. Cửa sổ agent hiện dòng
    **Từ xa: Tailscale 100.x.y.z** — nghĩa là đã sẵn sàng.
 4. Mở HeDeck trên điện thoại **một lần khi đang ở nhà**, để app nhớ địa chỉ
@@ -155,6 +157,7 @@ không dành để xem phim hay chơi game từ xa.
 | Hiện tượng | Cách xử lý |
 |---|---|
 | Cửa sổ agent ghi *Từ xa: chưa có* | Tailscale trên máy tính chưa bật hoặc chưa đăng nhập. Mở Tailscale, đăng nhập, rồi mở lại agent. |
+| iPhone báo *Safari không thể mở trang vì máy chủ đã dừng phản hồi* (mã Mọi nơi), app cứ *Đang kết nối* qua Tailscale | **Tường lửa Windows chặn Tailscale** (card mạng Tailscale bị xếp vào loại Public). Bấm **Cho phép qua Tailscale** trên cửa sổ HeDeck ở PC, hoặc chạy `MO_TAILSCALE.bat`. Chỉ mở cổng 8787 cho mạng Tailscale của bạn. |
 | Ở ngoài, app cứ *Đang kết nối* | Tailscale trên điện thoại chưa bật, hoặc chưa mở HeDeck ở nhà lần nào kể từ khi cài Tailscale trên máy tính. |
 | *Không liên lạc được trạm bật máy* | Điện thoại deck đã tắt app, tắt màn hình, mất Wi-Fi, hoặc Tailscale trên nó bị Android tắt (bật *VPN luôn bật*, tắt tối ưu pin). |
 | Trạm báo đã gửi nhưng máy không lên | Bật máy trong mạng nhà chưa chạy được — xem [BAT_MAY_TU_XA.md](BAT_MAY_TU_XA.md). |

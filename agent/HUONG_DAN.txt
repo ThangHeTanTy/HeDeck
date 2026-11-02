@@ -24,6 +24,9 @@ Tuỳ chọn
 --------
 - TU_CHAY_CUNG_WINDOWS.bat : agent tự chạy ngầm ở khay mỗi khi đăng nhập
                              Windows. Chạy lại lần nữa để gỡ bỏ.
+- MO_TAILSCALE.bat         : dùng từ xa qua Tailscale mà điện thoại báo "máy chủ
+                             không phản hồi" thì chạy file này (mở tường lửa
+                             cho mạng Tailscale, không mở cho Internet).
 - CAI_BAT_MAY_TU_XA.bat    : cấu hình card mạng để bật máy từ điện thoại
                              (Wake-on-LAN). Cần cắm dây LAN và bật trong BIOS,
                              xem docs/BAT_MAY_TU_XA.md trên GitHub.
