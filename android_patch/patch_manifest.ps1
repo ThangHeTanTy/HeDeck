@@ -41,6 +41,16 @@ if ($m -notmatch "REQUEST_INSTALL_PACKAGES") {
     Write-Host "  + Da them quyen cai ban cap nhat"
 }
 
+# 1c. Tram bat may chay ngam: dich vu nen, tu mo lai khi khoi dong may.
+if ($m -notmatch "FOREGROUND_SERVICE_SPECIAL_USE") {
+    $m = [regex]::Replace(
+        $m,
+        "(<manifest[^>]*>)",
+        "`$1$nl    <!-- Tram bat may chay ngam -->$nl    <uses-permission android:name=`"android.permission.FOREGROUND_SERVICE`" />$nl    <uses-permission android:name=`"android.permission.FOREGROUND_SERVICE_SPECIAL_USE`" />$nl    <uses-permission android:name=`"android.permission.POST_NOTIFICATIONS`" />$nl    <uses-permission android:name=`"android.permission.RECEIVE_BOOT_COMPLETED`" />$nl    <uses-permission android:name=`"android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`" />",
+        1)
+    Write-Host "  + Da them quyen cho tram bat may chay ngam"
+}
+
 # 2. Ten hien thi
 $m = [regex]::Replace($m, 'android:label="[^"]*"', 'android:label="HeDeck"', 1)
 
@@ -84,6 +94,30 @@ if ($m -notmatch "update_paths") {
     }
     $m = $m.Insert($i, "    " + $provider.Trim() + $nl + "    ")
     Write-Host "  + Da them FileProvider cho ban cap nhat"
+}
+
+# 4c. Khai bao dich vu tram bat may va bo nhan su kien khoi dong may
+if ($m -notmatch "WakeRelayService") {
+    $relay = @"
+        <service
+            android:name=".WakeRelayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Tram bat may tinh (Wake-on-LAN) cho dien thoai khac" />
+        </service>
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+"@
+    $i = $m.LastIndexOf("</application>")
+    $m = $m.Insert($i, "    " + $relay.Trim() + $nl + "    ")
+    Write-Host "  + Da khai bao tram bat may chay ngam"
 }
 
 # Ghi lai khong kem BOM, aapt khong thich BOM

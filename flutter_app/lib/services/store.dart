@@ -277,6 +277,62 @@ class Store extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Đã từng dựng bố cục trên máy này chưa, hay vẫn là trang mẫu ban đầu.
+  bool get hasOwnLayout => _prefs.getString(_kPages) != null;
+
+  /// Bố cục và thiết lập gửi lên máy tính để sao lưu. iPhone (bản web) có thể
+  /// mất dữ liệu: biểu tượng ngoài Màn hình chính có bộ nhớ riêng, iOS xoá dữ
+  /// liệu trang lâu không mở. Có bản sao trên máy tính thì lấy lại được.
+  Map<String, dynamic> backupData() => {
+        'pages': pages.map((p) => p.toJson()).toList(),
+        'rows': rows,
+        'flipped': flippedTiles.toList(),
+        'lang': lang.name,
+        'dark': dark,
+        'autoSwitch': autoSwitch,
+        'mouseSpeed': mouseSpeed,
+        'screenLevel': screenLevel,
+      };
+
+  /// Lấy lại bố cục từ bản sao trên máy tính. Bản sao hỏng thì bỏ qua.
+  Future<void> restoreBackup(Map<String, dynamic> b) async {
+    final List<DeckPage> restored;
+    try {
+      restored = (b['pages'] as List)
+          .map((e) => DeckPage.fromJson((e as Map).cast<String, dynamic>()))
+          .toList();
+    } catch (_) {
+      return;
+    }
+    if (restored.isEmpty) return;
+    pages = restored;
+    final r = (b['rows'] as num?)?.toInt();
+    if (r == 2 || r == 3) rows = r!;
+    flippedTiles
+      ..clear()
+      ..addAll((b['flipped'] as List? ?? const []).whereType<String>());
+    if (b['lang'] is String) {
+      lang = AppLang.fromCode(b['lang'] as String);
+      L10n.current = lang;
+    }
+    if (b['dark'] is bool) {
+      dark = b['dark'] as bool;
+      DeckColors.use(dark ? DeckPalette.dark : DeckPalette.light);
+    }
+    if (b['autoSwitch'] is bool) autoSwitch = b['autoSwitch'] as bool;
+    final speed = (b['mouseSpeed'] as num?)?.toDouble();
+    if (speed != null) mouseSpeed = speed;
+    if (b['screenLevel'] is String) screenLevel = b['screenLevel'] as String;
+    await _prefs.setInt(_kRows, rows);
+    await _prefs.setStringList(_kFlipped, flippedTiles.toList());
+    await _prefs.setString(_kLang, lang.name);
+    await _prefs.setBool(_kDark, dark);
+    await _prefs.setBool(_kAutoSwitch, autoSwitch);
+    await _prefs.setDouble(_kMouseSpeed, mouseSpeed);
+    await _prefs.setString(_kScreenLevel, screenLevel);
+    await _persistPages();
+  }
+
   Future<void> _persistPages() async {
     await _prefs.setString(
       _kPages,

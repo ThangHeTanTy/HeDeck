@@ -49,6 +49,16 @@
       history.replaceState(null, "", location.pathname + location.search);
     }
 
+    // Vé khôi phục ghép cặp (…#hd=…, xem lib/services/link_restore.dart):
+    // giữ nguyên trong đường link để "Thêm vào Màn hình chính" lưu theo.
+    window.hedeckRestoreToken = (location.hash.match(/hd=([A-Za-z0-9_-]+)/) || [])[1] || "";
+    window.hedeckSetLinkToken = function (token) {
+      try {
+        history.replaceState(null, "",
+            location.pathname + location.search + (token ? "#hd=" + token : ""));
+      } catch (e) {}
+    };
+
     // Ẩn màn hình chờ khi Flutter vẽ xong khung hình đầu tiên.
     window.addEventListener("flutter-first-frame", function () {
       var s = document.getElementById("splash");

@@ -366,6 +366,15 @@ class Agent:
             "wake_key": self.state["wake_key"],
         }
 
+    def latest_backup(self, name):
+        """Bản sao bố cục mới nhất của điện thoại cùng tên, None nếu không có."""
+        best = None
+        for dev in self.state["devices"].values():
+            if dev.get("name") == name and dev.get("backup"):
+                if best is None or dev.get("backup_at", 0) > best.get("backup_at", 0):
+                    best = dev
+        return best["backup"] if best else None
+
     def relay_status(self):
         relay = self.state.get("wake_relay")
         if not relay:
@@ -666,6 +675,22 @@ class Agent:
                 ws, str(msg.get("level", "mid")), msg.get("zoom", 1.0)))
             return None
 
+        if kind == "backup":
+            # Bản sao bố cục (trang, ô, thiết lập) của điện thoại. iPhone dùng
+            # bản web có thể mất dữ liệu trang; giữ ở đây để lấy lại được.
+            device = self._ws_device.get(ws)
+            data = msg.get("data")
+            dev = self.state["devices"].get(device)
+            if dev is None or not isinstance(data, dict):
+                return None
+            if len(json.dumps(data)) > 512 * 1024:
+                return {"t": "error", "msg": "Bản sao lưu quá lớn"}
+            if dev.get("backup") != data:
+                dev["backup"] = data
+                dev["backup_at"] = int(time.time())
+                save_state(self.state)
+            return None
+
         if kind == "relay":
             # Điện thoại deck để ở nhà nhận làm trạm bật máy (hoặc thôi làm).
             device = self._ws_device.get(ws)
@@ -914,12 +939,18 @@ class Agent:
                         continue
 
                     device_id = msg.get("device_id") or secrets.token_hex(8)
+                    # Ghép cặp lại (iPhone mất dữ liệu, cài lại app) ra mã
+                    # thiết bị mới: mang theo bản sao bố cục gần nhất của máy
+                    # cùng tên, để khỏi phải dựng lại từ đầu.
+                    inherited = self.latest_backup(msg.get("device_name"))
                     self.state["devices"][device_id] = {
                         "pubkey": pubkey,
                         "name": msg.get("device_name", "Điện thoại"),
                         "ip": peer,
                         "paired_at": int(time.time()),
                     }
+                    if inherited:
+                        self.state["devices"][device_id]["backup"] = inherited
                     save_state(self.state)
                     self.guard.record_success(peer)
                     authed = True
@@ -934,6 +965,7 @@ class Agent:
                         "wol": power.public_view(self.wol),
                         "v": AGENT_VERSION,
                         **self.session_info(),
+                        "backup": inherited,
                     }))
                     self.new_pair_code()
                     continue
@@ -970,7 +1002,9 @@ class Agent:
                         "t": "auth_ok", "host_name": self.host_name,
                         "wol": power.public_view(self.wol),
                         "v": AGENT_VERSION,
-                        **self.session_info()}))
+                        **self.session_info(),
+                        "backup": self.state["devices"][msg["device_id"]].get(
+                            "backup")}))
                     continue
 
                 if not authed:

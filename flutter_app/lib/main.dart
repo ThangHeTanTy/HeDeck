@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
 
 import 'l10n/l10n.dart';
 import 'screens/splash_screen.dart';
 import 'services/deck_connection.dart';
 import 'services/device_identity.dart';
+import 'services/backup_sync.dart';
+import 'services/link_restore.dart';
 import 'services/store.dart';
 import 'services/wake_relay.dart';
 import 'theme.dart';
@@ -53,6 +56,11 @@ Future<void> main() async {
     debugPrint('HeDeck: LỖI CHƯA BẮT — $error\n$stack');
     return true;
   };
+
+  // Bản web: Flutter không được đụng vào đường link. Phần sau dấu # chứa vé
+  // khôi phục ghép cặp (xem services/link_restore.dart). App không dùng
+  // đường dẫn để chuyển trang nên không mất gì. Android: không có tác dụng.
+  setUrlStrategy(null);
 
   // Vẽ ngay lập tức, chưa chờ gì cả. Trước đây main() chờ đọc cấu hình, nạp
   // khoá, khoá xoay màn hình... rồi mới runApp: chỉ cần một bước treo trên
@@ -133,6 +141,9 @@ class _BootAppState extends State<BootApp> {
 
     try {
       final store = Store();
+      // iPhone mở từ biểu tượng mà bộ nhớ trống: dựng lại ghép cặp từ vé
+      // trong đường link trước khi đọc cấu hình.
+      await _run(t('Đọc cấu hình đã lưu'), restorePairingFromLink);
       await _run(t('Đọc cấu hình đã lưu'), store.load);
       debugPrint('HeDeck: đã ghép cặp=${store.isPaired} '
           'host="${store.host}" trang=${store.pages.length} '
@@ -156,6 +167,8 @@ class _BootAppState extends State<BootApp> {
             'cần ghép cặp lại');
         await _run(t('Xoá ghép cặp cũ'), store.forgetHost);
       }
+      // Ghi lại vé theo ghép cặp hiện tại (hoặc xoá nếu đã mất ghép cặp).
+      await saveRestoreLink();
 
       _slowTimer?.cancel();
       if (!mounted) return;
@@ -241,12 +254,11 @@ class _BootScreen extends StatelessWidget {
                             height: 1.5)),
                   ),
                   const SizedBox(height: 16),
-                  FilledButton(
-                      onPressed: onRetry, child: Text(t('Thử lại'))),
+                  FilledButton(onPressed: onRetry, child: Text(t('Thử lại'))),
                   const SizedBox(height: 8),
-                  Text(
-                      t('Lặp lại nhiều lần thì chụp màn hình này gửi Hề IT.'),
-                      style: const TextStyle(color: Color(0xFF777777), fontSize: 11)),
+                  Text(t('Lặp lại nhiều lần thì chụp màn hình này gửi Hề IT.'),
+                      style: const TextStyle(
+                          color: Color(0xFF777777), fontSize: 11)),
                 ] else if (slow)
                   Text('$step…',
                       style: const TextStyle(
@@ -277,9 +289,14 @@ class DeckApp extends StatelessWidget {
             conn.onHostChanged = store.updateHost;
             conn.onWolInfo = (w) => store.saveWol(w.macs, w.broadcast);
             conn.onSession = store.saveSession;
+            attachBackupSync(store, conn);
             conn.remoteHost = store.remoteHost;
             // Điện thoại deck để ở nhà làm trạm bật máy: mở lại khi app mở.
             if (store.relayEnabled) applyRelay(store, conn);
+            // Agent gửi khoá/MAC mới thì báo trạm chạy ngầm đọc lại.
+            store.addListener(() {
+              if (store.relayEnabled) wakeRelay.refresh();
+            });
             return conn;
           },
         ),

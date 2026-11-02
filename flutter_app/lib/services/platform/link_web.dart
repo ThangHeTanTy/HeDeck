@@ -16,3 +16,18 @@ external void _windowOpen(String url, String target);
 
 /// Mở đường link ở thẻ mới (trên iPhone: mở bằng Safari).
 void openLink(String url) => _windowOpen(url, '_blank');
+
+/// web/index.html đọc vé khôi phục ghép cặp (…#hd=…) trước khi Flutter chạy.
+@JS('hedeckRestoreToken')
+external String? get _restoreToken;
+
+String? restoreTokenFromLink() {
+  final t = _restoreToken ?? '';
+  return t.isEmpty ? null : t;
+}
+
+@JS('hedeckSetLinkToken')
+external void _setLinkToken(String? token);
+
+/// Ghi (hoặc xoá, nếu null) vé khôi phục vào phần sau dấu # của đường link.
+void setLinkToken(String? token) => _setLinkToken(token);

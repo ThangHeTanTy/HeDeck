@@ -34,6 +34,34 @@ if "REQUEST_INSTALL_PACKAGES" not in m:
     <!-- Mở trình cài đặt khi cập nhật app từ GitHub -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />""", m, count=1)
 
+if "FOREGROUND_SERVICE_SPECIAL_USE" not in m:
+    m = re.sub(r"(<manifest[^>]*>)", r"\1" + """
+    <!-- Trạm bật máy chạy ngầm (dịch vụ nền, tự mở lại khi khởi động máy) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />""", m, count=1)
+
+if "WakeRelayService" not in m:
+    i = m.rindex("</application>")
+    m = m[:i] + """    <service
+            android:name=".WakeRelayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Tram bat may tinh (Wake-on-LAN) cho dien thoai khac" />
+        </service>
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    """ + m[i:]
+
 m = re.sub(r'android:label="[^"]*"', 'android:label="HeDeck"', m, count=1)
 
 # Android khôi phục dữ liệu cũ sau khi cài lại app, nhưng khoá giải mã thì

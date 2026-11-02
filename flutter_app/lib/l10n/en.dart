@@ -741,16 +741,16 @@ const en = <String, String>{
       'Asking the home wake station…',
   'Trạm ở nhà đã gửi tín hiệu bật máy. Windows cần khoảng 20–60 giây để lên.':
       'The home station sent the wake signal. Windows needs about 20–60 seconds to start.',
-  'Không liên lạc được trạm bật máy — điện thoại deck ở nhà có đang mở HeDeck và bật Tailscale không?':
-      'Could not reach the wake station — is the deck phone at home running HeDeck with Tailscale on?',
+  'Không liên lạc được trạm bật máy — điện thoại deck ở nhà có còn nối Wi-Fi, bật Tailscale và hiện thông báo trạm không?':
+      'Could not reach the wake station — is the deck phone at home on Wi-Fi, with Tailscale on and the station notification showing?',
   'Đã gửi tín hiệu trong mạng này, nhưng trạm ở nhà không trả lời. Nếu đang ở xa, máy sẽ không bật.':
       'Sent the signal on this network, but the home station did not answer. If you are away, the PC will not turn on.',
   'Trạm bật máy (điện thoại này để ở nhà)':
       'Wake station (this phone stays at home)',
   'Bật trên điện thoại deck luôn ở nhà, cắm sạc: điện thoại khác ở xa nhờ nó bật máy tính qua Tailscale':
       'Turn on for the deck phone that stays at home, plugged in: other phones away from home ask it to wake the PC over Tailscale',
-  'Đang chạy · Tailscale {0}':
-      'Running · Tailscale {0}',
+  'Đang chạy ngầm · Tailscale {0}':
+      'Running in background · Tailscale {0}',
   'Đang chạy, nhưng điện thoại này chưa bật Tailscale — điện thoại ở xa chưa gọi tới được':
       'Running, but Tailscale is not on for this phone — phones away from home cannot reach it yet',
   'Ẩn màn hình máy tính':

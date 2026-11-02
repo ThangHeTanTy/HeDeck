@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Bản web: tắt việc Flutter ghi đè đường link (giữ vé khôi phục ghép cặp).
+  flutter_web_plugins:
+    sdk: flutter
   web_socket_channel: ^3.0.1
   shared_preferences: ^2.3.2
   # Ghim phần Android ở nhánh 2.4.x. Từ 2.5.0 (10/2026) plugin tra lớp Kotlin
