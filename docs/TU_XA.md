@@ -97,8 +97,9 @@ Trước hết bật máy từ xa phải chạy được **trong mạng nhà** �
    Trong cài đặt Android → VPN → Tailscale, bật **VPN luôn bật** (*Always-on
    VPN*). Tắt **tối ưu pin** cho Tailscale và HeDeck.
 2. Mở HeDeck trên điện thoại deck → bánh răng ⚙ → bật **Trạm bật máy (điện
-   thoại này để ở nhà)**. Cho phép **thông báo** và chọn **Cho phép** khi được
-   hỏi bỏ tối ưu pin. Dòng dưới hiện **Đang chạy ngầm · Tailscale 100.y.y.y**.
+   thoại này để ở nhà)**. Cho phép **thông báo**. App mở trang thông tin
+   HeDeck: vào **Pin → Không hạn chế**, rồi quay lại. Dòng dưới hiện **Đang
+   chạy ngầm · Tailscale 100.y.y.y**.
 3. Cửa sổ agent hiện **Trạm bật máy: <tên điện thoại deck>**.
 4. Mở HeDeck trên **điện thoại của bạn** một lần lúc máy tính đang chạy, để app
    nhận địa chỉ trạm.
@@ -109,7 +110,9 @@ nhờ trạm ở nhà phát tín hiệu; khoảng 20–60 giây sau Windows lên
 
 Trạm **chạy ngầm**: tắt màn hình, chuyển app khác hay vuốt đóng HeDeck thì trạm
 vẫn chạy, thanh thông báo có dòng *HeDeck · Trạm bật máy đang chạy*. Khởi động
-lại điện thoại thì trạm tự chạy lại. Để chắc ăn: cắm sạc, giữ Wi-Fi, và trong
+lại điện thoại thì **mở HeDeck một lần** để trạm chạy lại (HeDeck không tự mở
+lúc khởi động máy, vì Google Play Protect coi việc đó là dấu hiệu của ứng dụng
+có hại). Để chắc ăn: cắm sạc, giữ Wi-Fi, và trong
 cài đặt Android → Ứng dụng → HeDeck → Pin chọn **Không hạn chế** (một số máy
 Xiaomi, Oppo, Samsung còn có mục *Tự khởi chạy* / *Ứng dụng không bao giờ ngủ*
 — thêm HeDeck và Tailscale vào). Muốn tắt trạm: bỏ công tắc trong ⚙.
@@ -180,3 +183,21 @@ không dành để xem phim hay chơi game từ xa.
 | Biểu tượng HeDeck trên iPhone đòi mã ghép cặp | Biểu tượng tạo từ bản cũ, chưa có vé khôi phục. Mở trong Safari, ghép cặp, rồi Thêm vào Màn hình chính lại (xem *iPhone dùng như deck ở mọi nơi*). |
 | Trạm báo đã gửi nhưng máy không lên | Bật máy trong mạng nhà chưa chạy được — xem [BAT_MAY_TU_XA.md](BAT_MAY_TU_XA.md). |
 | Touchpad ghi *Cập nhật agent…* | Agent trên máy tính là bản cũ: cập nhật agent (cửa sổ agent → *Xem và cập nhật*). |
+
+## Google Play Protect báo *Đã chặn ứng dụng có hại*
+
+HeDeck cài từ GitHub, không qua Google Play, nên Play Protect tự đoán dựa trên
+các quyền app xin. Bản 1.2.3 xin cùng lúc quyền tự cài bản cập nhật, tự mở khi
+khởi động máy và tự xin bỏ tối ưu pin — giống hệt bộ quyền của ứng dụng độc hại,
+nên bị chặn. Từ bản 1.2.4 đã bỏ hai quyền sau.
+
+Nếu vẫn bị chặn (Play Protect chưa kịp nhận ra bản mới):
+
+1. Mở **Cửa hàng Play** → ảnh đại diện → **Play Protect** → ⚙ → tạm tắt **Quét
+   ứng dụng bằng Play Protect**.
+2. Cài HeDeck.apk tải từ trang Releases của dự án (muốn chắc thì so mã trong
+   SHA256SUMS.txt).
+3. **Bật lại** *Quét ứng dụng bằng Play Protect* ngay sau đó.
+
+Bạn cũng có thể gửi APK cho Google xét lại tại
+<https://support.google.com/googleplay/android-developer/contact/protectappeals>.

@@ -41,15 +41,21 @@ if ($m -notmatch "REQUEST_INSTALL_PACKAGES") {
     Write-Host "  + Da them quyen cai ban cap nhat"
 }
 
-# 1c. Tram bat may chay ngam: dich vu nen, tu mo lai khi khoi dong may.
+# 1c. Tram bat may chay ngam: dich vu nen co thong bao.
 if ($m -notmatch "FOREGROUND_SERVICE_SPECIAL_USE") {
     $m = [regex]::Replace(
         $m,
         "(<manifest[^>]*>)",
-        "`$1$nl    <!-- Tram bat may chay ngam -->$nl    <uses-permission android:name=`"android.permission.FOREGROUND_SERVICE`" />$nl    <uses-permission android:name=`"android.permission.FOREGROUND_SERVICE_SPECIAL_USE`" />$nl    <uses-permission android:name=`"android.permission.POST_NOTIFICATIONS`" />$nl    <uses-permission android:name=`"android.permission.RECEIVE_BOOT_COMPLETED`" />$nl    <uses-permission android:name=`"android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`" />",
+        "`$1$nl    <!-- Tram bat may chay ngam -->$nl    <uses-permission android:name=`"android.permission.FOREGROUND_SERVICE`" />$nl    <uses-permission android:name=`"android.permission.FOREGROUND_SERVICE_SPECIAL_USE`" />$nl    <uses-permission android:name=`"android.permission.POST_NOTIFICATIONS`" />",
         1)
     Write-Host "  + Da them quyen cho tram bat may chay ngam"
 }
+
+# 1d. Ban 1.2.3 con tu mo lai khi khoi dong may va tu xin bo toi uu pin. Bo
+# quyen do cung quyen tu cai ban cap nhat khien Google Play Protect chan app
+# la "co hai". Go khoi khung da sinh tu truoc.
+$m = [regex]::Replace($m, '\s*<uses-permission android:name="android\.permission\.(RECEIVE_BOOT_COMPLETED|REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)" />', '')
+$m = [regex]::Replace($m, '(?s)\s*<receiver\s+android:name="\.BootReceiver".*?</receiver>', '')
 
 # 2. Ten hien thi
 $m = [regex]::Replace($m, 'android:label="[^"]*"', 'android:label="HeDeck"', 1)
@@ -96,7 +102,7 @@ if ($m -notmatch "update_paths") {
     Write-Host "  + Da them FileProvider cho ban cap nhat"
 }
 
-# 4c. Khai bao dich vu tram bat may va bo nhan su kien khoi dong may
+# 4c. Khai bao dich vu tram bat may
 if ($m -notmatch "WakeRelayService") {
     $relay = @"
         <service
@@ -107,13 +113,6 @@ if ($m -notmatch "WakeRelayService") {
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Tram bat may tinh (Wake-on-LAN) cho dien thoai khac" />
         </service>
-        <receiver
-            android:name=".BootReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
 "@
     $i = $m.LastIndexOf("</application>")
     $m = $m.Insert($i, "    " + $relay.Trim() + $nl + "    ")

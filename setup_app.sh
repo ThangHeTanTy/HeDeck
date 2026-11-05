@@ -36,12 +36,16 @@ if "REQUEST_INSTALL_PACKAGES" not in m:
 
 if "FOREGROUND_SERVICE_SPECIAL_USE" not in m:
     m = re.sub(r"(<manifest[^>]*>)", r"\1" + """
-    <!-- Trạm bật máy chạy ngầm (dịch vụ nền, tự mở lại khi khởi động máy) -->
+    <!-- Trạm bật máy chạy ngầm (dịch vụ nền có thông báo) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />""", m, count=1)
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />""", m, count=1)
+
+# Bản 1.2.3 còn tự mở lại khi khởi động máy và tự xin bỏ tối ưu pin. Bộ quyền
+# đó cùng quyền tự cài bản cập nhật khiến Google Play Protect chặn app là "có
+# hại". Gỡ khỏi khung đã sinh từ trước.
+m = re.sub(r'\s*<uses-permission android:name="android\.permission\.(RECEIVE_BOOT_COMPLETED|REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)" />', "", m)
+m = re.sub(r'\s*<receiver\s+android:name="\.BootReceiver".*?</receiver>', "", m, flags=re.S)
 
 if "WakeRelayService" not in m:
     i = m.rindex("</application>")
@@ -53,13 +57,6 @@ if "WakeRelayService" not in m:
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Tram bat may tinh (Wake-on-LAN) cho dien thoai khac" />
         </service>
-        <receiver
-            android:name=".BootReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
     """ + m[i:]
 
 m = re.sub(r'android:label="[^"]*"', 'android:label="HeDeck"', m, count=1)

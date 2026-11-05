@@ -6,7 +6,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -21,6 +20,7 @@ import android.provider.Settings
 import android.util.Base64
 import android.util.Log
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -144,16 +144,21 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    // Xin cho HeDeck khoi bi toi uu pin: nhieu may (Samsung, Xiaomi, Oppo)
-    // van tat dich vu nen sau vai gio neu khong co ngoai le nay.
+    // Nhieu may (Samsung, Xiaomi, Oppo) van tat dich vu nen sau vai gio neu
+    // HeDeck con bi toi uu pin. Khong dung hop thoai xin ngoai le
+    // (REQUEST_IGNORE_BATTERY_OPTIMIZATIONS): quyen do khien Google Play
+    // Protect chan app la "co hai". Mo trang thong tin app de nguoi dung tu
+    // chon Pin -> Khong han che.
     private fun askBatteryExemption() {
         val pm = getSystemService(POWER_SERVICE) as PowerManager
         if (pm.isIgnoringBatteryOptimizations(packageName)) return
         try {
-            startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                 Uri.parse("package:$packageName")))
+            Toast.makeText(this, "Pin → Không hạn chế, để trạm bật máy chạy ngầm ổn định",
+                Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
-            Log.w("HeDeck", "khong mo duoc cai dat pin: $e")
+            Log.w("HeDeck", "khong mo duoc cai dat app: $e")
         }
     }
 }
@@ -163,7 +168,7 @@ class MainActivity : FlutterActivity() {
  * khac (qua Tailscale) roi phat goi Wake-on-LAN trong mang nha.
  *
  * Chay doc lap voi giao dien Flutter: man hinh tat, app bi vuot khoi danh
- * sach da nhiem, hay dien thoai khoi dong lai (BootReceiver) van chay. Giu
+ * sach da nhiem van chay (khoi dong lai dien thoai thi mo HeDeck mot lan). Giu
  * CPU va Wi-Fi thuc de luon nghe duoc lenh; tram vot cam sac nen khong lo pin.
  *
  * Giao thuc giong ban Dart (lib/services/platform/relay_io.dart):
@@ -458,17 +463,6 @@ class WakeRelayService : Service() {
             }
         } catch (_: Exception) {
             true
-        }
-    }
-}
-
-/** Dien thoai khoi dong lai: mo lai tram neu dang bat. */
-class BootReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
-        if (context.getSharedPreferences(WakeRelayService.PREFS, Context.MODE_PRIVATE)
-                .getBoolean("on", false)) {
-            WakeRelayService.start(context)
         }
     }
 }
