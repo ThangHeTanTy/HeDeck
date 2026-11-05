@@ -749,6 +749,10 @@ const en = <String, String>{
       'Wake station (this phone stays at home)',
   'Bật trên điện thoại deck luôn ở nhà, cắm sạc: điện thoại khác ở xa nhờ nó bật máy tính qua Tailscale':
       'Turn on for the deck phone that stays at home, plugged in: other phones away from home ask it to wake the PC over Tailscale',
+  'Hiện các nút': 'Show buttons',
+  'Thu gọn các nút': 'Hide buttons',
+  'Hiện nút nhạc và âm lượng': 'Show music and volume controls',
+  'Thu gọn vào góc': 'Tuck into the corner',
   'Đang chạy ngầm · Tailscale {0}':
       'Running in background · Tailscale {0}',
   'Đang chạy, nhưng điện thoại này chưa bật Tailscale — điện thoại ở xa chưa gọi tới được':

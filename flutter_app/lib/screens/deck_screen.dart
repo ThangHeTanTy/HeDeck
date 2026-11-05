@@ -1318,40 +1318,70 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
             color: DeckColors.warn,
             onTap: conn.reconnectNow,
           ),
+        // Các nút công cụ: bấm ☰ để thu gọn, nhường chỗ cho tên máy. Nút
+        // Sửa (đang sửa) và Nguồn (máy tắt, bật được) vẫn hiện khi thu gọn,
+        // vì lúc đó chính là thứ cần bấm.
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          alignment: Alignment.centerRight,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!store.topCollapsed) ...[
+                _barButton(
+                  icon: Icons.monitor_heart_rounded,
+                  tooltip: t('Hiệu năng: FPS, nhiệt độ'),
+                  color: DeckColors.muted,
+                  onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PerfScreen())),
+                ),
+                _barButton(
+                  icon: Icons.mouse_rounded,
+                  tooltip: t('Touchpad và bàn phím'),
+                  color: DeckColors.muted,
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const TouchpadScreen())),
+                ),
+              ],
+              if (!store.topCollapsed || (!conn.isOnline && store.canWake))
+                _barButton(
+                  icon: Icons.power_settings_new_rounded,
+                  tooltip:
+                      conn.isOnline ? t('Nguồn máy tính') : t('Bật máy tính'),
+                  // Máy tắt mà bật được thì nút sáng xanh, mời bấm.
+                  color: !conn.isOnline && store.canWake
+                      ? DeckColors.live
+                      : DeckColors.muted,
+                  onTap: _powerSheet,
+                ),
+              if (!store.topCollapsed || _editing)
+                _barButton(
+                  icon: _editing ? Icons.check_rounded : Icons.edit_rounded,
+                  tooltip: _editing ? 'Xong' : t('Sửa bố cục'),
+                  color: _editing ? DeckColors.accent : DeckColors.muted,
+                  onTap: () => setState(() => _editing = !_editing),
+                ),
+              if (!store.topCollapsed)
+                _barButton(
+                  icon: Icons.settings_rounded,
+                  tooltip: t('Tuỳ chọn'),
+                  color: DeckColors.muted,
+                  onTap: _menu,
+                ),
+            ],
+          ),
+        ),
         _barButton(
-          icon: Icons.monitor_heart_rounded,
-          tooltip: t('Hiệu năng: FPS, nhiệt độ'),
+          icon:
+              store.topCollapsed ? Icons.menu_rounded : Icons.menu_open_rounded,
+          tooltip:
+              store.topCollapsed ? t('Hiện các nút') : t('Thu gọn các nút'),
           color: DeckColors.muted,
-          onTap: () => Navigator.of(context)
-              .push(MaterialPageRoute(builder: (_) => const PerfScreen())),
-        ),
-        _barButton(
-          icon: Icons.mouse_rounded,
-          tooltip: t('Touchpad và bàn phím'),
-          color: DeckColors.muted,
-          onTap: () => Navigator.of(context)
-              .push(MaterialPageRoute(builder: (_) => const TouchpadScreen())),
-        ),
-        _barButton(
-          icon: Icons.power_settings_new_rounded,
-          tooltip: conn.isOnline ? t('Nguồn máy tính') : t('Bật máy tính'),
-          // Máy tắt mà bật được thì nút sáng xanh, mời bấm.
-          color: !conn.isOnline && store.canWake
-              ? DeckColors.live
-              : DeckColors.muted,
-          onTap: _powerSheet,
-        ),
-        _barButton(
-          icon: _editing ? Icons.check_rounded : Icons.edit_rounded,
-          tooltip: _editing ? 'Xong' : t('Sửa bố cục'),
-          color: _editing ? DeckColors.accent : DeckColors.muted,
-          onTap: () => setState(() => _editing = !_editing),
-        ),
-        _barButton(
-          icon: Icons.settings_rounded,
-          tooltip: t('Tuỳ chọn'),
-          color: DeckColors.muted,
-          onTap: _menu,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            store.setTopCollapsed(!store.topCollapsed);
+          },
         ),
       ],
     );
@@ -1522,7 +1552,15 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
             ],
           ),
         ),
-        const MediaBar(),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          alignment: Alignment.centerRight,
+          child: MediaBar(
+            collapsed: store.mediaCollapsed,
+            onToggle: () => store.setMediaCollapsed(!store.mediaCollapsed),
+          ),
+        ),
       ],
     );
   }

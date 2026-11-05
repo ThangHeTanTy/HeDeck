@@ -22,6 +22,8 @@ class Store extends ChangeNotifier {
   static const _kFlipped = 'deck.flipped';
   static const _kWolMacs = 'deck.wolMacs';
   static const _kAutoSwitch = 'deck.autoSwitch';
+  static const _kTopCollapsed = 'ui.topCollapsed';
+  static const _kMediaCollapsed = 'ui.mediaCollapsed';
   static const _kLang = 'deck.lang';
   static const _kDark = 'deck.dark';
   static const _kMouseSpeed = 'deck.mouseSpeed';
@@ -80,6 +82,12 @@ class Store extends ChangeNotifier {
   /// Tự đổi trang theo app đang dùng trên thiết bị.
   bool autoSwitch = true;
 
+  /// Thu gọn các nút trên thanh trên vào nút ☰.
+  bool topCollapsed = false;
+
+  /// Thu gọn thanh nhạc/âm lượng thành một nút ở góc phải dưới.
+  bool mediaCollapsed = false;
+
   /// Tốc độ con trỏ của touchpad, 0.5..3.
   double mouseSpeed = 1.4;
 
@@ -119,6 +127,8 @@ class Store extends ChangeNotifier {
     dark = _prefs.getBool(_kDark) ?? true;
     DeckColors.use(dark ? DeckPalette.dark : DeckPalette.light);
     autoSwitch = _prefs.getBool(_kAutoSwitch) ?? true;
+    topCollapsed = _prefs.getBool(_kTopCollapsed) ?? false;
+    mediaCollapsed = _prefs.getBool(_kMediaCollapsed) ?? false;
     mouseSpeed = _prefs.getDouble(_kMouseSpeed) ?? 1.4;
     wolMacs = _prefs.getStringList(_kWolMacs) ?? [];
     wolBroadcast = _prefs.getString(_kWolBroadcast) ?? '';
@@ -396,6 +406,18 @@ class Store extends ChangeNotifier {
     autoSwitch = value;
     await _prefs.setBool(_kAutoSwitch, value);
     notifyListeners();
+  }
+
+  Future<void> setTopCollapsed(bool value) async {
+    topCollapsed = value;
+    notifyListeners();
+    await _prefs.setBool(_kTopCollapsed, value);
+  }
+
+  Future<void> setMediaCollapsed(bool value) async {
+    mediaCollapsed = value;
+    notifyListeners();
+    await _prefs.setBool(_kMediaCollapsed, value);
   }
 
   Future<void> setMouseSpeed(double value) async {
