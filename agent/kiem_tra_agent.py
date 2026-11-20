@@ -249,6 +249,36 @@ def main():
     check("màn hình đứng yên thì không gửi lại ảnh",
           "if digest == last_digest" in scr_src and "def _crop(" in scr_src)
 
+    # --- Màn hình phụ ------------------------------------------------------
+    print("\n[Màn hình phụ]")
+    sys.path.insert(0, str(HERE))
+    import sources
+    check("đọc nguồn màn hình / cửa sổ điện thoại gửi",
+          sources.parse({"monitor": 1}) == ("monitor", 1)
+          and sources.parse({"window": "655"}) == ("window", 655)
+          and sources.parse(None) is None)
+    bad = 0
+    for junk in ({"monitor": -1}, {"monitor": "x"}, {"window": 0}):
+        try:
+            sources.parse(junk)
+        except ValueError:
+            bad += 1
+    check("từ chối nguồn không hợp lệ", bad == 3)
+    # Màn hình thứ hai đặt bên trái màn hình chính: toạ độ x âm.
+    check("đổi chạm trên điện thoại ra đúng pixel trên Windows",
+          sources.to_screen((-1920, 0, 1920, 1080), 0.5, 0.5) == (-960, 540)
+          and sources.to_screen((0, 0, 100, 100), 1.0, 1.0) == (99, 99)
+          and sources.to_screen((0, 0, 100, 100), 7, -3) == (99, 0))
+    check("con trỏ ngoài nguồn thì ẩn, trong nguồn thì tính theo nguồn",
+          sources.relative_cursor((1920, 0, 1280, 720), 2000, 10, 1) == (80, 10, 1)
+          and sources.relative_cursor((1920, 0, 1280, 720), 100, 10, 1) == (-1, -1, 0))
+    check("nhận ra màn hình ảo",
+          sources.is_virtual("Virtual Display Driver")
+          and not sources.is_virtual("Generic PnP Monitor"))
+    check("agent nối lệnh nguồn và chạm màn hình phụ",
+          'if kind == "sources"' in source and 'if kind == "pointer"' in source
+          and "screen.capture, level, zoom, last[1], last[0], source" in source)
+
     # --- Bảo mật ----------------------------------------------------------
     print("\n[Bảo mật]")
     sec_src = (HERE / "security.py").read_text(encoding="utf-8")

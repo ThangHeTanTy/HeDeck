@@ -96,6 +96,13 @@ def move(dx, dy):
         _send(_mouse(MOUSEEVENTF_MOVE, dx, dy))
 
 
+def move_to(x, y):
+    """Đặt con trỏ đúng một điểm (pixel thật, toạ độ màn hình ảo của Windows).
+    Dùng cho chế độ màn hình phụ: chạm chỗ nào trên điện thoại thì con trỏ tới
+    đúng chỗ đó."""
+    user32.SetCursorPos(int(x), int(y))
+
+
 def button(name, action="click"):
     """action: click | double | down | up."""
     if name not in BUTTONS:

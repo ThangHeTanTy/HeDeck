@@ -30,6 +30,9 @@ Tuỳ chọn
 - CAI_BAT_MAY_TU_XA.bat    : cấu hình card mạng để bật máy từ điện thoại
                              (Wake-on-LAN). Cần cắm dây LAN và bật trong BIOS,
                              xem docs/BAT_MAY_TU_XA.md trên GitHub.
+- CAI_MAN_HINH_AO.bat      : thêm một "màn hình ảo" cho Windows, để điện thoại
+                             thành màn hình mở rộng thật (HeDeck -> nút Màn
+                             hình phụ). Chạy lại để gỡ. Xem docs/MAN_HINH_PHU.md.
 
 Cập nhật
 --------

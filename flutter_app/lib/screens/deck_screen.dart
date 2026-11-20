@@ -28,6 +28,7 @@ import '../widgets/media_bar.dart';
 import 'tile_edit_screen.dart';
 import 'perf_screen.dart';
 import 'touchpad_screen.dart';
+import 'second_screen.dart';
 
 class DeckScreen extends StatefulWidget {
   const DeckScreen({super.key});
@@ -1281,24 +1282,35 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
               ),
               if (conn.isOnline && conn.latencyMs != null) ...[
                 const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  // Bản tối giữ màu gốc; bản sáng dùng nền nhạt của màu
-                  // trạng thái, chữ đậm cho đủ tương phản trên nền trắng.
-                  decoration: BoxDecoration(
-                    color: DeckColors.isDark
-                        ? const Color(0xFF0F6E56)
-                        : DeckColors.live.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(20),
+                // Màn hình hẹp (dọc, nhiều nút): co lại, hẹp quá thì ẩn hẳn
+                // thay vì đè lên nút.
+                Flexible(
+                  child: LayoutBuilder(
+                    builder: (context, box) => box.maxWidth < 60
+                        ? const SizedBox.shrink()
+                        : Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            // Bản tối giữ màu gốc; bản sáng dùng nền nhạt của màu
+                            // trạng thái, chữ đậm cho đủ tương phản trên nền trắng.
+                            decoration: BoxDecoration(
+                              color: DeckColors.isDark
+                                  ? const Color(0xFF0F6E56)
+                                  : DeckColors.live.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                                '${conn.viaRemote ? 'Tailscale' : 'Wi-Fi'} · ${conn.latencyMs} ms',
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.fade,
+                                style: TextStyle(
+                                    color: DeckColors.isDark
+                                        ? const Color(0xFF9FE1CB)
+                                        : DeckColors.live,
+                                    fontSize: 11)),
+                          ),
                   ),
-                  child: Text(
-                      '${conn.viaRemote ? 'Tailscale' : 'Wi-Fi'} · ${conn.latencyMs} ms',
-                      style: TextStyle(
-                          color: DeckColors.isDark
-                              ? const Color(0xFF9FE1CB)
-                              : DeckColors.live,
-                          fontSize: 11)),
                 ),
               ],
             ],
@@ -1342,6 +1354,13 @@ class _DeckScreenState extends State<DeckScreen> with WidgetsBindingObserver {
                   color: DeckColors.muted,
                   onTap: () => Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const TouchpadScreen())),
+                ),
+                _barButton(
+                  icon: Icons.cast_rounded,
+                  tooltip: t('Màn hình phụ'),
+                  color: DeckColors.muted,
+                  onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SecondScreen())),
                 ),
               ],
               if (!store.topCollapsed || (!conn.isOnline && store.canWake))
