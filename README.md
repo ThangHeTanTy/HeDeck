@@ -33,6 +33,7 @@ nhạc, âm lượng riêng từng ứng dụng, và các ô macro gõ tổ hợ
 | **Chọn từng cửa sổ** | Mở 3 cửa sổ Chrome thì ô hiện số 1, 2, 3 phía trên icon — chạm số nào ra cửa sổ đó, như taskbar Windows. |
 | **Tự đổi trang** | Như Stream Deck: vào Liên Minh thì deck tự sang trang Game, về desktop thì về trang Làm việc. |
 | **Touchpad và bàn phím** | Điều khiển chuột, cuộn, kéo thả và gõ chữ tiếng Việt từ xa. |
+| **Màn hình phụ** | Điện thoại hiện một cửa sổ (Discord, OBS, Spotify…) hoặc một màn hình của máy tính, chạm thẳng lên hình để điều khiển. Cài thêm màn hình ảo thì thành màn hình mở rộng thật: kéo cửa sổ sang. Xem [MAN_HINH_PHU.md](docs/MAN_HINH_PHU.md). |
 | **Sáng / tối** | Nút trượt mặt trời / mặt trăng trong bánh răng. Chủ đề sáng có bộ màu ô riêng, đủ tương phản trên nền trắng. |
 | **Dùng từ xa qua Internet** | Ở ngoài vẫn điều khiển được máy ở nhà qua Tailscale (mã hoá, không mở cổng router), xem màn hình máy tính ngay trong touchpad, và bật máy đang tắt nhờ điện thoại deck ở nhà làm trạm. Xem [TU_XA.md](docs/TU_XA.md). |
 | **iPhone, iPad, trình duyệt** | Agent phục vụ sẵn bản web: quét mã QR trên cửa sổ agent là dùng được trên iPhone/iPad, không cần cài, không cần tài khoản Apple. Xem [CAI_DAT.md](docs/CAI_DAT.md#iphone-ipad--bản-web). |

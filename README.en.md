@@ -34,6 +34,7 @@ overlay — no dedicated hardware to buy.
 | **Pick a window** | Three Chrome windows open? The tile shows 1, 2, 3 above the icon — tap a number to jump to that window, like the Windows taskbar. |
 | **Automatic pages** | Like a Stream Deck profile: launch a game and the deck switches to your Game page; back on the desktop, back to Work. |
 | **Touchpad and keyboard** | Move the mouse, scroll, drag and type (including Vietnamese) remotely. |
+| **Second screen** | The phone shows one window (Discord, OBS, Spotify…) or a whole display of the PC; touch the picture to control it. Add a virtual display and it becomes a real extended display: drag windows onto it. See [MAN_HINH_PHU.md](docs/MAN_HINH_PHU.md) (Vietnamese). |
 | **Performance overlay** | FPS, 1% low, CPU/GPU temperature and load, VRAM, RAM, network — on the phone, not over your game. |
 | **Scenes** | One tap opens and closes several apps: "Gaming" opens Discord and your game, closes Chrome. |
 | **Keyboard macros** | A tile types `ctrl+shift+p`, or a whole multi-step sequence. |

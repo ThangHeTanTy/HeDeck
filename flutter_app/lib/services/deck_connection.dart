@@ -122,6 +122,45 @@ class ScreenFrame {
   }
 }
 
+/// Một màn hình Windows chọn được cho chế độ màn hình phụ.
+class ScreenMonitor {
+  final int id;
+  final String name;
+  final int width, height;
+  final bool primary, virtual;
+
+  const ScreenMonitor(
+      this.id, this.name, this.width, this.height, this.primary, this.virtual);
+
+  factory ScreenMonitor.fromJson(Map<String, dynamic> j) => ScreenMonitor(
+        (j['id'] as num?)?.toInt() ?? 0,
+        '${j['name'] ?? ''}',
+        (j['w'] as num?)?.toInt() ?? 0,
+        (j['h'] as num?)?.toInt() ?? 0,
+        j['primary'] == true,
+        j['virtual'] == true,
+      );
+}
+
+/// Một cửa sổ chọn được cho chế độ màn hình phụ.
+class ScreenWindow {
+  final int id;
+  final String title, exe;
+
+  const ScreenWindow(this.id, this.title, this.exe);
+
+  factory ScreenWindow.fromJson(Map<String, dynamic> j) => ScreenWindow(
+      (j['id'] as num?)?.toInt() ?? 0,
+      '${j['title'] ?? ''}',
+      '${j['exe'] ?? ''}');
+}
+
+class ScreenSources {
+  final List<ScreenMonitor> monitors;
+  final List<ScreenWindow> windows;
+  const ScreenSources(this.monitors, this.windows);
+}
+
 /// Kênh liên lạc duy nhất tới agent trên thiết bị.
 class DeckConnection extends ChangeNotifier {
   DeckConnection(this.identity);
@@ -220,6 +259,13 @@ class DeckConnection extends ChangeNotifier {
   /// Agent từ bản này mới gửi được màn hình và nhận trạm bật máy.
   static const screenAgentVersion = 7;
 
+  /// Agent từ bản này mới có chế độ màn hình phụ (chọn màn hình/cửa sổ).
+  static const secondScreenAgentVersion = 8;
+
+  /// Nguồn màn hình phụ đang xem không còn (cửa sổ đã đóng, màn hình ảo đã
+  /// gỡ): câu báo của agent. Màn hình phụ nghe để mời chọn lại.
+  final screenLost = ValueNotifier<String?>(null);
+
   /// Điện thoại này đang làm trạm bật máy: báo agent địa chỉ của trạm mỗi
   /// lần kết nối. Null nếu không làm trạm.
   Map<String, dynamic>? _relayAnnounce;
@@ -241,6 +287,7 @@ class DeckConnection extends ChangeNotifier {
   int _backoff = 1;
   Completer<PairResult>? _pairing;
   Completer<List<RunningProgram>>? _runningReq;
+  Completer<ScreenSources>? _sourcesReq;
   Completer<String>? _adoptReq;
 
   bool get isOnline => state == ConnState.online;
@@ -430,8 +477,39 @@ class DeckConnection extends ChangeNotifier {
 
   /// Xin một khung hình màn hình. Gọi lại sau khi nhận được khung trước.
   /// [zoom] 1..4: agent cắt vùng quanh con trỏ, gửi ở độ phân giải gốc.
-  void requestScreen(String level, {double zoom = 1}) =>
-      _send({'t': 'screen', 'level': level, 'zoom': zoom});
+  /// [source] của chế độ màn hình phụ: {'monitor': i} hoặc {'window': hwnd};
+  /// bỏ trống là màn hình chính.
+  void requestScreen(String level,
+          {double zoom = 1, Map<String, int>? source}) =>
+      _send({
+        't': 'screen',
+        'level': level,
+        'zoom': zoom,
+        if (source != null) 'source': source,
+      });
+
+  /// Các màn hình và cửa sổ trên máy tính, để chọn làm màn hình phụ.
+  Future<ScreenSources> listSources() {
+    _sourcesReq?.completeError(StateError(t('Đã thay bằng yêu cầu mới')));
+    final req = _sourcesReq = Completer<ScreenSources>();
+    _send({'t': 'sources'});
+    return req.future.timeout(const Duration(seconds: 15),
+        onTimeout: () => throw StateError(t('Thiết bị không trả lời')));
+  }
+
+  /// Chạm trên màn hình phụ. [x], [y] là vị trí theo tỉ lệ 0..1 trong nguồn.
+  /// [action]: move, down, up, click, double, right, scroll.
+  void pointer(Map<String, int> source, double x, double y, String action,
+          {int dy = 0, int dx = 0}) =>
+      _send({
+        't': 'pointer',
+        'source': source,
+        'x': x,
+        'y': y,
+        'action': action,
+        if (dy != 0) 'dy': dy,
+        if (dx != 0) 'dx': dx,
+      });
 
   void stopScreen() {
     _send({'t': 'screen', 'off': true});
@@ -733,6 +811,21 @@ class DeckConnection extends ChangeNotifier {
         req?.complete(msg['app_id'] as String);
         break;
 
+      case 'sources':
+        final req = _sourcesReq;
+        _sourcesReq = null;
+        List<T> list<T>(String key, T Function(Map<String, dynamic>) f) =>
+            (msg[key] as List? ?? const [])
+                .map((e) => f((e as Map).cast<String, dynamic>()))
+                .toList();
+        req?.complete(ScreenSources(list('monitors', ScreenMonitor.fromJson),
+            list('windows', ScreenWindow.fromJson)));
+        break;
+
+      case 'screen_lost':
+        screenLost.value = t(msg['msg'] as String? ?? 'Nguồn hình không còn');
+        break;
+
       case 'pong':
         final sent = msg['ts'];
         if (sent is int) {
@@ -749,13 +842,14 @@ class DeckConnection extends ChangeNotifier {
         }
         // Lỗi trả về khi đang chờ danh sách cửa sổ hay đang thêm app thì là
         // lỗi của yêu cầu đó, đừng để màn hình chờ mãi.
-        for (final req in [_runningReq, _adoptReq]) {
+        for (final req in [_runningReq, _adoptReq, _sourcesReq]) {
           if (req != null && !req.isCompleted) {
             req.completeError(StateError(lastError!));
           }
         }
         _runningReq = null;
         _adoptReq = null;
+        _sourcesReq = null;
         if (msg['fatal'] == true) {
           final code = msg['code'] as String? ?? '';
           final text = lastError ?? '';

@@ -30,6 +30,7 @@ import power
 import remote
 import remote_input
 import screen
+import sources
 import security
 import updater
 import web_ui
@@ -45,7 +46,7 @@ ALLOW_MACROS = True        # đặt False nếu không muốn điện thoại g�
 # Tăng mỗi khi giao thức với app thay đổi. App so số này để báo người dùng
 # chạy lại agent sau khi cập nhật code — pull code xong mà quên tắt cửa sổ
 # agent cũ thì nó vẫn chạy bản cũ, mọi tính năng mới im lặng không hoạt động.
-AGENT_VERSION = 7
+AGENT_VERSION = 8
 # đặt False nếu không muốn điện thoại điều khiển chuột và gõ phím từ xa
 ALLOW_REMOTE_INPUT = True
 ALLOW_POWER = True         # đặt False nếu không muốn điện thoại tắt/ngủ máy
@@ -389,8 +390,11 @@ class Agent:
             except Exception:
                 pass
 
-    async def send_screen(self, ws, level, zoom=1.0):
-        """Gửi một khung màn hình. Điện thoại nhận xong mới xin khung sau."""
+    async def send_screen(self, ws, level, zoom=1.0, source=None):
+        """Gửi một khung màn hình. Điện thoại nhận xong mới xin khung sau.
+
+        source: nguồn của chế độ màn hình phụ (sources.parse), None là màn
+        hình chính như touchpad."""
         if ws in self._screen_busy:
             return
         self._screen_busy.add(ws)
@@ -399,15 +403,23 @@ class Agent:
                 name = self.state["devices"].get(
                     self._ws_device.get(ws, ""), {}).get("name", "Điện thoại")
                 log(f"{name} đang xem màn hình máy này.")
-            last = self._screen_last.get(ws) or (None, None)
+            last = self._screen_last.get(ws) or (None, None, None)
+            if last[2] != source:          # đổi nguồn: gửi lại ảnh đầy đủ
+                last = (None, None, None)
             packet, digest, crop = await self.run_blocking(
-                screen.capture, level, zoom, last[1], last[0])
+                screen.capture, level, zoom, last[1], last[0], source)
             # Nhớ vân tay và vùng cắt để lần sau khỏi gửi lại ảnh giống hệt,
             # và vùng phóng to đứng yên khi con trỏ chưa tới mép.
-            self._screen_last[ws] = (digest, crop)
+            self._screen_last[ws] = (digest, crop, source)
             await ws.send(packet)
         except websockets.ConnectionClosed:
             pass
+        except LookupError as exc:
+            # Cửa sổ đã đóng, màn hình ảo đã gỡ: báo để điện thoại chọn lại.
+            try:
+                await ws.send(json.dumps({"t": "screen_lost", "msg": str(exc)}))
+            except Exception:
+                pass
         except Exception as exc:
             log("Không chụp được màn hình:", exc)
         finally:
@@ -671,9 +683,27 @@ class Agent:
                 if self._screen_last.pop(ws, None) is not None:
                     log("Đã ngừng xem màn hình.")
                 return None
+            try:
+                source = sources.parse(msg.get("source"))
+            except ValueError as exc:
+                return {"t": "error", "msg": str(exc)}
             self._spawn(self.send_screen(
-                ws, str(msg.get("level", "mid")), msg.get("zoom", 1.0)))
+                ws, str(msg.get("level", "mid")), msg.get("zoom", 1.0),
+                source))
             return None
+
+        if kind == "sources":
+            # Chế độ màn hình phụ: các màn hình và cửa sổ chọn được.
+            if not ALLOW_SCREEN_VIEW:
+                return {"t": "error", "msg": "Máy tính đã tắt chế độ xem màn hình"}
+            try:
+                mons, wins = await self.run_blocking(self.list_sources)
+            except Exception as exc:
+                return {"t": "error", "msg": f"Không đọc được danh sách màn hình: {exc}"}
+            return {"t": "sources", "monitors": mons, "windows": wins}
+
+        if kind == "pointer":
+            return self.pointer(msg)
 
         if kind == "backup":
             # Bản sao bố cục (trang, ô, thiết lập) của điện thoại. iPhone dùng
@@ -881,6 +911,47 @@ class Agent:
                 remote_input.type_text(msg.get("text", ""))
             elif kind == "key":
                 win_control.press_hotkey(str(msg.get("combo", "")))
+        except (ValueError, TypeError) as exc:
+            return {"t": "error", "msg": str(exc)}
+        return None
+
+    @staticmethod
+    def list_sources():
+        screen._dpi_aware()
+        return sources.monitors(), sources.windows()
+
+    def pointer(self, msg):
+        """Chạm trên màn hình phụ: (x, y) là vị trí theo tỉ lệ 0..1 trong
+        nguồn đang xem. Đặt con trỏ đúng chỗ rồi nhấp, cuộn hoặc kéo."""
+        if not ALLOW_REMOTE_INPUT:
+            return {"t": "error", "msg": "Máy tính đang tắt điều khiển chuột và bàn phím"}
+        action = msg.get("action", "click")
+        try:
+            source = sources.parse(msg.get("source"))
+            screen._dpi_aware()
+            if source is None:
+                import win32api
+                w = win32api.GetSystemMetrics(0)
+                h = win32api.GetSystemMetrics(1)
+                rect = (0, 0, w, h)
+            else:
+                rect = sources.rect_of(*source)
+            x, y = sources.to_screen(rect, msg.get("x"), msg.get("y"))
+            if action in ("click", "double", "right", "down") and source:
+                sources.focus(*source)
+            remote_input.move_to(x, y)
+            if action == "move":
+                pass
+            elif action == "right":
+                remote_input.button("right", "click")
+            elif action == "scroll":
+                remote_input.scroll(msg.get("dy", 0), msg.get("dx", 0))
+            elif action in ("click", "double", "down", "up"):
+                remote_input.button("left", action)
+            else:
+                return {"t": "error", "msg": f"Thao tác lạ: {action}"}
+        except LookupError as exc:
+            return {"t": "screen_lost", "msg": str(exc)}
         except (ValueError, TypeError) as exc:
             return {"t": "error", "msg": str(exc)}
         return None

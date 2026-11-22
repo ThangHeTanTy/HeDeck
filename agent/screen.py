@@ -63,14 +63,31 @@ _cursor_handles = None
 
 
 def _dpi_aware():
-    """Chụp đúng độ phân giải thật thay vì bản Windows thu nhỏ theo DPI."""
+    """Chụp và đặt con trỏ bằng pixel thật thay vì toạ độ Windows thu nhỏ
+    theo DPI.
+
+    Cả tiến trình: "system aware" (cửa sổ agent vẫn được Windows co giãn bình
+    thường). Riêng luồng đang chụp/điều khiển: "per-monitor", để khi các màn
+    hình có tỉ lệ phóng khác nhau (laptop 150%, màn rời hay màn hình ảo 100%)
+    thì toạ độ và ảnh của mọi màn hình vẫn khớp nhau. Gọi mỗi lần, vì luồng
+    chạy việc nền thay đổi."""
     global _dpi_done
-    if _dpi_done:
-        return
-    _dpi_done = True
     try:
         import ctypes
-        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    except Exception:
+        return
+    if not _dpi_done:
+        _dpi_done = True
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        except Exception:
+            pass
+    try:
+        # DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4 (Windows 10 1703+).
+        fn = ctypes.windll.user32.SetThreadDpiAwarenessContext
+        fn.restype = ctypes.c_void_p
+        fn.argtypes = [ctypes.c_void_p]
+        fn(ctypes.c_void_p(-4))
     except Exception:
         pass
 
@@ -127,11 +144,13 @@ def _crop(sw, sh, zoom, cx, cy, prev):
     return (x0, y0, cw, ch)
 
 
-def capture(level="mid", zoom=1.0, prev_crop=None, last_digest=None):
-    """Chụp màn hình chính. Trả về (gói nhị phân, dấu vân tay, vùng cắt).
+def capture(level="mid", zoom=1.0, prev_crop=None, last_digest=None,
+            source=None):
+    """Chụp màn hình chính, hoặc nguồn đã chọn cho chế độ màn hình phụ
+    (source, xem sources.parse). Trả về (gói nhị phân, dấu vân tay, vùng cắt).
 
     Vùng cắt giống lần trước và nội dung không đổi (cùng last_digest) thì gói
-    chỉ có phần đầu: toạ độ và loại con trỏ.
+    chỉ có phần đầu: toạ độ và loại con trỏ. Toạ độ con trỏ tính theo nguồn.
     """
     from PIL import Image, ImageGrab
 
@@ -141,9 +160,15 @@ def capture(level="mid", zoom=1.0, prev_crop=None, last_digest=None):
         zoom = min(4.0, max(1.0, float(zoom)))
     except (TypeError, ValueError):
         zoom = 1.0
-    shot = ImageGrab.grab()
-    sw, sh = shot.size
     cx, cy, kind = _cursor()
+    if source is None:
+        shot = ImageGrab.grab()
+    else:
+        import sources
+        rect = sources.rect_of(*source)
+        shot = sources.grab(*source, rect)
+        cx, cy, kind = sources.relative_cursor(rect, cx, cy, kind)
+    sw, sh = shot.size
     cx, cy = (v if -32768 <= v <= 32767 else -1 for v in (cx, cy))
     crop = _crop(sw, sh, zoom, cx, cy, prev_crop)
     x0, y0, cw, ch = crop

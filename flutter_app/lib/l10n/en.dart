@@ -749,6 +749,38 @@ const en = <String, String>{
       'Wake station (this phone stays at home)',
   'Bật trên điện thoại deck luôn ở nhà, cắm sạc: điện thoại khác ở xa nhờ nó bật máy tính qua Tailscale':
       'Turn on for the deck phone that stays at home, plugged in: other phones away from home ask it to wake the PC over Tailscale',
+  'Màn hình phụ':
+      'Second screen',
+  'Màn hình {0}':
+      'Display {0}',
+  'Hiện gì trên điện thoại?':
+      'What should this phone show?',
+  'Màn hình':
+      'Displays',
+  'màn hình chính':
+      'main display',
+  'màn hình ảo — kéo cửa sổ sang đây':
+      'virtual display — drag windows onto it',
+  'Muốn điện thoại thành màn hình mở rộng thật (kéo cửa sổ sang)? Trên máy tính, chạy CAI_MAN_HINH_AO.bat trong thư mục HeDeck rồi chọn độ phân giải gần với điện thoại này: {0}×{1}.':
+      'Want this phone as a real extended display (drag windows onto it)? On the PC, run CAI_MAN_HINH_AO.bat in the HeDeck folder, then pick a resolution close to this phone: {0}×{1}.',
+  'Không có cửa sổ nào đang mở':
+      'No open windows',
+  'Đổi màn hình / cửa sổ':
+      'Switch display / window',
+  'Bỏ phóng to':
+      'Reset zoom',
+  'Về deck':
+      'Back to deck',
+  'Cập nhật HeDeck trên máy tính để dùng màn hình phụ':
+      'Update HeDeck on the PC to use the second screen',
+  'Chưa kết nối máy tính':
+      'Not connected to the PC',
+  'Nguồn hình không còn':
+      'The picture source is gone',
+  'Màn hình này không còn nữa':
+      'This display is no longer there',
+  'Cửa sổ này đã đóng':
+      'This window was closed',
   'Hiện các nút': 'Show buttons',
   'Thu gọn các nút': 'Hide buttons',
   'Hiện nút nhạc và âm lượng': 'Show music and volume controls',

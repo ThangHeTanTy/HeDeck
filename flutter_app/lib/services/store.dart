@@ -24,6 +24,7 @@ class Store extends ChangeNotifier {
   static const _kAutoSwitch = 'deck.autoSwitch';
   static const _kTopCollapsed = 'ui.topCollapsed';
   static const _kMediaCollapsed = 'ui.mediaCollapsed';
+  static const _kSecondSource = 'ui.secondSource';
   static const _kLang = 'deck.lang';
   static const _kDark = 'deck.dark';
   static const _kMouseSpeed = 'deck.mouseSpeed';
@@ -88,6 +89,10 @@ class Store extends ChangeNotifier {
   /// Thu gọn thanh nhạc/âm lượng thành một nút ở góc phải dưới.
   bool mediaCollapsed = false;
 
+  /// Nguồn màn hình phụ chọn lần trước: `m:` + số màn hình, hoặc `w:` +
+  /// tên exe (hwnd đổi mỗi lần mở app nên nhớ theo chương trình).
+  String secondSource = '';
+
   /// Tốc độ con trỏ của touchpad, 0.5..3.
   double mouseSpeed = 1.4;
 
@@ -129,6 +134,7 @@ class Store extends ChangeNotifier {
     autoSwitch = _prefs.getBool(_kAutoSwitch) ?? true;
     topCollapsed = _prefs.getBool(_kTopCollapsed) ?? false;
     mediaCollapsed = _prefs.getBool(_kMediaCollapsed) ?? false;
+    secondSource = _prefs.getString(_kSecondSource) ?? '';
     mouseSpeed = _prefs.getDouble(_kMouseSpeed) ?? 1.4;
     wolMacs = _prefs.getStringList(_kWolMacs) ?? [];
     wolBroadcast = _prefs.getString(_kWolBroadcast) ?? '';
@@ -412,6 +418,11 @@ class Store extends ChangeNotifier {
     topCollapsed = value;
     notifyListeners();
     await _prefs.setBool(_kTopCollapsed, value);
+  }
+
+  Future<void> setSecondSource(String value) async {
+    secondSource = value;
+    await _prefs.setString(_kSecondSource, value);
   }
 
   Future<void> setMediaCollapsed(bool value) async {
