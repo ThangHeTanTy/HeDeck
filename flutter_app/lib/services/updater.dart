@@ -2,15 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter/services.dart';
 
 /// Cập nhật app từ GitHub Releases.
 ///
-/// Android không cho app ngoài Play Store tự cài im lặng: app chỉ tải APK về
-/// rồi mở trình cài đặt của hệ thống, người dùng bấm "Cài đặt" để xác nhận.
-/// Phần mở trình cài đặt nằm trong MainActivity.kt (kênh `hedeck/update`), do
-/// setup_app.bat sinh ra.
+/// App chỉ hỏi GitHub có bản mới không, rồi mở link tải trong trình duyệt
+/// (kênh `hedeck/update` trong MainActivity.kt, do setup_app.bat sinh ra).
+/// Trình duyệt tải HeDeck.apk; bấm vào file để Android cài đè bản cũ.
 class Updater {
   static const repo = 'ThangHeTanTy/HeDeck';
   static const releasesPage = 'https://github.com/$repo/releases';
@@ -65,56 +63,13 @@ class Updater {
     }
   }
 
-  /// Tải APK về bộ nhớ đệm của app, kiểm SHA-256 nếu GitHub có ghi.
-  /// [onProgress] nhận 0..1, hoặc -1 khi không biết dung lượng.
-  static Future<File> download(Release rel,
-      {void Function(double)? onProgress}) async {
-    final dir = await _channel.invokeMethod<String>('apkDir');
-    final file = File('$dir/HeDeck-${rel.version}.apk');
-    final client = HttpClient()
-      ..connectionTimeout = const Duration(seconds: 15);
-    try {
-      final req = await client.getUrl(Uri.parse(rel.apkUrl));
-      req.headers.set(HttpHeaders.userAgentHeader, 'HeDeck-App');
-      final resp = await req.close();
-      if (resp.statusCode != 200) {
-        throw HttpException('GitHub ${resp.statusCode}');
-      }
-      final total = resp.contentLength > 0 ? resp.contentLength : rel.apkSize;
-      final hash = Sha256().newHashSink();
-      final out = file.openWrite();
-      var done = 0;
-      try {
-        await for (final chunk in resp.timeout(const Duration(seconds: 30))) {
-          out.add(chunk);
-          hash.add(chunk);
-          done += chunk.length;
-          onProgress?.call(total > 0 ? done / total : -1);
-        }
-      } finally {
-        await out.close();
-      }
-      hash.close();
-      if (rel.apkSha256.isNotEmpty) {
-        final got = (await hash.hash())
-            .bytes
-            .map((b) => b.toRadixString(16).padLeft(2, '0'))
-            .join();
-        if (got != rel.apkSha256) {
-          await file.delete();
-          throw const FormatException('sha256');
-        }
-      }
-      return file;
-    } finally {
-      client.close(force: true);
-    }
-  }
-
-  /// Mở trình cài đặt của Android. Lần đầu Android sẽ hỏi cho phép HeDeck
-  /// cài ứng dụng — bật lên rồi quay lại là cài tiếp.
-  static Future<void> install(File apk) =>
-      _channel.invokeMethod('install', {'path': apk.path});
+  /// Mở link tải HeDeck.apk trong trình duyệt. Trình duyệt tải về, người
+  /// dùng bấm vào file để cài — như lần cài đầu tiên.
+  ///
+  /// App không tự tải và tự mở trình cài đặt nữa: hành vi đó (kèm quyền cài
+  /// ứng dụng) khiến Google Play Protect chặn HeDeck là "ứng dụng có hại".
+  static Future<void> openDownload(Release rel) =>
+      _channel.invokeMethod('open', {'url': rel.apkUrl});
 }
 
 class Release {

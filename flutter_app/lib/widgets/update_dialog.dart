@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -7,15 +5,15 @@ import '../l10n/l10n.dart';
 import '../services/updater.dart';
 import '../theme.dart';
 
-/// Hộp thoại "Kiểm tra cập nhật": hỏi GitHub, hiện ghi chú thay đổi, tải APK
-/// rồi mở trình cài đặt của Android. Chỉ chạy khi người dùng bấm.
+/// Hộp thoại "Kiểm tra cập nhật": hỏi GitHub, hiện ghi chú thay đổi, rồi mở
+/// link tải HeDeck.apk trong trình duyệt. Chỉ chạy khi người dùng bấm.
 Future<void> showUpdateDialog(BuildContext context) => showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (_) => const _UpdateDialog(),
     );
 
-enum _Step { checking, latest, available, downloading, ready, failed }
+enum _Step { checking, latest, available, opened, failed }
 
 class _UpdateDialog extends StatefulWidget {
   const _UpdateDialog();
@@ -27,8 +25,6 @@ class _UpdateDialog extends StatefulWidget {
 class _UpdateDialogState extends State<_UpdateDialog> {
   _Step _step = _Step.checking;
   Release? _rel;
-  File? _apk;
-  double _progress = 0;
   String _error = '';
 
   @override
@@ -51,36 +47,15 @@ class _UpdateDialogState extends State<_UpdateDialog> {
     }
   }
 
-  Future<void> _download() async {
-    setState(() {
-      _step = _Step.downloading;
-      _progress = 0;
-    });
+  Future<void> _open() async {
     try {
-      final apk = await Updater.download(_rel!, onProgress: (p) {
-        if (mounted) setState(() => _progress = p);
-      });
-      if (!mounted) return;
-      setState(() {
-        _apk = apk;
-        _step = _Step.ready;
-      });
-      await _install();
-    } on FormatException {
-      _fail(t('File tải về bị hỏng. Thử tải lại.'));
+      await Updater.openDownload(_rel!);
+      if (mounted) setState(() => _step = _Step.opened);
     } on MissingPluginException {
       _fail(t('Bản build này chưa có bộ cập nhật. Chạy lại setup_app.bat '
           'rồi build lại, hoặc tải APK trên trang GitHub.'));
-    } catch (_) {
-      _fail(t('Tải bản mới thất bại. Kiểm tra mạng rồi thử lại.'));
-    }
-  }
-
-  Future<void> _install() async {
-    try {
-      await Updater.install(_apk!);
     } on PlatformException catch (e) {
-      _fail(t('Không mở được trình cài đặt: {0}', [e.message ?? e.code]));
+      _fail(t('Không mở được trình duyệt: {0}', [e.message ?? e.code]));
     }
   }
 
@@ -150,46 +125,31 @@ class _UpdateDialogState extends State<_UpdateDialog> {
             ],
             const SizedBox(height: 10),
             Text(
-                t('Android sẽ hỏi xác nhận trước khi cài. Lần đầu cần cho '
-                    'phép HeDeck cài ứng dụng.'),
+                t('Trình duyệt sẽ tải HeDeck.apk. Tải xong, bấm vào file để '
+                    'cài đè bản cũ — giữ nguyên ghép cặp và bố cục.'),
                 style: muted),
           ],
         );
         close('Để sau');
         actions.add(FilledButton.icon(
-          onPressed: _download,
+          onPressed: _open,
           icon: const Icon(Icons.download_rounded, size: 18),
-          label: Text(t('Cập nhật')),
+          label: Text(t('Tải bản mới')),
         ));
-      case _Step.downloading:
-        final known = _progress >= 0;
-        body = Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-                known
-                    ? t('Đang tải bản {0}… {1}%',
-                        [_rel!.version, (_progress * 100).round()])
-                    : t('Đang tải bản {0}…', [_rel!.version]),
-                style: muted),
-            const SizedBox(height: 10),
-            LinearProgressIndicator(value: known ? _progress : null),
-          ],
-        );
-      case _Step.ready:
+      case _Step.opened:
         body = Text(
-            t('Đã tải xong. Bấm "Cài đặt" trên màn hình của Android để hoàn '
-                'tất. Nếu lỡ đóng, bấm "Mở lại trình cài đặt".'),
+            t('Đã mở trình duyệt. Tải xong, bấm vào HeDeck.apk (trên thanh '
+                'thông báo hoặc trong mục Tải xuống) rồi chọn "Cài đặt". Nếu '
+                'Google Play Protect hỏi, chọn "Vẫn cài đặt".'),
             style: muted);
         close();
-        actions.add(FilledButton(
-            onPressed: _install, child: Text(t('Mở lại trình cài đặt'))));
+        actions.add(
+            FilledButton(onPressed: _open, child: Text(t('Mở lại link tải'))));
       case _Step.failed:
         body = _warning(_error);
         close();
         actions.add(FilledButton(
-          onPressed: _rel == null ? _check : _download,
+          onPressed: _rel == null ? _check : _open,
           child: Text(t('Thử lại')),
         ));
     }
