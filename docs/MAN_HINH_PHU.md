@@ -41,9 +41,15 @@ Windows chỉ "thấy" thêm màn hình khi có màn hình thật hoặc một *
 HeDeck dùng [Virtual Display Driver](https://github.com/VirtualDrivers/Virtual-Display-Driver)
 — mã nguồn mở (giấy phép MIT), đã ký số, chạy trên Windows 10/11.
 
-1. Trong thư mục HeDeck trên máy tính, chạy **`CAI_MAN_HINH_AO.bat`** → chọn
-   **1**. Windows hỏi quyền Administrator thì bấm **Yes**; hiện cửa sổ *Virtual
-   Driver Control* thì bấm **Install**.
+1. Trên cửa sổ HeDeck ở máy tính, bấm **Thêm màn hình ảo** (dòng *Màn hình
+   phụ* cho biết đã có màn hình ảo chưa). Một cửa sổ lệnh mở ra và cài qua
+   winget: Windows hỏi quyền Administrator thì bấm **Yes**; hiện cửa sổ
+   *Virtual Driver Control* thì bấm **Install**. (Cách khác: chạy
+   `CAI_MAN_HINH_AO.bat` trong gói cài đặt → chọn **1**.)
+
+   Chưa cài thì Windows **không có** màn hình thứ hai trong cài đặt, và điện
+   thoại chỉ chiếu được màn hình/cửa sổ sẵn có — chuột trên máy tính không đi
+   sang điện thoại được.
 2. Cài đặt màn hình của Windows tự mở ra:
    - chọn màn hình mới, đặt **Extend these displays** (*Mở rộng các màn hình
      này*);
@@ -80,6 +86,7 @@ của chế độ này.
 | Hiện tượng | Cách xử lý |
 |---|---|
 | Danh sách chỉ có *màn hình chính* | Chưa có màn hình thứ hai: cài màn hình ảo như trên, hoặc chọn một cửa sổ. |
+| Chạm vào hình không có tác dụng ở một cửa sổ | Cửa sổ đó chạy bằng quyền Administrator (Task Manager, một số game/launcher): Windows không cho app thường điều khiển nó. Chạy HeDeck Agent bằng quyền Administrator nếu cần. |
 | Chọn cửa sổ mà hình đen | Một số app (game, video có DRM) không cho chụp. Chọn màn hình thay vì cửa sổ. |
 | Báo *Cửa sổ này đã đóng* | App đã tắt; chọn lại trong danh sách. |
 | Chạm lệch chỗ | Cập nhật HeDeck trên máy tính lên bản mới nhất (bản cũ tính sai khi các màn hình có tỉ lệ phóng khác nhau). |

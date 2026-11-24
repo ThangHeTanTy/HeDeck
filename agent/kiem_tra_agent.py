@@ -275,6 +275,11 @@ def main():
     check("nhận ra màn hình ảo",
           sources.is_virtual("Virtual Display Driver")
           and not sources.is_virtual("Generic PnP Monitor"))
+    tray_src = (HERE / "tray_ui.py").read_text(encoding="utf-8")
+    vd_src = (HERE / "virtual_display.py").read_text(encoding="utf-8")
+    check("cửa sổ agent có nút cài màn hình ảo (bản tự cập nhật không có .bat)",
+          "virtual_display.install()" in tray_src
+          and "winget install --id={PACKAGE}" in vd_src)
     check("agent nối lệnh nguồn và chạm màn hình phụ",
           'if kind == "sources"' in source and 'if kind == "pointer"' in source
           and "screen.capture, level, zoom, last[1], last[0], source" in source)
