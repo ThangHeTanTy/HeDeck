@@ -29,6 +29,7 @@ import instance
 import power
 import remote
 import updater
+import virtual_display
 import web_ui
 
 # Mã QR mở bản web trên iPhone/iPad. Thiếu thư viện thì chỉ hiện địa chỉ.
@@ -238,7 +239,7 @@ class AgentWindow:
         self.info = {}
         for row, key in enumerate(("Địa chỉ", "Bản web", "Từ xa", "Ứng dụng",
                                    "Điện thoại", "Bật từ xa", "Trạm bật máy",
-                                   "Phiên bản")):
+                                   "Màn hình phụ", "Phiên bản")):
             self._label(info, key, 9, MUTED).grid(row=row, column=0,
                                                   sticky="w", padx=(0, 14))
             self.info[key] = self._label(info, "", 9)
@@ -261,6 +262,8 @@ class AgentWindow:
         self._button(self.fw_bar, "Cho phép qua Tailscale", self.allow_tailscale,
                      primary=True).pack(side="right")
         self._fw_ok = True
+        # (số màn hình, có màn hình ảo) — luồng nền hỏi mỗi 30 giây.
+        self._displays = (0, False)
         threading.Thread(target=self._watch_firewall, daemon=True,
                          name="hedeck-firewall").start()
 
@@ -270,6 +273,11 @@ class AgentWindow:
         self._button(tools, "Xoá điện thoại đã ghép",
                      self.forget).pack(side="left", padx=8)
         self._button(tools, "Ẩn xuống khay", self.hide).pack(side="right")
+        # Màn hình ảo cho chế độ màn hình phụ: cài thẳng từ đây, vì bản agent
+        # tự cập nhật không có file CAI_MAN_HINH_AO.bat đi kèm.
+        self.vd_button = self._button(tools, "Thêm màn hình ảo",
+                                      self.virtual_display)
+        self.vd_button.pack(side="right", padx=8)
 
         # Dòng nhắc đặt trước để luôn còn chỗ, khung log co giãn phần còn lại.
         self.hint = self._label(
@@ -469,10 +477,15 @@ class AgentWindow:
                 "Từ xa": remote.describe(),
                 "Bật từ xa": power.describe(agent.wol),
                 "Trạm bật máy": agent.relay_status(),
+                "Màn hình phụ": self._display_text(),
                 "Phiên bản": version,
             }.items():
                 self.info[key].configure(text=value)
             self._refresh_qr(agent)
+            want = ("Cài đặt màn hình" if self._displays[1]
+                    else "Thêm màn hình ảo")
+            if self.vd_button["text"] != want:
+                self.vd_button.configure(text=want)
             if not self._fw_ok and not self.fw_bar.winfo_ismapped():
                 self.fw_bar.pack(fill="x", padx=14, pady=(0, 10),
                                  before=self.tools)
@@ -500,11 +513,44 @@ class AgentWindow:
                                or firewall.rule_exists())
             except Exception:
                 self._fw_ok = True
+            try:
+                self._displays = virtual_display.status()
+            except Exception:
+                pass
             for _ in range(30):
                 if getattr(self, "_fw_recheck", False):
                     self._fw_recheck = False
                     break
                 time.sleep(1)
+
+    def _display_text(self):
+        count, virtual = self._displays
+        if virtual:
+            return "có màn hình ảo — điện thoại: Màn hình phụ → chọn nó"
+        if count > 1:
+            return f"{count} màn hình — chọn một cái trên điện thoại"
+        return "chỉ chiếu cửa sổ — bấm Thêm màn hình ảo để mở rộng"
+
+    def virtual_display(self):
+        if self._displays[1]:
+            virtual_display.open_settings()
+            return
+        if not messagebox.askyesno(
+                "Thêm màn hình ảo",
+                "Cài Virtual Display Driver (mã nguồn mở, đã ký số) để Windows "
+                "có thêm một màn hình. Điện thoại chọn màn hình đó trong "
+                "Màn hình phụ là thành màn hình mở rộng: kéo cửa sổ sang.\n\n"
+                "Windows sẽ hỏi quyền Administrator. Cài xong, trong cài đặt "
+                "màn hình chọn \"Extend these displays\" và độ phân giải "
+                "gần với điện thoại.\n\nCài ngay?", parent=self.root):
+            return
+        virtual_display.install()
+        print("Đang cài màn hình ảo trong cửa sổ lệnh vừa mở — bấm Yes khi "
+              "Windows hỏi quyền.")
+        def recheck():
+            self._fw_recheck = True
+        for delay in (20000, 45000, 90000):
+            self.root.after(delay, recheck)
 
     def allow_tailscale(self):
         firewall.open_for_tailscale(self.port or 8787)

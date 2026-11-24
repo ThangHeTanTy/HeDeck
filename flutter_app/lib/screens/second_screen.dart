@@ -17,7 +17,8 @@ import '../widgets/pc_cursor.dart';
 /// - Chọn một **cửa sổ** (Discord, OBS, Spotify...): chỉ cửa sổ đó, kể cả khi
 ///   nó bị cửa sổ khác che trên máy tính.
 /// - Chọn một **màn hình**: màn hình thứ hai, hoặc màn hình ảo (cài bằng
-///   CAI_MAN_HINH_AO.bat) — khi đó điện thoại là màn hình mở rộng thật, kéo
+///   nút "Thêm màn hình ảo" trên cửa sổ HeDeck ở máy tính) — khi đó điện
+///   thoại là màn hình mở rộng thật, kéo
 ///   cửa sổ sang là hiện ở đây.
 ///
 /// Cử chỉ:
@@ -80,6 +81,11 @@ class _SecondScreenState extends State<SecondScreen> {
   // ------------------------------------------------------------ nút nổi
 
   bool _controlsBright = true;
+
+  /// Dải hướng dẫn cử chỉ, hiện vài giây mỗi lần chọn nguồn: chạm thẳng lên
+  /// hình khác touchpad (kéo là cuộn chứ không phải di chuột).
+  bool _hint = false;
+  Timer? _hintTimer;
   Timer? _dimTimer;
 
   @override
@@ -123,6 +129,7 @@ class _SecondScreenState extends State<SecondScreen> {
     _stallTimer?.cancel();
     _holdTimer?.cancel();
     _dimTimer?.cancel();
+    _hintTimer?.cancel();
     final src = _source;
     if (_dragging && src != null) _conn.pointer(src, 0, 0, 'up');
     if (src != null) _conn.stopScreen();
@@ -182,6 +189,15 @@ class _SecondScreenState extends State<SecondScreen> {
     _conn.screen.value = null;
     if (remember != null) _store.setSecondSource(remember);
     _askFrame();
+    _showHint();
+  }
+
+  void _showHint() {
+    setState(() => _hint = true);
+    _hintTimer?.cancel();
+    _hintTimer = Timer(const Duration(seconds: 7), () {
+      if (mounted) setState(() => _hint = false);
+    });
   }
 
   // --------------------------------------------------------- khung hình
@@ -286,7 +302,7 @@ class _SecondScreenState extends State<SecondScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
                 child: Text(
-                    t('Muốn điện thoại thành màn hình mở rộng thật (kéo cửa sổ sang)? Trên máy tính, chạy CAI_MAN_HINH_AO.bat trong thư mục HeDeck rồi chọn độ phân giải gần với điện thoại này: {0}×{1}.',
+                    t('Muốn điện thoại thành màn hình mở rộng thật (kéo cửa sổ sang)? Trên cửa sổ HeDeck ở máy tính, bấm "Thêm màn hình ảo", rồi trong cài đặt màn hình của Windows chọn "Extend" và độ phân giải gần với điện thoại này: {0}×{1}.',
                         [phoneW, phoneH]),
                     style: TextStyle(
                         color: DeckColors.muted, fontSize: 12, height: 1.45)),
@@ -484,6 +500,12 @@ class _SecondScreenState extends State<SecondScreen> {
               onTap: () => Navigator.pop(ctx, 'unzoom'),
             ),
           ListTile(
+            leading: Icon(Icons.touch_app_rounded, color: DeckColors.text),
+            title: Text(t('Cách điều khiển'),
+                style: TextStyle(color: DeckColors.text)),
+            onTap: () => Navigator.pop(ctx, 'hint'),
+          ),
+          ListTile(
             leading: Icon(Icons.grid_view_rounded, color: DeckColors.text),
             title: Text(t('Về deck'), style: TextStyle(color: DeckColors.text)),
             onTap: () => Navigator.pop(ctx, 'back'),
@@ -497,6 +519,8 @@ class _SecondScreenState extends State<SecondScreen> {
         _openPicker();
       case 'unzoom':
         setState(() => _zoom = 1);
+      case 'hint':
+        _showHint();
       case 'back':
         Navigator.of(context).maybePop();
     }
@@ -524,6 +548,35 @@ class _SecondScreenState extends State<SecondScreen> {
             onPointerUp: _up,
             onPointerCancel: _up,
             child: _body(),
+          ),
+        ),
+        Positioned(
+          left: 16,
+          right: 16,
+          bottom: 16,
+          child: SafeArea(
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 300),
+                opacity: _hint && _source != null ? 1 : 0,
+                child: Center(
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.72),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(
+                        t(
+                            'Chạm: nhấp · Kéo: cuộn · Giữ rồi thả: chuột phải · Giữ rồi kéo: kéo thả · Chụm: phóng to'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 12, height: 1.4)),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
         Positioned(

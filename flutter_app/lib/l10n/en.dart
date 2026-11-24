@@ -761,8 +761,11 @@ const en = <String, String>{
       'main display',
   'màn hình ảo — kéo cửa sổ sang đây':
       'virtual display — drag windows onto it',
-  'Muốn điện thoại thành màn hình mở rộng thật (kéo cửa sổ sang)? Trên máy tính, chạy CAI_MAN_HINH_AO.bat trong thư mục HeDeck rồi chọn độ phân giải gần với điện thoại này: {0}×{1}.':
-      'Want this phone as a real extended display (drag windows onto it)? On the PC, run CAI_MAN_HINH_AO.bat in the HeDeck folder, then pick a resolution close to this phone: {0}×{1}.',
+  'Muốn điện thoại thành màn hình mở rộng thật (kéo cửa sổ sang)? Trên cửa sổ HeDeck ở máy tính, bấm "Thêm màn hình ảo", rồi trong cài đặt màn hình của Windows chọn "Extend" và độ phân giải gần với điện thoại này: {0}×{1}.':
+      'Want this phone as a real extended display (drag windows onto it)? In the HeDeck window on the PC, click "Thêm màn hình ảo" (Add virtual display), then in Windows display settings choose "Extend" and a resolution close to this phone: {0}×{1}.',
+  'Cách điều khiển': 'How to control',
+  'Chạm: nhấp · Kéo: cuộn · Giữ rồi thả: chuột phải · Giữ rồi kéo: kéo thả · Chụm: phóng to':
+      'Tap: click · Drag: scroll · Hold and release: right-click · Hold and drag: drag · Pinch: zoom',
   'Không có cửa sổ nào đang mở':
       'No open windows',
   'Đổi màn hình / cửa sổ':
