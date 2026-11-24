@@ -105,9 +105,10 @@ touchpad, hay bật máy đang tắt từ xa: xem [TU_XA.md](TU_XA.md).
 Không có gì tự cài sau lưng bạn — cả hai đều hỏi trước.
 
 **App:** bánh răng ⚙ → **Kiểm tra cập nhật**. Có bản mới thì app hiện ghi
-chú thay đổi; bấm **Cập nhật**, app tải về và mở trình cài đặt của Android,
-bấm **Cài đặt** để xong. Lần đầu Android hỏi cho phép HeDeck cài ứng dụng —
-bật lên rồi quay lại.
+chú thay đổi; bấm **Tải bản mới**, trình duyệt tải `HeDeck.apk` — bấm vào file
+(thanh thông báo hoặc mục Tải xuống) rồi **Cài đặt**, như lần cài đầu. App
+không tự cài APK: Google Play Protect coi việc app tự cài ứng dụng là dấu hiệu
+của ứng dụng có hại.
 
 Cập nhật **giữ nguyên mọi thứ**: các trang, ô và app đã chọn, ngôn ngữ, giao
 diện sáng/tối, tốc độ chuột, tự đổi trang, MAC bật máy và ghép cặp. Android

@@ -187,9 +187,11 @@ không dành để xem phim hay chơi game từ xa.
 ## Google Play Protect báo *Đã chặn ứng dụng có hại*
 
 HeDeck cài từ GitHub, không qua Google Play, nên Play Protect tự đoán dựa trên
-các quyền app xin. Bản 1.2.3 xin cùng lúc quyền tự cài bản cập nhật, tự mở khi
-khởi động máy và tự xin bỏ tối ưu pin — giống hệt bộ quyền của ứng dụng độc hại,
-nên bị chặn. Từ bản 1.2.4 đã bỏ hai quyền sau.
+các quyền và hành vi của app, và chấm lại mỗi bản mới. Bản 1.2.3 xin cùng lúc
+quyền tự cài bản cập nhật, tự mở khi khởi động máy và tự xin bỏ tối ưu pin —
+giống bộ quyền của ứng dụng độc hại. Bản 1.2.4 bỏ hai quyền sau; bản 1.3.0 vẫn
+bị chặn, nên từ bản 1.3.1 app bỏ luôn việc tự tải và tự cài APK (cập nhật bằng
+cách mở link tải trong trình duyệt).
 
 Nếu vẫn bị chặn (Play Protect chưa kịp nhận ra bản mới):
 

@@ -30,17 +30,6 @@ $nl
     Write-Host "  + Da them quyen mang"
 }
 
-# 1b. Quyen mo trinh cai dat, de app tu cap nhat tu GitHub. Tach rieng khoi
-# buoc 1 de may da chay setup ban cu cung duoc them.
-if ($m -notmatch "REQUEST_INSTALL_PACKAGES") {
-    $m = [regex]::Replace(
-        $m,
-        "(<manifest[^>]*>)",
-        "`$1$nl    <!-- Mo trinh cai dat khi cap nhat app tu GitHub -->$nl    <uses-permission android:name=`"android.permission.REQUEST_INSTALL_PACKAGES`" />",
-        1)
-    Write-Host "  + Da them quyen cai ban cap nhat"
-}
-
 # 1c. Tram bat may chay ngam: dich vu nen co thong bao.
 if ($m -notmatch "FOREGROUND_SERVICE_SPECIAL_USE") {
     $m = [regex]::Replace(
@@ -56,6 +45,13 @@ if ($m -notmatch "FOREGROUND_SERVICE_SPECIAL_USE") {
 # la "co hai". Go khoi khung da sinh tu truoc.
 $m = [regex]::Replace($m, '\s*<uses-permission android:name="android\.permission\.(RECEIVE_BOOT_COMPLETED|REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)" />', '')
 $m = [regex]::Replace($m, '(?s)\s*<receiver\s+android:name="\.BootReceiver".*?</receiver>', '')
+
+# 1e. Ban 1.3.0 van bi chan: app tu tai APK roi tu mo trinh cai dat
+# (REQUEST_INSTALL_PACKAGES + FileProvider) bi Play Protect nghi la "ung dung
+# phat tan". Gio cap nhat bang cach mo link tai trong trinh duyet.
+$m = [regex]::Replace($m, '\s*<!-- Mo trinh cai dat[^>]*-->', '')
+$m = [regex]::Replace($m, '\s*<uses-permission android:name="android\.permission\.REQUEST_INSTALL_PACKAGES" />', '')
+$m = [regex]::Replace($m, '(?s)\s*<provider\s+android:name="androidx\.core\.content\.FileProvider".*?</provider>', '')
 
 # 2. Ten hien thi
 $m = [regex]::Replace($m, 'android:label="[^"]*"', 'android:label="HeDeck"', 1)
@@ -78,28 +74,6 @@ if ($m -notmatch "screenOrientation") {
         "android:screenOrientation=`"sensorLandscape`"$nl            android:windowSoftInputMode=`"adjustResize`"",
         1)
     Write-Host "  + Da dat huong man hinh ngang"
-}
-
-# 4b. Chia se APK tai ve cho trinh cai dat (Android 7+ cam dung file://)
-if ($m -notmatch "update_paths") {
-    $provider = @"
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="`${applicationId}.updates"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/update_paths" />
-        </provider>
-"@
-    $i = $m.LastIndexOf("</application>")
-    if ($i -lt 0) {
-        Write-Host "[X] Khong thay </application> trong manifest" -ForegroundColor Red
-        exit 1
-    }
-    $m = $m.Insert($i, "    " + $provider.Trim() + $nl + "    ")
-    Write-Host "  + Da them FileProvider cho ban cap nhat"
 }
 
 # 4c. Khai bao dich vu tram bat may
@@ -129,7 +103,7 @@ if ($m -notmatch "WakeRelayService") {
 $xmlDir = "android\app\src\main\res\xml"
 if (-not (Test-Path $xmlDir)) { New-Item -ItemType Directory -Path $xmlDir -Force | Out-Null }
 Copy-Item "..\android_patch\network_security_config.xml" $xmlDir -Force
-Copy-Item "..\android_patch\update_paths.xml" $xmlDir -Force
+Remove-Item (Join-Path $xmlDir "update_paths.xml") -ErrorAction SilentlyContinue
 
 # 6. Nen khoi dong trang, khop voi man hinh mo dau cua app
 foreach ($dir in @("android\app\src\main\res\drawable",

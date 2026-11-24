@@ -21,7 +21,6 @@ import android.util.Base64
 import android.util.Log
 import android.view.WindowManager
 import android.widget.Toast
-import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -53,33 +52,26 @@ class MainActivity : FlutterActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
-    // Kenh hedeck/update: noi luu APK tai ve va mo trinh cai dat cua Android.
-    // Tu viet thay vi dung plugin, vi plugin hay vo moi lan Flutter nang cap.
+    // Kenh hedeck/update: mo link tai ban moi trong trinh duyet. App khong tu
+    // tai APK va tu mo trinh cai dat nua: hanh vi do (kem quyen
+    // REQUEST_INSTALL_PACKAGES) khien Google Play Protect chan app la "co hai".
+    // Trinh duyet tai HeDeck.apk, nguoi dung bam vao file de cai.
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "hedeck/update")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "apkDir" -> {
-                        // Khop voi res/xml/update_paths.xml
-                        val dir = File(cacheDir, "updates")
-                        dir.mkdirs()
-                        // Xoa APK cu, chi giu ban sap tai
-                        dir.listFiles()?.forEach { it.delete() }
-                        result.success(dir.absolutePath)
-                    }
-                    "install" -> try {
-                        val file = File(call.argument<String>("path")!!)
-                        val uri = FileProvider.getUriForFile(
-                            this, "$packageName.updates", file)
-                        val intent = Intent(Intent.ACTION_VIEW)
-                            .setDataAndType(uri, "application/vnd.android.package-archive")
-                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        startActivity(intent)
+                    "open" -> try {
+                        val url = call.argument<String>("url") ?: ""
+                        // Chi mo link GitHub cua du an, khong mo link la.
+                        if (!url.startsWith("https://github.com/")) {
+                            throw IllegalArgumentException("link khong hop le")
+                        }
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                         result.success(null)
                     } catch (e: Exception) {
-                        result.error("install", e.message, null)
+                        result.error("open", e.message, null)
                     }
                     else -> result.notImplemented()
                 }

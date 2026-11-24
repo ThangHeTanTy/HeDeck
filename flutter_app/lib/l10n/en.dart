@@ -781,6 +781,16 @@ const en = <String, String>{
       'This display is no longer there',
   'Cửa sổ này đã đóng':
       'This window was closed',
+  'Không mở được trình duyệt: {0}':
+      'Could not open the browser: {0}',
+  'Trình duyệt sẽ tải HeDeck.apk. Tải xong, bấm vào file để cài đè bản cũ — giữ nguyên ghép cặp và bố cục.':
+      'Your browser will download HeDeck.apk. When it finishes, tap the file to install over the current version — pairing and layout are kept.',
+  'Tải bản mới':
+      'Download update',
+  'Đã mở trình duyệt. Tải xong, bấm vào HeDeck.apk (trên thanh thông báo hoặc trong mục Tải xuống) rồi chọn "Cài đặt". Nếu Google Play Protect hỏi, chọn "Vẫn cài đặt".':
+      'Browser opened. When the download finishes, tap HeDeck.apk (in the notification shade or Downloads) and choose "Install". If Google Play Protect asks, choose "Install anyway".',
+  'Mở lại link tải':
+      'Open the download link again',
   'Hiện các nút': 'Show buttons',
   'Thu gọn các nút': 'Hide buttons',
   'Hiện nút nhạc và âm lượng': 'Show music and volume controls',
